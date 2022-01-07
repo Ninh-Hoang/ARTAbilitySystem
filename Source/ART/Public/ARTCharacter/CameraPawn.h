@@ -9,6 +9,7 @@
 #include "CameraPawn.generated.h"
 
 class AARTCharacterAI;
+class AARTSurvivor;
 
 UCLASS()
 class ART_API ACameraPawn : public APawn
@@ -24,10 +25,7 @@ protected:
 	TArray<AARTCharacterAI*> SelectedUnits;
 	
 	UPROPERTY()
-	AARTCharacterAI* UnitA;
-
-	UPROPERTY()
-	AARTCharacterAI* UnitB;
+	AARTCharacterAI* PlayerPawn;
 
 	UFUNCTION(BlueprintPure, Category="Team")
 	TArray<AARTCharacterAI*> GetSelectedUnit() {return SelectedUnits;}
@@ -38,12 +36,6 @@ protected:
 	virtual void MoveForward(float AxisValue);
 
 	virtual void MoveRight(float AxisValue);
-
-	virtual void ChangeToUnitA();
-	virtual void ChangeToUnitB();
-
-	virtual void PressQ();
-	virtual void ReleaseQ();
 
 public:
 	//Components
@@ -63,10 +55,11 @@ public:
 	class UInputComponent* DummyInputComp;
 
 	UPROPERTY(EditAnywhere, Category = "Team")
-	TSubclassOf<AARTCharacterAI> UnitClassA;
+	TSubclassOf<AARTCharacterAI> PlayerPawnClass;
 
+	//TODO: This should change to be a data structure
 	UPROPERTY(EditAnywhere, Category = "Team")
-	TSubclassOf<AARTCharacterAI> UnitClassB;
+	TArray<TSubclassOf<AARTCharacterAI>> AlliesPawnClassList;
 	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -76,7 +69,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintCallable, Category="Team")
-	void BP_ChangeCurrentUnit(int32 UnitIndex, bool& Success);
+	void BP_ChangeCurrentUnit(AARTCharacterAI* Pawn, bool& Success);
 
 private:
 	void InitSpawnPlayerTeam();

@@ -1,5 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
+ *TODO: This is Project specific, remove from Plugin, also every type of damage can be in one EMC
+ */
 
 #include "Ability/EC/ARTElecDamage_EC.h"
 #include "ARTCharacter/ARTCharacterAttributeSet.h"

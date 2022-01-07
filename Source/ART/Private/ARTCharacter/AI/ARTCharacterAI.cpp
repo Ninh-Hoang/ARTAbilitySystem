@@ -67,7 +67,7 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 }
 
 void AARTCharacterAI::BeginPlay()
-{
+{	
 	Super::BeginPlay();
 
 	//Add AI to Director if it was not load from map (drop in map)

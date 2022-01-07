@@ -31,6 +31,24 @@ void UARTAIConductor::Activate(bool bNewAutoActivate)
 	UE_LOG(LogTemp, Warning, TEXT("Number of AI at Start: %i"), AIList.Num());
 }
 
+TArray<AARTCharacterAI*> UARTAIConductor::GetAlliesList() const
+{
+	return AlliesList;
+}
+
+void UARTAIConductor::AddAlliesToList(AARTCharacterAI* AI)
+{
+	if(AI && !AI->IsPendingKillPending())
+	{
+		AlliesList.Add(AI);
+	}
+}
+
+void UARTAIConductor::RemoveAlliesFromList(AARTCharacterAI* AI)
+{
+	AlliesList.RemoveSingle(AI);
+}
+
 TArray<AARTCharacterAI*> UARTAIConductor::GetAIList() const
 {
 	return AIList;
@@ -53,6 +71,7 @@ void UARTAIConductor::RemoveAIFromList(AARTCharacterAI* AI)
 {
 	AIList.RemoveSingle(AI);
 	ActorLocationMap.Remove(AI);
+	AlliesList.Remove(AI);
 	TryRemoveBoidFromList(AI);
 }
 
@@ -118,7 +137,6 @@ bool UARTAIConductor::TryAddBoidToList(int32 ListKey, AARTCharacterAI* InBoid)
 	}
 	return true;
 }
-
 
 bool UARTAIConductor::TryRemoveBoidFromList(AARTCharacterAI* InBoid)
 {

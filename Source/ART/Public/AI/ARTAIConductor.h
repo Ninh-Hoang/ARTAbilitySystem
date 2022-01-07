@@ -32,11 +32,24 @@ public:
 	TMap<AActor*, FVector> ActorLocationMap;
 
 protected:
+
+	TArray<AARTCharacterAI*> AlliesList;
 	TArray<AARTCharacterAI*> AIList;
 
 	TArray<FVector> MoveLocations;
 
-public:	
+public:
+	//AlliesList
+	UFUNCTION(BlueprintPure, Category="AIManager")
+	TArray<AARTCharacterAI*> GetAlliesList() const;
+	
+	UFUNCTION(BlueprintCallable, Category="AIManager")
+	void AddAlliesToList(AARTCharacterAI* AI);
+
+	UFUNCTION(BlueprintCallable, Category="AIManager")
+	void RemoveAlliesFromList(AARTCharacterAI* AI);
+	
+	// AI LIST
 	UFUNCTION(BlueprintPure, Category="AIManager")
 	TArray<AARTCharacterAI*> GetAIList() const;
 
@@ -51,7 +64,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="AIManager")
     void AddLocationToList(FVector Location);
-
+	
 	TMap<int32, FFlock> BoidMap;
 	int32 ListBuffer;
 

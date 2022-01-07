@@ -1,5 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
+ *TODO: This is Project specific, remove from Plugin
+ */
 
 #include "Ability/MMC/ARTKnockBackForce_MMC.h"
 

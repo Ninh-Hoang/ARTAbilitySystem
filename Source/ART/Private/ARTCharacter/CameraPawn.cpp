@@ -8,6 +8,10 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "AI/Order/ARTSelectComponent.h"
+#include "AppFramework/Public/Widgets/Colors/SColorGradingPicker.h"
+#include "ARTCharacter/AI/ARTAIController.h"
+#include "Blueprint/ARTBlueprintFunctionLibrary.h"
+#include "Framework/ARTGameState.h"
 
 // Sets default values
 ACameraPawn::ACameraPawn()
@@ -49,9 +53,6 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("MoveForward", this, &ACameraPawn::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ACameraPawn::MoveRight);
 
-	PlayerInputComponent->BindAction("UnitA", IE_Pressed, this, &ACameraPawn::ChangeToUnitA);
-	PlayerInputComponent->BindAction("UnitB", IE_Pressed, this, &ACameraPawn::ChangeToUnitB);
-
 	//PlayerInputComponent->BindAction("Q", IE_Pressed, this, &ACameraPawn::PressQ);
 	//PlayerInputComponent->BindAction("Q", IE_Released, this, &ACameraPawn::ReleaseQ);
 }
@@ -64,12 +65,16 @@ void ACameraPawn::InitSpawnPlayerTeam()
 	Params.bNoFail = true;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	UnitA = GetWorld()->SpawnActor<AARTCharacterAI>(UnitClassA, GetActorLocation() + FVector(0, 100, 0), FRotator(0),
-	                                                Params);
-	UnitB = GetWorld()->SpawnActor<AARTCharacterAI>(UnitClassA, GetActorLocation() + FVector(0, -100, 0), FRotator(0),
-	                                                Params);
+	PlayerPawn = GetWorld()->SpawnActor<AARTCharacterAI>(PlayerPawnClass, GetActorLocation() + FVector(0, 0, 0), FRotator(0), Params);
+	FVector OffsetPosition = PlayerPawn->GetActorLocation();
+	for( auto& PawnClass : AlliesPawnClassList)
+	{
+		OffsetPosition += FVector(0, -100, 0);
+		AARTCharacterAI* AllyPawn = GetWorld()->SpawnActor<AARTCharacterAI>(PawnClass, OffsetPosition, FRotator(0), Params);
+		AARTGameState::GetAIConductor(this)->AddAlliesToList(AllyPawn);
+	}
 
-	ChangeCurrentUnitInternal(UnitA);
+	ChangeCurrentUnitInternal(PlayerPawn);
 }
 
 bool ACameraPawn::ChangeCurrentUnitInternal(AARTCharacterAI* Unit)
@@ -131,33 +136,12 @@ bool ACameraPawn::DeSelectUnit(AARTCharacterAI* Unit)
 	return SelectComp->SetSelected(false);
 }
 
-void ACameraPawn::ChangeToUnitA()
+void ACameraPawn::BP_ChangeCurrentUnit(AARTCharacterAI* Pawn, bool& Success)
 {
-	ChangeCurrentUnitInternal(UnitA);
-}
-
-void ACameraPawn::ChangeToUnitB()
-{
-	ChangeCurrentUnitInternal(UnitB);
-}
-
-void ACameraPawn::PressQ()
-{
-}
-
-void ACameraPawn::ReleaseQ()
-{
-}
-
-void ACameraPawn::BP_ChangeCurrentUnit(int32 UnitIndex, bool& Success)
-{
-	switch (UnitIndex)
+	if (!Pawn)
 	{
-	case 1:
-		Success = ChangeCurrentUnitInternal(UnitA);
-		break;
-	case 2:
-		Success = ChangeCurrentUnitInternal(UnitB);
-		break;
+		Success = false;
+		return;
 	}
+	Success = ChangeCurrentUnitInternal(Pawn);
 }

@@ -1,5 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
+/*
+ *TODO: This is Project specific, remove from Plugin
+ */
 
 #include "Ability/EC/ARTWaterDamage_EC.h"
 #include "ARTCharacter/ARTCharacterAttributeSet.h"

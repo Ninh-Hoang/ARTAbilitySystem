@@ -2,11 +2,9 @@
 
 
 #include "ARTCharacter/ARTCharacterAttributeSet.h"
+
 #include "Net/UnrealNetwork.h"
-#include <GameplayEffectExtension.h>
-
-
-
+#include "GameplayEffectExtension.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Ability/FARTAggregatorEvaluateMetaDataLibrary.h"
 #include "ARTCharacter/ARTCharacterBase.h"

@@ -1,5 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
+ * TODO: Do we even need this? This is only needed for super realistic first person melee combat and quite costly
+ */
 
 #include "Ability/TargetActor/GATA_MeleeWeaponTrace.h"
 #include <Weapon/MeleeWeapon.h>

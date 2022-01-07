@@ -46,7 +46,6 @@ public class ART : ModuleRules
 				"GameplayTags",
 				"GameplayTasks",
 				"Paper2D",
-				"NavigationSystem",
 				"OnlineSubsystem",
 				"OnlineSubsystemUtils",
 				"Networking",
