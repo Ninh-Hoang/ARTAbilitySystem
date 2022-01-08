@@ -5,6 +5,7 @@
 #include "ARTCharacter/ARTCharacterBase.h"
 #include <AbilitySystemComponent.h>
 #include "GameplayTagContainer.h"
+#include "AVEncoder/Public/Microsoft/AVEncoderIMFSampleWrapper.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 
 UARTCharacterMovementComponent::UARTCharacterMovementComponent()
@@ -15,6 +16,7 @@ UARTCharacterMovementComponent::UARTCharacterMovementComponent()
 	AttackingMultiplier = 0.0f;
 	bUseControllerDesiredRotation = true;
 	bUseGroupMovement = false;
+	MaxAcceleration = MAX_flt;	
 
 	//flocking
 	AlignmentWeight = 1.0f;

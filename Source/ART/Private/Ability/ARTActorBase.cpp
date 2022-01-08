@@ -15,6 +15,7 @@ AARTActorBase::AARTActorBase()
 	AbilitySystemComponent->SetIsReplicated(true);
 	// Minimal mode means GameplayEffects are not replicated to anyone. Only GameplayTags and Attributes are replicated to clients.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+	
 }
 
 class UAbilitySystemComponent* AARTActorBase::GetAbilitySystemComponent() const

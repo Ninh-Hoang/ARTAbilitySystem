@@ -117,10 +117,10 @@ protected:
 	//ABILITY SYSTEM STUFFS
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UARTAbilitySystemComponent* AbilitySystemComponent;
+	class UARTAbilitySystemComponent* ASC;
 
 	UPROPERTY()
-	class UARTCharacterAttributeSet* AttributeSetBase;
+	class UARTCharacterAttributeSet* Attribute;
 	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
 	class UARTGameplayAbilitySet* AbilitySet;

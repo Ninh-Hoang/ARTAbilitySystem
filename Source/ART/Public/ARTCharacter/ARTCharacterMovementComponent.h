@@ -79,13 +79,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS Movement")
 	float AttackingMultiplier;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS Movement")
+	UPROPERTY( BlueprintReadWrite, Category = "GAS Movement")
 	bool IsSprinting;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS Movement")
+	UPROPERTY(BlueprintReadWrite, Category = "GAS Movement")
 	bool IsAiming;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS Movement")
+	UPROPERTY(BlueprintReadWrite, Category = "GAS Movement")
 	bool IsBlocking;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS Movement")

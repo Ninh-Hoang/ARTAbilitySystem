@@ -25,29 +25,23 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 	NavInvoker = CreateDefaultSubobject<UARTNavigationInvokerComponent>(TEXT("NavInvokerComp"));
 
 	//Create Ability System Component
-	HardRefAbilitySystemComponent = CreateDefaultSubobject<UARTAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	HardRefAbilitySystemComponent->SetIsReplicated(true);
+	ASC = CreateDefaultSubobject<UARTAbilitySystemComponent>(TEXT("AbilitySystemComp"));
+	ASC->SetIsReplicated(true);
 
 	// Minimal Mode means that no GameplayEffects will replicate. They will only live on the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
-	HardRefAbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
-
-	// Set our parent's TWeakObjectPtr
-	AbilitySystemComponent = HardRefAbilitySystemComponent;
+	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	// Create the attribute set, this replicates by default
 	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
 	if(AttributeSetClass)
 	{
-		HardRefAttributeSetBase = Cast<UARTCharacterAttributeSet>(CreateDefaultSubobject(TEXT("AttributeSetBase"), AttributeSetClass, AttributeSetClass, true,  false));
+		Attribute = Cast<UARTCharacterAttributeSet>(CreateDefaultSubobject(TEXT("Attribute"), AttributeSetClass, AttributeSetClass, true,  false));
 	}
 	else
 	{
-		HardRefAttributeSetBase = CreateDefaultSubobject<UARTCharacterAttributeSet>(TEXT("AttributeSetBase"));
+		Attribute = CreateDefaultSubobject<UARTCharacterAttributeSet>(TEXT("Attribute"));
 	}
-	
-	// Set our parent's TWeakObjectPtr
-	AttributeSetBase = HardRefAttributeSetBase;
 
 	//selectcomp
 	SelectComponent = CreateDefaultSubobject<UARTSelectComponent>(TEXT("SelectComponent"));
@@ -76,9 +70,9 @@ void AARTCharacterAI::BeginPlay()
 		AARTGameState::GetAIConductor(this)->AddAIToList(this);
 	}
 
-	if (IsValid(AbilitySystemComponent))
+	if (IsValid(ASC))
 	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		ASC->InitAbilityActorInfo(this, this);
 		InitializeAttributes();
 		AddStartupEffects();
 		AddCharacterAbilities();
@@ -86,8 +80,8 @@ void AARTCharacterAI::BeginPlay()
 		InitializeTagResponseTable();
 
 		// Attribute change callbacks
-		HealthChangedDelegateHandle = AbilitySystemComponent->
-		                              GetGameplayAttributeValueChangeDelegate(AttributeSetBase->GetHealthAttribute()).
+		HealthChangedDelegateHandle = ASC->
+		                              GetGameplayAttributeValueChangeDelegate(Attribute->GetHealthAttribute()).
 		                              AddUObject(this, &AARTCharacterAI::HealthChanged);
 	}
 
@@ -129,7 +123,7 @@ void AARTCharacterAI::HealthChanged(const FOnAttributeChangeData& Data)
 	}
 
 	// If the minion died, handle death
-	if (!IsAlive() && !AbilitySystemComponent->HasMatchingGameplayTag(DeadTag))
+	if (!IsAlive() && !ASC->HasMatchingGameplayTag(DeadTag))
 	{
 		Die();
 	}

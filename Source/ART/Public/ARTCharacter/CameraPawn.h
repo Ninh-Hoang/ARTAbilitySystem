@@ -9,7 +9,6 @@
 #include "CameraPawn.generated.h"
 
 class AARTCharacterAI;
-class AARTSurvivor;
 
 UCLASS()
 class ART_API ACameraPawn : public APawn
@@ -70,7 +69,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Team")
 	void BP_ChangeCurrentUnit(AARTCharacterAI* Pawn, bool& Success);
-
+	
+	UFUNCTION(BlueprintCallable, Category="Team")
+	AARTCharacterAI* BP_GetControlledUnit(bool& Success);
+	
 private:
 	void InitSpawnPlayerTeam();
 	bool ChangeCurrentUnitInternal(AARTCharacterAI* Unit);

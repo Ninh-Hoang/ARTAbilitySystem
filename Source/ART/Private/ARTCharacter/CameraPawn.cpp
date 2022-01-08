@@ -8,7 +8,6 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "AI/Order/ARTSelectComponent.h"
-#include "AppFramework/Public/Widgets/Colors/SColorGradingPicker.h"
 #include "ARTCharacter/AI/ARTAIController.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 #include "Framework/ARTGameState.h"
@@ -57,6 +56,18 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	//PlayerInputComponent->BindAction("Q", IE_Released, this, &ACameraPawn::ReleaseQ);
 }
 
+void ACameraPawn::MoveForward(float AxisValue)
+{
+	FRotator Rot = FRotator(0, GetControlRotation().Yaw, 0);
+	AddMovementInput(FRotationMatrix(Rot).GetScaledAxis(EAxis::X), AxisValue);
+}
+
+void ACameraPawn::MoveRight(float AxisValue)
+{
+	FRotator Rot = FRotator(0, GetControlRotation().Yaw, 0);
+	AddMovementInput(FRotationMatrix(Rot).GetScaledAxis(EAxis::Y), AxisValue);
+}
+
 void ACameraPawn::InitSpawnPlayerTeam()
 {
 	FActorSpawnParameters Params;
@@ -100,16 +111,15 @@ bool ACameraPawn::ChangeCurrentUnitInternal(AARTCharacterAI* Unit)
 	return true;
 }
 
-void ACameraPawn::MoveForward(float AxisValue)
+AARTCharacterAI* ACameraPawn::BP_GetControlledUnit(bool& Success)
 {
-	FRotator Rot = FRotator(0, GetControlRotation().Yaw, 0);
-	AddMovementInput(FRotationMatrix(Rot).GetScaledAxis(EAxis::X), AxisValue);
-}
-
-void ACameraPawn::MoveRight(float AxisValue)
-{
-	FRotator Rot = FRotator(0, GetControlRotation().Yaw, 0);
-	AddMovementInput(FRotationMatrix(Rot).GetScaledAxis(EAxis::Y), AxisValue);
+	if(!PlayerPawn)
+	{
+		Success = false;
+		return nullptr;
+	}
+	Success = true;
+	return PlayerPawn;
 }
 
 bool ACameraPawn::SelectUnit(AARTCharacterAI* Unit)

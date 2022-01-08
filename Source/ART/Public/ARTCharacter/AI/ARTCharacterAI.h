@@ -27,15 +27,11 @@ public:
 	virtual void FinishDying() override;
 
 protected:
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
-	class TSubclassOf<UARTAttributeSetBase> AttributeSetClass =  UARTCharacterAttributeSet::StaticClass();
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Abilities")
+	class TSubclassOf<UARTAttributeSetBase> AttributeSetClass;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UARTNavigationInvokerComponent* NavInvoker;
-
-	class UARTAbilitySystemComponent* HardRefAbilitySystemComponent;
-
-	class UARTCharacterAttributeSet* HardRefAttributeSetBase;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UARTSelectComponent* SelectComponent;

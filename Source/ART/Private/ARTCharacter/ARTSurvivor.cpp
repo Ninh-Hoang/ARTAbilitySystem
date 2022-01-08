@@ -48,7 +48,7 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 	if (PS)
 	{
 		// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
-		AbilitySystemComponent = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		ASC = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 
 		// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
 		InventoryComponent = Cast<UInventoryComponent>(PS->GetInventoryComponent());
@@ -57,7 +57,7 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
 		// Set the AttributeSetBase for convenience attribute functions
-		AttributeSetBase = PS->GetAttributeSetBase();
+		Attribute = PS->GetAttributeSetBase();
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
@@ -85,7 +85,7 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		//AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
 
 		// Set Health/Mana/Stamina to their max. This is only necessary for *Respawn*.
-		if (AbilitySystemComponent->GetTagCount(DeadTag) > 0)
+		if (ASC->GetTagCount(DeadTag) > 0)
 		{
 			// Set Health/Mana/Stamina to their max. This is only necessary for *Respawn*.
 			SetShield(GetMaxShield());
@@ -94,7 +94,7 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		}
 
 		// Remove Dead tag
-		AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(DeadTag));
+		ASC->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(DeadTag));
 
 		InitializeFloatingStatusBar();
 
@@ -122,19 +122,19 @@ void AARTSurvivor::OnRep_PlayerState()
 	if (PS)
 	{
 		// Set the ASC for clients. Server does this in PossessedBy.
-		AbilitySystemComponent = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		ASC = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 
 		// Set the inventory for clients. Server does this in PossessedBy.
 		InventoryComponent = Cast<UInventoryComponent>(PS->GetInventoryComponent());
 
 		// Init ASC Actor Info for clients. Server will init its ASC when it possesses a new Actor.
-		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+		ASC->InitAbilityActorInfo(PS, this);
 
 		// Bind player input to the AbilitySystemComponent. Also called in SetupPlayerInputComponent because of a potential race condition.
 		BindASCInput();
 
 		// Set the AttributeSetBase for convenience attribute functions
-		AttributeSetBase = PS->GetAttributeSetBase();
+		Attribute = PS->GetAttributeSetBase();
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that posession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
@@ -155,7 +155,7 @@ void AARTSurvivor::OnRep_PlayerState()
 
 		// Forcibly set the DeadTag count to 0
 		//AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
-		if (AbilitySystemComponent->GetTagCount(DeadTag) > 0)
+		if (ASC->GetTagCount(DeadTag) > 0)
 		{
 			// Set Health/Mana/Stamina/Shield to their max. This is only for *Respawn*. It will be set (replicated) by the
 			// Server, but we call it here just to be a little more responsive.
@@ -184,7 +184,7 @@ UARTFloatingStatusBarWidget* AARTSurvivor::GetFloatingStatusBar()
 void AARTSurvivor::InitializeFloatingStatusBar()
 {
 	// Only create once
-	if (UIFloatingStatusBar || !IsValid(AbilitySystemComponent))
+	if (UIFloatingStatusBar || !IsValid(ASC))
 	{
 		return;
 	}
@@ -254,10 +254,10 @@ void AARTSurvivor::SetCurrentWeapon(AWeapon* NewWeapon, AWeapon* LastWeapon)
 		return;
 	}
 	// Cancel active weapon abilities
-	if (AbilitySystemComponent)
+	if (ASC)
 	{
 		FGameplayTagContainer AbilityTagsToCancel = FGameplayTagContainer(WeaponAbilityTag);
-		AbilitySystemComponent->CancelAbilities(&AbilityTagsToCancel);
+		ASC->CancelAbilities(&AbilityTagsToCancel);
 	}
 
 	if (LastWeapon)
@@ -267,10 +267,10 @@ void AARTSurvivor::SetCurrentWeapon(AWeapon* NewWeapon, AWeapon* LastWeapon)
 
 	if (NewWeapon)
 	{
-		if (AbilitySystemComponent)
+		if (ASC)
 		{
 			// Clear out potential NoWeaponTag
-			AbilitySystemComponent->RemoveLooseGameplayTag(CurrentWeaponTag);
+			ASC->RemoveLooseGameplayTag(CurrentWeaponTag);
 		}
 
 		// Weapons coming from OnRep_CurrentWeapon won't have the owner set
@@ -287,9 +287,9 @@ void AARTSurvivor::SetCurrentWeapon(AWeapon* NewWeapon, AWeapon* LastWeapon)
 			PC->SetHUDReticle(CurrentWeapon->GetPrimaryHUDReticleClass());
 		}
 
-		if (AbilitySystemComponent)
+		if (ASC)
 		{
-			AbilitySystemComponent->AddLooseGameplayTag(CurrentWeaponTag);
+			ASC->AddLooseGameplayTag(CurrentWeaponTag);
 		}
 
 		UAnimMontage* EquipMontage = CurrentWeapon->GetEquipWeaponMontage();
@@ -361,11 +361,11 @@ void AARTSurvivor::UnEquipWeapon(AWeapon* WeaponToUnEquip)
 
 void AARTSurvivor::UnEquipCurrentWeapon()
 {
-	if (AbilitySystemComponent)
+	if (ASC)
 	{
-		AbilitySystemComponent->RemoveLooseGameplayTag(CurrentWeaponTag);
+		ASC->RemoveLooseGameplayTag(CurrentWeaponTag);
 		CurrentWeaponTag = NoWeaponTag;
-		AbilitySystemComponent->AddLooseGameplayTag(CurrentWeaponTag);
+		ASC->AddLooseGameplayTag(CurrentWeaponTag);
 	}
 
 	UnEquipWeapon(CurrentWeapon);
@@ -452,9 +452,9 @@ void AARTSurvivor::EquipEquipment(AEquipment* NewEquipment)
 			NewEquipment->SetOwningCharacter(this);
 			NewEquipment->Equip(this);
 
-			if (AbilitySystemComponent)
+			if (ASC)
 			{
-				AbilitySystemComponent->AddLooseGameplayTag(NewEquipment->EquipmentTag);
+				ASC->AddLooseGameplayTag(NewEquipment->EquipmentTag);
 			}
 
 			UAnimMontage* EquipMontage = NewEquipment->GetEquipMontage();

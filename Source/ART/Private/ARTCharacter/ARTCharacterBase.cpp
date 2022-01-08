@@ -36,6 +36,8 @@ AARTCharacterBase::AARTCharacterBase(const class FObjectInitializer& ObjectIniti
 	bReplicates = true;
 	SetReplicateMovement(true);
 
+	bUseControllerRotationYaw = false;
+
 	//VoxelInvokerComponent = CreateDefaultSubobject<UARTSimpleInvokerComponent>(TEXT("VoxelInvoker"));
 	//VoxelInvokerComponent->SetupAttachment(RootComponent);
 
@@ -125,13 +127,13 @@ EARTHitReactDirection AARTCharacterBase::GetHitReactDirectionVector(const FVecto
 
 UAbilitySystemComponent* AARTCharacterBase::GetAbilitySystemComponent() const
 {
-	return AbilitySystemComponent;
+	return ASC;
 }
 
 
 void AARTCharacterBase::RemoveCharacterAbilities()
 {
-	if (GetLocalRole() != ROLE_Authority || !IsValid(AbilitySystemComponent) || !AbilitySystemComponent->
+	if (GetLocalRole() != ROLE_Authority || !IsValid(ASC) || !ASC->
 		CharacterAbilitiesGiven)
 	{
 		return;
@@ -139,7 +141,7 @@ void AARTCharacterBase::RemoveCharacterAbilities()
 
 	// Remove any abilities added from a previous call. This checks to make sure the ability is in the startup 'CharacterAbilities' array.
 	TArray<FGameplayAbilitySpecHandle> AbilitiesToRemove;
-	for (const FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
+	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
 	{
 		if (Spec.SourceObject == this && AbilitySet)
 		{
@@ -156,10 +158,10 @@ void AARTCharacterBase::RemoveCharacterAbilities()
 	// Do in two passes so the removal happens after we have the full list
 	for (int32 i = 0; i < AbilitiesToRemove.Num(); i++)
 	{
-		AbilitySystemComponent->ClearAbility(AbilitiesToRemove[i]);
+		ASC->ClearAbility(AbilitiesToRemove[i]);
 		UE_LOG(LogTemp, Warning, TEXT("Remove"));
 	}
-	AbilitySystemComponent->CharacterAbilitiesGiven = false;
+	ASC->CharacterAbilitiesGiven = false;
 }
 
 void AARTCharacterBase::Die()
@@ -172,18 +174,18 @@ void AARTCharacterBase::Die()
 
 	RemoveCharacterAbilities();
 
-	if (IsValid(AbilitySystemComponent) && DeathEffect)
+	if (IsValid(ASC) && DeathEffect)
 	{
-		AbilitySystemComponent->CancelAllAbilities();
+		ASC->CancelAllAbilities();
 
 		FGameplayTagContainer EffectTagsToRemove;
 		EffectTagsToRemove.AddTag(EffectRemoveOnDeathTag);
-		int32 NumEffectsRemoved = AbilitySystemComponent->RemoveActiveEffectsWithTags(EffectTagsToRemove);
+		int32 NumEffectsRemoved = ASC->RemoveActiveEffectsWithTags(EffectTagsToRemove);
 
-		AbilitySystemComponent->ApplyGameplayEffectToSelf(Cast<UGameplayEffect>(DeathEffect->GetDefaultObject()), 1.0f,
-		                                                  AbilitySystemComponent->MakeEffectContext());
+		ASC->ApplyGameplayEffectToSelf(Cast<UGameplayEffect>(DeathEffect->GetDefaultObject()), 1.0f,
+		                                                  ASC->MakeEffectContext());
 
-		AbilitySystemComponent->AddLooseGameplayTag(DeadTag);
+		ASC->AddLooseGameplayTag(DeadTag);
 	}
 
 	OnCharacterDied.Broadcast(this);
@@ -253,20 +255,20 @@ int32 AARTCharacterBase::GetCharacterLevel() const
 void AARTCharacterBase::AddCharacterAbilities()
 {
 	// Grant abilities, but only on the server	
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent || AbilitySystemComponent->CharacterAbilitiesGiven)
+	if (GetLocalRole() != ROLE_Authority || !ASC || ASC->CharacterAbilitiesGiven)
 	{
 		return;
 	}
 
 	if (AbilitySet)
 	{
-		AbilitySet->GiveAbilities(AbilitySystemComponent);
+		AbilitySet->GiveAbilities(ASC);
 	}
 }
 
 void AARTCharacterBase::InitializeAttributes()
 {
-	if (!AbilitySystemComponent)
+	if (!ASC)
 	{
 		return;
 	}
@@ -279,41 +281,41 @@ void AARTCharacterBase::InitializeAttributes()
 	}
 
 	// Can run on Server and Client
-	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
 
-	FGameplayEffectSpecHandle NewHandle = AbilitySystemComponent->MakeOutgoingSpec(
+	FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(
 		DefaultAttributes, GetCharacterLevel(), EffectContext);
 	if (NewHandle.IsValid())
 	{
-		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(
-			*NewHandle.Data.Get(), AbilitySystemComponent);
+		FActiveGameplayEffectHandle ActiveGEHandle = ASC->ApplyGameplayEffectSpecToTarget(
+			*NewHandle.Data.Get(), ASC);
 	}
 }
 
 void AARTCharacterBase::AddStartupEffects()
 {
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent || AbilitySystemComponent->StartupEffectsApplied)
+	if (GetLocalRole() != ROLE_Authority || !ASC || ASC->StartupEffectsApplied)
 	{
 		return;
 	}
 
 	if (AbilitySet)
 	{
-		AbilitySet->AddStartupEffects(AbilitySystemComponent);
+		AbilitySet->AddStartupEffects(ASC);
 	}
 }
 
 void AARTCharacterBase::InitializeTagPropertyMap()
 {
-	TagDelegateMap.Initialize(this, AbilitySystemComponent);
+	TagDelegateMap.Initialize(this, ASC);
 }
 
 void AARTCharacterBase::InitializeTagResponseTable()
 {
 	if (TagReponseTable)
 	{
-		TagReponseTable->RegisterResponseForEvents(AbilitySystemComponent);
+		TagReponseTable->RegisterResponseForEvents(ASC);
 	}
 }
 
@@ -339,9 +341,9 @@ void AARTCharacterBase::ShowDamageNumber()
 bool AARTCharacterBase::ActivateAbilitiesWithTags(FGameplayTagContainer AbilityTags,
                                                   bool bAllowRemoteActivation /*= true*/)
 {
-	if (AbilitySystemComponent)
+	if (ASC)
 	{
-		return AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags, bAllowRemoteActivation);
+		return ASC->TryActivateAbilitiesByTag(AbilityTags, bAllowRemoteActivation);
 	}
 
 	return false;
@@ -350,9 +352,9 @@ bool AARTCharacterBase::ActivateAbilitiesWithTags(FGameplayTagContainer AbilityT
 void AARTCharacterBase::GetActiveAbilitiesWithTags(FGameplayTagContainer AbilityTags,
                                                    TArray<UARTGameplayAbility*>& ActiveAbilities)
 {
-	if (AbilitySystemComponent)
+	if (ASC)
 	{
-		AbilitySystemComponent->GetActiveAbilitiesWithTags(AbilityTags, ActiveAbilities);
+		ASC->GetActiveAbilitiesWithTags(AbilityTags, ActiveAbilities);
 	}
 }
 
@@ -437,9 +439,9 @@ void AARTCharacterBase::EndCrouch()
 
 float AARTCharacterBase::GetAttackPower() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetAttackPower();
+		return Attribute->GetAttackPower();
 	}
 
 	return 0.0f;
@@ -447,9 +449,9 @@ float AARTCharacterBase::GetAttackPower() const
 
 float AARTCharacterBase::GetCritRate() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetCritRate();
+		return Attribute->GetCritRate();
 	}
 
 	return 0.0f;
@@ -457,9 +459,9 @@ float AARTCharacterBase::GetCritRate() const
 
 float AARTCharacterBase::GetCritMultiplier() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetCritMultiplier();
+		return Attribute->GetCritMultiplier();
 	}
 
 	return 0.0f;
@@ -467,9 +469,9 @@ float AARTCharacterBase::GetCritMultiplier() const
 
 float AARTCharacterBase::GetReactMas() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetReactMas();
+		return Attribute->GetReactMas();
 	}
 
 	return 0.0f;
@@ -477,9 +479,9 @@ float AARTCharacterBase::GetReactMas() const
 
 float AARTCharacterBase::GetPhysBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPhysBonus();
+		return Attribute->GetPhysBonus();
 	}
 
 	return 0.0f;
@@ -487,9 +489,9 @@ float AARTCharacterBase::GetPhysBonus() const
 
 float AARTCharacterBase::GetPhysRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPhysRes();
+		return Attribute->GetPhysRes();
 	}
 
 	return 0.0f;
@@ -497,9 +499,9 @@ float AARTCharacterBase::GetPhysRes() const
 
 float AARTCharacterBase::GetArmor() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetArmor();
+		return Attribute->GetArmor();
 	}
 
 	return 0.0f;
@@ -507,9 +509,9 @@ float AARTCharacterBase::GetArmor() const
 
 float AARTCharacterBase::GetHealBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetHealBonus();
+		return Attribute->GetHealBonus();
 	}
 
 	return 0.0f;
@@ -517,9 +519,9 @@ float AARTCharacterBase::GetHealBonus() const
 
 float AARTCharacterBase::GetIncomingHealBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetIncomingHealBonus();
+		return Attribute->GetIncomingHealBonus();
 	}
 
 	return 0.0f;
@@ -527,9 +529,9 @@ float AARTCharacterBase::GetIncomingHealBonus() const
 
 float AARTCharacterBase::GetVoidBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetVoidBonus();
+		return Attribute->GetVoidBonus();
 	}
 
 	return 0.0f;
@@ -537,9 +539,9 @@ float AARTCharacterBase::GetVoidBonus() const
 
 float AARTCharacterBase::GetVoidRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetVoidRes();
+		return Attribute->GetVoidRes();
 	}
 
 	return 0.0f;
@@ -547,9 +549,9 @@ float AARTCharacterBase::GetVoidRes() const
 
 float AARTCharacterBase::GetHeatBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetHeatBonus();
+		return Attribute->GetHeatBonus();
 	}
 
 	return 0.0f;
@@ -557,9 +559,9 @@ float AARTCharacterBase::GetHeatBonus() const
 
 float AARTCharacterBase::GetHeatRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetHeatRes();
+		return Attribute->GetHeatRes();
 	}
 
 	return 0.0f;
@@ -567,9 +569,9 @@ float AARTCharacterBase::GetHeatRes() const
 
 float AARTCharacterBase::GetColdBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetColdBonus();
+		return Attribute->GetColdBonus();
 	}
 
 	return 0.0f;
@@ -577,9 +579,9 @@ float AARTCharacterBase::GetColdBonus() const
 
 float AARTCharacterBase::GetColdRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetColdRes();
+		return Attribute->GetColdRes();
 	}
 
 	return 0.0f;
@@ -587,9 +589,9 @@ float AARTCharacterBase::GetColdRes() const
 
 float AARTCharacterBase::GetElecBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetElecBonus();
+		return Attribute->GetElecBonus();
 	}
 
 	return 0.0f;
@@ -597,9 +599,9 @@ float AARTCharacterBase::GetElecBonus() const
 
 float AARTCharacterBase::GetElecRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetElecRes();
+		return Attribute->GetElecRes();
 	}
 
 	return 0.0f;
@@ -607,9 +609,9 @@ float AARTCharacterBase::GetElecRes() const
 
 float AARTCharacterBase::GetWaterBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetWaterBonus();
+		return Attribute->GetWaterBonus();
 	}
 
 	return 0.0f;
@@ -617,9 +619,9 @@ float AARTCharacterBase::GetWaterBonus() const
 
 float AARTCharacterBase::GetWaterRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetWaterRes();
+		return Attribute->GetWaterRes();
 	}
 
 	return 0.0f;
@@ -627,9 +629,9 @@ float AARTCharacterBase::GetWaterRes() const
 
 float AARTCharacterBase::GetEarthBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetEarthBonus();
+		return Attribute->GetEarthBonus();
 	}
 
 	return 0.0f;
@@ -637,9 +639,9 @@ float AARTCharacterBase::GetEarthBonus() const
 
 float AARTCharacterBase::GetEarthRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetEarthRes();
+		return Attribute->GetEarthRes();
 	}
 
 	return 0.0f;
@@ -647,9 +649,9 @@ float AARTCharacterBase::GetEarthRes() const
 
 float AARTCharacterBase::GetAirBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetAirBonus();
+		return Attribute->GetAirBonus();
 	}
 
 	return 0.0f;
@@ -657,9 +659,9 @@ float AARTCharacterBase::GetAirBonus() const
 
 float AARTCharacterBase::GeAirRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetAirRes();
+		return Attribute->GetAirRes();
 	}
 
 	return 0.0f;
@@ -667,9 +669,9 @@ float AARTCharacterBase::GeAirRes() const
 
 float AARTCharacterBase::GetLifeBonus() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetLifeBonus();
+		return Attribute->GetLifeBonus();
 	}
 
 	return 0.0f;
@@ -677,9 +679,9 @@ float AARTCharacterBase::GetLifeBonus() const
 
 float AARTCharacterBase::GetLifeRes() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetLifeRes();
+		return Attribute->GetLifeRes();
 	}
 
 	return 0.0f;
@@ -687,9 +689,9 @@ float AARTCharacterBase::GetLifeRes() const
 
 float AARTCharacterBase::GetShield() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetShield();
+		return Attribute->GetShield();
 	}
 
 	return 0.0f;
@@ -697,9 +699,9 @@ float AARTCharacterBase::GetShield() const
 
 float AARTCharacterBase::GetMaxShield() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetMaxShield();
+		return Attribute->GetMaxShield();
 	}
 
 	return 0.0f;
@@ -707,9 +709,9 @@ float AARTCharacterBase::GetMaxShield() const
 
 float AARTCharacterBase::GetShieldRegen() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetShieldRegen();
+		return Attribute->GetShieldRegen();
 	}
 
 	return 0.0f;
@@ -717,9 +719,9 @@ float AARTCharacterBase::GetShieldRegen() const
 
 float AARTCharacterBase::GetHealth() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetHealth();
+		return Attribute->GetHealth();
 	}
 
 	return 0.0f;
@@ -727,9 +729,9 @@ float AARTCharacterBase::GetHealth() const
 
 float AARTCharacterBase::GetMaxHealth() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetMaxHealth();
+		return Attribute->GetMaxHealth();
 	}
 
 	return 0.0f;
@@ -737,9 +739,9 @@ float AARTCharacterBase::GetMaxHealth() const
 
 float AARTCharacterBase::GetHealthRegen() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetHealthRegen();
+		return Attribute->GetHealthRegen();
 	}
 
 	return 0.0f;
@@ -747,9 +749,9 @@ float AARTCharacterBase::GetHealthRegen() const
 
 float AARTCharacterBase::GetPartHealthA() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPartHealthA();
+		return Attribute->GetPartHealthA();
 	}
 
 	return 0.0f;
@@ -757,9 +759,9 @@ float AARTCharacterBase::GetPartHealthA() const
 
 float AARTCharacterBase::GetPartHealthB() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPartHealthB();
+		return Attribute->GetPartHealthB();
 	}
 
 	return 0.0f;
@@ -767,9 +769,9 @@ float AARTCharacterBase::GetPartHealthB() const
 
 float AARTCharacterBase::GetPartHealthC() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPartHealthC();
+		return Attribute->GetPartHealthC();
 	}
 
 	return 0.0f;
@@ -777,9 +779,9 @@ float AARTCharacterBase::GetPartHealthC() const
 
 float AARTCharacterBase::GetPartHealthD() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPartHealthD();
+		return Attribute->GetPartHealthD();
 	}
 
 	return 0.0f;
@@ -787,9 +789,9 @@ float AARTCharacterBase::GetPartHealthD() const
 
 float AARTCharacterBase::GetPartHealthE() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPartHealthE();
+		return Attribute->GetPartHealthE();
 	}
 
 	return 0.0f;
@@ -797,9 +799,9 @@ float AARTCharacterBase::GetPartHealthE() const
 
 float AARTCharacterBase::GetPartHealthF() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetPartHealthF();
+		return Attribute->GetPartHealthF();
 	}
 
 	return 0.0f;
@@ -807,9 +809,9 @@ float AARTCharacterBase::GetPartHealthF() const
 
 float AARTCharacterBase::GetEnergy() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetEnergy();
+		return Attribute->GetEnergy();
 	}
 
 	return 0.0f;
@@ -817,9 +819,9 @@ float AARTCharacterBase::GetEnergy() const
 
 float AARTCharacterBase::GetMaxEnergy() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetMaxEnergy();
+		return Attribute->GetMaxEnergy();
 	}
 
 	return 0.0f;
@@ -827,9 +829,9 @@ float AARTCharacterBase::GetMaxEnergy() const
 
 float AARTCharacterBase::GetEnergyRegen() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetEnergyRegen();
+		return Attribute->GetEnergyRegen();
 	}
 
 	return 0.0f;
@@ -837,9 +839,9 @@ float AARTCharacterBase::GetEnergyRegen() const
 
 float AARTCharacterBase::GetStamina() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetStamina();
+		return Attribute->GetStamina();
 	}
 
 	return 0.0f;
@@ -847,9 +849,9 @@ float AARTCharacterBase::GetStamina() const
 
 float AARTCharacterBase::GetMaxStamina() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetMaxStamina();
+		return Attribute->GetMaxStamina();
 	}
 
 	return 0.0f;
@@ -857,9 +859,9 @@ float AARTCharacterBase::GetMaxStamina() const
 
 float AARTCharacterBase::GetStaminaRegen() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetStaminaRegen();
+		return Attribute->GetStaminaRegen();
 	}
 
 	return 0.0f;
@@ -867,9 +869,9 @@ float AARTCharacterBase::GetStaminaRegen() const
 
 float AARTCharacterBase::GetMoveSpeed() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetMoveSpeed();
+		return Attribute->GetMoveSpeed();
 	}
 
 	return 0.0f;
@@ -877,9 +879,9 @@ float AARTCharacterBase::GetMoveSpeed() const
 
 float AARTCharacterBase::GetRotateRate() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetRotateRate();
+		return Attribute->GetRotateRate();
 	}
 
 	return 0.0f;
@@ -887,9 +889,9 @@ float AARTCharacterBase::GetRotateRate() const
 
 float AARTCharacterBase::GetXPMod() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetXPMod();
+		return Attribute->GetXPMod();
 	}
 
 	return 0.0f;
@@ -897,9 +899,9 @@ float AARTCharacterBase::GetXPMod() const
 
 float AARTCharacterBase::GetEnMod() const
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		return AttributeSetBase->GetEnMod();
+		return Attribute->GetEnMod();
 	}
 
 	return 0.0f;
@@ -907,73 +909,73 @@ float AARTCharacterBase::GetEnMod() const
 
 void AARTCharacterBase::SetShield(float Shield)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetShield(Shield);
+		Attribute->SetShield(Shield);
 	}
 }
 
 void AARTCharacterBase::SetHealth(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetHealth(Health);
+		Attribute->SetHealth(Health);
 	}
 }
 
 void AARTCharacterBase::SetPartHealthA(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetPartHealthA(Health);
+		Attribute->SetPartHealthA(Health);
 	}
 }
 
 void AARTCharacterBase::SetPartHealthB(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetPartHealthB(Health);
+		Attribute->SetPartHealthB(Health);
 	}
 }
 
 void AARTCharacterBase::SetPartHealthC(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetPartHealthC(Health);
+		Attribute->SetPartHealthC(Health);
 	}
 }
 
 void AARTCharacterBase::SetPartHealthD(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetPartHealthD(Health);
+		Attribute->SetPartHealthD(Health);
 	}
 }
 
 void AARTCharacterBase::SetPartHealthE(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetPartHealthE(Health);
+		Attribute->SetPartHealthE(Health);
 	}
 }
 
 void AARTCharacterBase::SetPartHealthF(float Health)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetPartHealthF(Health);
+		Attribute->SetPartHealthF(Health);
 	}
 }
 
 void AARTCharacterBase::SetStamina(float Stamina)
 {
-	if (AttributeSetBase)
+	if (Attribute)
 	{
-		AttributeSetBase->SetStamina(Stamina);
+		Attribute->SetStamina(Stamina);
 	}
 }
 
@@ -985,9 +987,9 @@ void AARTCharacterBase::Tick(float DeltaTime)
 
 void AARTCharacterBase::BindASCInput()
 {
-	if (!ASCInputBound && AbilitySystemComponent && IsValid(InputComponent))
+	if (!ASCInputBound && ASC && IsValid(InputComponent))
 	{
-		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(
+		ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(
 			                                                              FString("ConfirmTarget"),
 			                                                              FString("CancelTarget"),
 			                                                              FString("EARTAbilityInputID"),
