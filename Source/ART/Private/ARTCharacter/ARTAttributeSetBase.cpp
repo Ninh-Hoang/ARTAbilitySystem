@@ -3,6 +3,7 @@
 
 #include "ARTCharacter/ARTAttributeSetBase.h"
 #include "AbilitySystemComponent.h"
+#include "Net/UnrealNetwork.h"
 
 UARTAttributeSetBase::UARTAttributeSetBase()
 {
@@ -23,4 +24,14 @@ void UARTAttributeSetBase::AdjustAttributeForMaxChange(FGameplayAttributeData& A
 
 		AbilityComp->ApplyModToAttributeUnsafe(AffectedAttributeProperty, EGameplayModOp::Additive, NewDelta);
 	}
+}
+
+void UARTAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(UARTAttributeSetBase, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UARTAttributeSetBase, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UARTAttributeSetBase, MoveSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UARTAttributeSetBase, RotateRate, COND_None, REPNOTIFY_Always);
 }

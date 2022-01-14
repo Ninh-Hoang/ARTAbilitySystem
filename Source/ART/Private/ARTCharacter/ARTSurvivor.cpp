@@ -57,7 +57,7 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
 		// Set the AttributeSetBase for convenience attribute functions
-		Attribute = PS->GetAttributeSetBase();
+		Attribute = PS->GetAttributeSet();
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
@@ -88,9 +88,9 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		if (ASC->GetTagCount(DeadTag) > 0)
 		{
 			// Set Health/Mana/Stamina to their max. This is only necessary for *Respawn*.
-			SetShield(GetMaxShield());
-			SetHealth(GetMaxHealth());
-			SetStamina(GetMaxStamina());
+			//SetShield(GetMaxShield());
+			//SetHealth(GetMaxHealth());
+			//SetStamina(GetMaxStamina());
 		}
 
 		// Remove Dead tag
@@ -134,7 +134,7 @@ void AARTSurvivor::OnRep_PlayerState()
 		BindASCInput();
 
 		// Set the AttributeSetBase for convenience attribute functions
-		Attribute = PS->GetAttributeSetBase();
+		Attribute = PS->GetAttributeSet();
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that posession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
@@ -159,9 +159,9 @@ void AARTSurvivor::OnRep_PlayerState()
 		{
 			// Set Health/Mana/Stamina/Shield to their max. This is only for *Respawn*. It will be set (replicated) by the
 			// Server, but we call it here just to be a little more responsive.
-			SetHealth(GetMaxHealth());
-			SetShield(GetMaxShield());
-			SetStamina(GetMaxStamina());
+			//SetHealth(GetMaxHealth());
+			//SetShield(GetMaxShield());
+			//SetStamina(GetMaxStamina());
 		}
 	}
 
@@ -214,9 +214,9 @@ void AARTSurvivor::InitializeFloatingStatusBar()
 				UIFloatingStatusBarComponent->SetWidget(UIFloatingStatusBar);
 
 				// Setup the floating status bar
-				UIFloatingStatusBar->SetHealthPercentage(GetHealth() / GetMaxHealth());
-				UIFloatingStatusBar->SetEnergyPercentage(GetEnergy() / GetMaxEnergy());
-				UIFloatingStatusBar->SetShieldPercentage(GetShield() / GetMaxShield());
+				//UIFloatingStatusBar->SetHealthPercentage(GetHealth() / GetMaxHealth());
+				//UIFloatingStatusBar->SetEnergyPercentage(GetEnergy() / GetMaxEnergy());
+				//UIFloatingStatusBar->SetShieldPercentage(GetShield() / GetMaxShield());
 				UIFloatingStatusBar->OwningCharacter = this;
 				UIFloatingStatusBar->SetCharacterName(CharacterName);
 			}

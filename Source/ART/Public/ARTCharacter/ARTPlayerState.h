@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "ARTAttributeSetBase.h"
 #include "GameplayEffectTypes.h"
 #include "ARTPlayerState.generated.h"
 
@@ -26,10 +27,13 @@ public:
 	// Implement IAbilitySystemInterface
 	class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	class UARTCharacterAttributeSet* GetAttributeSetBase() const;
+	class UARTAttributeSetBase* GetAttributeSet() const;
 
 	class UInventoryComponent* GetInventoryComponent() const;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Abilities")
+	class TSubclassOf<UARTAttributeSetBase> AttributeSetClass;
+	
 	UFUNCTION(BlueprintCallable, Category = "ART|ARTPlayerState")
 	bool IsAlive() const;
 
@@ -59,154 +63,14 @@ public:
 	virtual int32 GetCharacterLevel() const;
 
 	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetAttackPower() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetCritRate() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetCritMultiplier() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetReactMas() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetPhysBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetPhysRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetArmor() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetHealBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetIncomingHealBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetVoidBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetVoidRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetHeatBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetHeatRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetColdBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetColdRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetElecBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetElecRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetWaterBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetWaterRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetEarthBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetEarthRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetAirBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetAirRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetLifeBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetLifeRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetShield() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetMaxShield() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetShieldRegen() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
 	float GetHealth() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxHealth() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetHealthRegen() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthA() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthB() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthC() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthD() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthE() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthF() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetEnergy() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxEnergy() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetEnergyRegen() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetStamina() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxStamina() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetStaminaRegen() const;
-
-	// Gets the Current value of MoveSpeed
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMoveSpeed() const;
-
-	// Gets the Current value of MoveSpeed
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetRotateRate() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetXPMod() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetEnMod() const;
 
 protected:
 	UPROPERTY()
 	class UARTAbilitySystemComponent* AbilitySystemComponent;
 
 	UPROPERTY()
-	class UARTCharacterAttributeSet* AttributeSetBase;
+	class UARTAttributeSetBase* AttributeSet;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "ART|Item")
 	class UInventoryComponent* InventoryComponent;

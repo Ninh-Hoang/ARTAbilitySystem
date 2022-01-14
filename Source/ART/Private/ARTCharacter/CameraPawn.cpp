@@ -111,14 +111,8 @@ bool ACameraPawn::ChangeCurrentUnitInternal(AARTCharacterAI* Unit)
 	return true;
 }
 
-AARTCharacterAI* ACameraPawn::BP_GetControlledUnit(bool& Success)
+AARTCharacterAI* ACameraPawn::BP_GetControlledUnit()
 {
-	if(!PlayerPawn)
-	{
-		Success = false;
-		return nullptr;
-	}
-	Success = true;
 	return PlayerPawn;
 }
 

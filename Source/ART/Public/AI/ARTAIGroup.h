@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "NavigationPath.h"
 #include "ARTCharacter/AI/ARTCharacterAI.h"
 #include "UObject/NoExportTypes.h"
 #include "ARTAIGroup.generated.h"
@@ -26,6 +27,12 @@ protected:
 	FVector Destination;
 	
 	TArray<TArray<FNavPathPoint>> Paths;
+
+	UPROPERTY()
+	FVector Centroid;
+
+	UPROPERTY()
+	FVector ForwardVector;
 	
 public:
 	UARTAIGroup();
@@ -48,9 +55,18 @@ public:
 	bool IsEmpty();
 	bool ShouldBeRemoved();
 
+	UFUNCTION(BlueprintPure)
+	FVector GetGroupCentroid();
+
 	FVector GetDestination();
 	void SetDestination(FVector& InDestination);
-
 	
-	//CalculatePathLane();
+	UNavigationPath* GenerateLeaderPath(FVector& Goal);
+
+	//void DrawDebugPath(const TArray<FNavPathPoint> PathPoints, FColor Color);
+	UFUNCTION(BlueprintPure)
+	FVector CalcCentroid();
+
+	UFUNCTION(BlueprintCallable, Category="GroupMovement")
+	void FormFormationAtLocation(FVector FormationPosition, FVector Forward);
 };

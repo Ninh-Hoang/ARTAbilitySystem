@@ -48,6 +48,9 @@ public:
 	// Sets default values for this character's properties
 	AARTCharacterBase(const class FObjectInitializer& ObjectInitializer);
 
+	static FName AbilitySystemComponentName;
+	static FName AttributeComponentName;
+	
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	//class UARTSimpleInvokerComponent* VoxelInvokerComponent;
 
@@ -120,11 +123,18 @@ protected:
 	class UARTAbilitySystemComponent* ASC;
 
 	UPROPERTY()
-	class UARTCharacterAttributeSet* Attribute;
+	class UARTAttributeSetBase* Attribute;
+
+	
 	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
 	class UARTGameplayAbilitySet* AbilitySet;
-
+	
+	// Default attributes for a character for initializing on spawn/respawn.
+	// This is an instant GE that overrides the values for attributes that get reset on spawn/respawn.
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
+	TSubclassOf<class UGameplayEffect> DefaultAttributes;
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|UI")
 	TSubclassOf<class UARTFloatingStatusBarWidget> UIFloatingStatusBarClass;
 
@@ -136,12 +146,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "ART|UI")
 	TSubclassOf<class UARTDamageTextWidgetComponent> DamageNumberClass;
-
-	// Default attributes for a character for initializing on spawn/respawn.
-	// This is an instant GE that overrides the values for attributes that get reset on spawn/respawn.
-	
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
-	TSubclassOf<class UGameplayEffect> DefaultAttributes;
 
 	// Grant abilities on the Server. The Ability Specs will be replicated to the owning client.
 	virtual void AddCharacterAbilities();
@@ -202,151 +206,6 @@ public:
 	virtual int32 GetCharacterLevel() const;
 
 	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetAttackPower() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetCritRate() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetCritMultiplier() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetReactMas() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetPhysBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetPhysRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetArmor() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetHealBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetIncomingHealBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetVoidBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetVoidRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetHeatBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetHeatRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetColdBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetColdRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetElecBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetElecRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetWaterBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetWaterRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetEarthBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetEarthRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetAirBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GeAirRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetLifeBonus() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
-	float GetLifeRes() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetShield() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxShield() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetShieldRegen() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetHealth() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxHealth() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetHealthRegen() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthA() const;
-    
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthB() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthC() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthD() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthE() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-    float GetPartHealthF() const;
-	
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetEnergy() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxEnergy() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetEnergyRegen() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetStamina() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMaxStamina() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetStaminaRegen() const;
-
-	// Gets the Current value of MoveSpeed
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetMoveSpeed() const;
-
-	// Gets the Current value of MoveSpeed
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetRotateRate() const;
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetXPMod() const;
-
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
-	float GetEnMod() const;
-
-
-	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
 	bool IsAlive() const;
 
 	// Called every frame
@@ -354,15 +213,20 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
+	float GetHealth() const;
+
+	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
+	float GetMaxHealth() const;
+
+	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
+	float GetMoveSpeed() const;
+
+	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attribute")
+	float GetRotateRate() const;
+	
 
 	//ONLY USE THIS FOR RE/SPAWNING
-	virtual void SetShield(float Shield);
-	virtual void SetHealth(float Health);
-	virtual void SetPartHealthA(float Health);
-	virtual void SetPartHealthB(float Health);
-	virtual void SetPartHealthC(float Health);
-	virtual void SetPartHealthD(float Health);
-	virtual void SetPartHealthE(float Health);
-	virtual void SetPartHealthF(float Health);
-	virtual void SetStamina(float Stamina);
+	void SetHealth(float Health);
 };

@@ -13,6 +13,7 @@
 
 UARTAIConductor::UARTAIConductor()
 {
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UARTAIConductor::Activate(bool bNewAutoActivate)
@@ -32,6 +33,15 @@ void UARTAIConductor::Activate(bool bNewAutoActivate)
 	AIList.Append(AIActors);
 
 	UE_LOG(LogTemp, Warning, TEXT("Number of AI at Start: %i"), AIList.Num());
+}
+
+void UARTAIConductor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	for (const TPair<int32, UARTAIGroup*>& Pair : GroupList)
+	{
+		Pair.Value->Update(DeltaTime);
+	}
 }
 
 TArray<AARTCharacterAI*> UARTAIConductor::GetAlliesList() const
@@ -83,7 +93,6 @@ void UARTAIConductor::AddLocationToList(FVector InLocation)
 	MoveLocations.Add(InLocation);
 }
 
-
 TArray<AARTCharacterAI*> UARTAIConductor::GetAgentInGroup(int32 Key)
 {
 	TArray<AARTCharacterAI*> AgentList;
@@ -99,9 +108,9 @@ TArray<AARTCharacterAI*> UARTAIConductor::GetAgentInGroup(int32 Key)
 int32 UARTAIConductor::CreateEmptyGroup()
 {
 	//reset to 0 for some reason
-	ListBuffer = GroupList.IsEmpty() ? 0 : ListBuffer++;
+	ListBuffer++;
 	
-	UARTAIGroup* Group = NewObject<UARTAIGroup>();
+	UARTAIGroup* Group = NewObject<UARTAIGroup>(this);
 	GroupList.Add(ListBuffer, Group);
 	
 	return ListBuffer;
@@ -114,8 +123,8 @@ UARTAIGroup* UARTAIConductor::GetGroup(int32 Key)
 
 bool UARTAIConductor::TryRemoveGroup(int32 ListKey)
 {
-	if(!GroupList.Contains(ListKey)) return false;
 	UARTAIGroup* Group = GetGroup(ListKey);
+	if(!Group) return false;
 
 	//get agent list
 	TArray<AARTCharacterAI*> AgentList;
@@ -123,13 +132,10 @@ bool UARTAIConductor::TryRemoveGroup(int32 ListKey)
 	
 	for(AARTCharacterAI* Agent : AgentList)
 	{
-		UARTCharacterMovementComponent* MoveComp = Agent->FindComponentByClass<UARTCharacterMovementComponent>();
-
-		if(!MoveComp) continue;
-		MoveComp->RemoveFromGroup();
+		Agent->RemoveFromGroup();
 	}
+	
 	GroupList.Remove(ListKey);
-	UE_LOG(LogTemp, Warning, TEXT("Number of Flock: %i"), GroupList.Num());
 	return true;
 }
 
@@ -141,30 +147,6 @@ bool UARTAIConductor::TryAddAgentToGroup(int32 ListKey, AARTCharacterAI* InAgent
 	//add and check if fail
 	UARTAIGroup* Group = GetGroup(ListKey);
 	if(!Group->AddAgent(InAgent)) return false;
-
-	UARTCharacterMovementComponent* MoveComp = InAgent->FindComponentByClass<UARTCharacterMovementComponent>();
-	if(MoveComp)
-	{
-		if(MoveComp->GetGroupKey() > -1)
-		{
-			TryRemoveAgentFromGroup(InAgent);
-		}
-		//local avoidance
-		MoveComp->SetGroupKey(ListKey);
-		MoveComp->SetAIConductor(this);
-	}
-
-	AARTAIController* Controller = Cast<AARTAIController>(InAgent->GetController());
-	if(Controller)
-	{
-		if(Controller->GetGroupKey() > 0)
-		{
-			TryRemoveAgentFromGroup(InAgent);
-		}
-		//group movement
-		Controller->SetGroupKey(ListKey);
-		Controller->SetAIConductor(this);
-	}
 	
 	return true;
 }
@@ -173,17 +155,21 @@ bool UARTAIConductor::TryRemoveAgentFromGroup(AARTCharacterAI* InAgent)
 {
 	if(!InAgent) return false;
 	
-	UARTCharacterMovementComponent* MoveComp = InAgent->FindComponentByClass<UARTCharacterMovementComponent>();
-	if(!MoveComp) return false;
-
-	int32 AgentGroupKey = MoveComp->GetGroupKey();
-	if(AgentGroupKey<0) return false;
-
-	if(!GetGroup(AgentGroupKey)->RemoveAgent(InAgent)) return false;
+	int32 AgentGroupIndex = InAgent->GetGroupIndex();
 	
-	MoveComp->RemoveFromGroup();
-	if(GetGroup(AgentGroupKey)->ShouldBeRemoved()) TryRemoveGroup(AgentGroupKey);
-	return true;
+	if(UARTAIGroup* Group = GetGroup(AgentGroupIndex))
+	{
+		if(Group->RemoveAgent(InAgent))
+		{
+			if(Group->ShouldBeRemoved())
+			{
+				TryRemoveGroup(AgentGroupIndex);
+			}
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 int32 UARTAIConductor::GetNumberOfGroup()
@@ -318,7 +304,7 @@ void UARTAIConductor::DrawDebugPath(const TArray<FNavPathPoint> PathPoints, FCol
 	
 	for(int32 i = 0; i < PathPointNum; i++)
 	{
-		DrawDebugPoint(World, PathPoints[i].Location, 25.f, FColor::Green, false);
+		DrawDebugPoint(World, PathPoints[i].Location, 25.f, FColor::Green, false, 3.f);
 		if(i == 0) continue;
 		
 		DrawDebugLine(World, PathPoints[i-1].Location,

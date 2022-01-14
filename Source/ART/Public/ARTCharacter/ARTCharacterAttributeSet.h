@@ -340,28 +340,6 @@ public:
 		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, ShieldRegen, OldShieldRegen);
 	}
 
-	//Health
-	UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_Health)
-	FGameplayAttributeData Health;
-	ATTRIBUTE_ACCESSORS(UARTCharacterAttributeSet, Health)
-
-	UFUNCTION()
-	void OnRep_Health(const FGameplayAttributeData& OldHealth)
-	{
-		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, Health, OldHealth);
-	}
-
-	// MaxHealth is its own attribute since GameplayEffects may modify it
-	UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_MaxHealth)
-	FGameplayAttributeData MaxHealth;
-	ATTRIBUTE_ACCESSORS(UARTCharacterAttributeSet, MaxHealth)
-
-	UFUNCTION()
-	void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
-	{
-		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, MaxHealth, OldMaxHealth);
-	}
-
 	// HealthRegen is its own attribute since GameplayEffects may modify it
 	UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_HealthRegen)
 	FGameplayAttributeData HealthRegen;
@@ -505,28 +483,6 @@ public:
 		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, StaminaRegen, OldStaminaRegen);
 	}
 
-	//MoveSpeed
-	UPROPERTY(BlueprintReadOnly, Category = "MoveSpeed", ReplicatedUsing = OnRep_MoveSpeed)
-	FGameplayAttributeData MoveSpeed;
-	ATTRIBUTE_ACCESSORS(UARTCharacterAttributeSet, MoveSpeed)
-
-	UFUNCTION()
-	void OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed)
-	{
-		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, MoveSpeed, OldMoveSpeed);
-	}
-
-	//RotateRate
-	UPROPERTY(BlueprintReadOnly, Category = "RotateRate", ReplicatedUsing = OnRep_RotateRate)
-	FGameplayAttributeData RotateRate;
-	ATTRIBUTE_ACCESSORS(UARTCharacterAttributeSet, RotateRate)
-
-	UFUNCTION()
-	void OnRep_RotateRate(const FGameplayAttributeData& OldRotateRate)
-	{
-		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, RotateRate, OldRotateRate);
-	}
-
 	//XP mod
 	UPROPERTY(BlueprintReadOnly, Category = "XPMod", ReplicatedUsing = OnRep_XPMod)
 	FGameplayAttributeData XPMod;
@@ -548,18 +504,6 @@ public:
 	{
 		GAMEPLAYATTRIBUTE_REPNOTIFY(UARTCharacterAttributeSet, XPMod, OldEnMod);
 	}
-
-	// Damage is a meta attribute used by the DamageExecution to calculate final damage, which then turns into -Health
-	// Temporary value that only exists on the Server. Not replicated.
-	UPROPERTY(BlueprintReadOnly, Category = "Damage", meta = (HideFromLevelInfos))
-	FGameplayAttributeData Damage;
-	ATTRIBUTE_ACCESSORS(UARTCharacterAttributeSet, Damage)
-
-	// Healing is a meta attribute used by the HealingExecution to calculate final healing, which then turns into +Health
-	// Temporary value that only exists on the Server. Not replicated.
-	UPROPERTY(BlueprintReadOnly, Category = "Healing", meta = (HideFromLevelInfos))
-	FGameplayAttributeData Healing;
-	ATTRIBUTE_ACCESSORS(UARTCharacterAttributeSet, Healing)
 
 protected:
 	//cache tags

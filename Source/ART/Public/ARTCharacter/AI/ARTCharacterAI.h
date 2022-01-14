@@ -45,4 +45,19 @@ protected:
 	FDelegateHandle HealthChangedDelegateHandle;
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+
+	//Group AI
+protected:
+	int32 GroupIndex;
+
+public:
+	UFUNCTION(BlueprintPure)
+	int32 GetGroupIndex();
+
+	UFUNCTION(BlueprintPure)
+	bool IsInGroup();
+
+	void SetGroupIndex(int32 InIndex);
+	void RemoveFromGroup();
+	
 };

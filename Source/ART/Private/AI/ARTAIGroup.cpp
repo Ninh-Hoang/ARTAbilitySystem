@@ -2,6 +2,8 @@
 
 
 #include "AI/ARTAIGroup.h"
+#include "ARTCharacter/AI/ARTAIController.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
 
 UARTAIGroup::UARTAIGroup()
 {
@@ -11,6 +13,7 @@ UARTAIGroup::UARTAIGroup()
 
 void UARTAIGroup::Update(float DeltaSeconds)
 {
+	CalcCentroid();
 }
 
 AARTCharacterAI* UARTAIGroup::GetLeader()
@@ -49,6 +52,7 @@ bool UARTAIGroup::RemoveAgent(AARTCharacterAI* InAgent)
 	if(!AgentList.Contains(InAgent)) return false;
 
 	AgentList.Remove(InAgent);
+	InAgent->RemoveFromGroup();
 	return true;
 }
 
@@ -62,6 +66,11 @@ bool UARTAIGroup::ShouldBeRemoved()
 	return AgentList.Num() <= 1 ? true : false;
 }
 
+FVector UARTAIGroup::GetGroupCentroid()
+{
+	return Centroid;
+}
+
 FVector UARTAIGroup::GetDestination()
 {
 	return Destination;
@@ -70,4 +79,57 @@ FVector UARTAIGroup::GetDestination()
 void UARTAIGroup::SetDestination(FVector& InDestination)
 {
 	Destination = InDestination;
+}
+
+FVector UARTAIGroup::CalcCentroid()
+{
+	Centroid = FVector(0);
+	for(auto& Agent : AgentList)
+	{
+		Centroid += Agent->GetActorLocation();
+	}
+	Centroid /= AgentList.Num();
+
+	DrawDebugPoint(GetWorld(), Centroid, 20.f, FColor::Purple);
+
+	return Centroid;
+}
+
+void UARTAIGroup::FormFormationAtLocation(FVector FormationPosition, FVector Forward)
+{
+	//we hard code formation position for now
+	float Offset = 100.f;
+	Forward.Z = 0;
+	ForwardVector = Forward.GetSafeNormal();
+
+	FVector LeftVector = ForwardVector.RotateAngleAxis(-90, FVector::UpVector);
+	FVector RightVector = ForwardVector.RotateAngleAxis(90, FVector::UpVector);
+	FVector BackVector = ForwardVector.RotateAngleAxis(180, FVector::UpVector);
+	
+	TArray<FVector> FormationPositions;
+	FormationPositions.AddDefaulted(9);
+	FormationPositions[4] = FormationPosition;
+	FormationPositions[1] = FormationPositions[4] + ForwardVector * Offset;
+	FormationPositions[0] = FormationPositions[1] + LeftVector * Offset;
+	FormationPositions[2] = FormationPositions[1] + RightVector * Offset;
+	FormationPositions[3] = FormationPositions[4] + LeftVector * Offset;
+	FormationPositions[5] = FormationPositions[4] + RightVector * Offset;
+	FormationPositions[7] = FormationPositions[4] + BackVector * Offset;
+	FormationPositions[6] = FormationPositions[7] + LeftVector * Offset;
+	FormationPositions[8] = FormationPositions[7] + RightVector * Offset;
+
+	for(auto& Position : FormationPositions)
+	{
+		DrawDebugPoint(GetWorld(), Position, 20.f, FColor::Blue, false, 2.0f);
+	}
+
+
+	for(int32 i = 0; i < AgentList.Num(); i ++)
+	{
+		FAIMoveRequest MoveRequest;
+		UAIBlueprintHelperLibrary::CreateMoveToProxyObject(
+			GetWorld(),
+			AgentList[i],
+			FormationPositions[i]);
+	}
 }

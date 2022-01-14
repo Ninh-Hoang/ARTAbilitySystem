@@ -18,11 +18,13 @@ class ART_API UARTAIConductor : public UActorComponent
 public:	
 	// Sets default values for this actor's properties
 	UARTAIConductor();
+	
+	UPROPERTY(BlueprintReadWrite)
+	TMap<AActor*, FVector> ActorLocationMap;
 
 	void Activate(bool bNewAutoActivate) override;
 
-	UPROPERTY(BlueprintReadWrite)
-	TMap<AActor*, FVector> ActorLocationMap;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 
@@ -67,7 +69,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="AIManager")
 	int32 CreateEmptyGroup();
-	
+
+	UFUNCTION(BlueprintPure, Category="AIManager")
 	UARTAIGroup* GetGroup(int32 Key);
 	
 	UFUNCTION(BlueprintCallable, Category="AIManager")

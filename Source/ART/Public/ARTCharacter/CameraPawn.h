@@ -70,8 +70,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Team")
 	void BP_ChangeCurrentUnit(AARTCharacterAI* Pawn, bool& Success);
 	
-	UFUNCTION(BlueprintCallable, Category="Team")
-	AARTCharacterAI* BP_GetControlledUnit(bool& Success);
+	UFUNCTION(BlueprintPure, Category="Team")
+	AARTCharacterAI* BP_GetControlledUnit();
 	
 private:
 	void InitSpawnPlayerTeam();

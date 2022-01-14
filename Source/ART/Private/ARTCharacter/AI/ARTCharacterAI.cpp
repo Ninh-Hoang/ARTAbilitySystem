@@ -25,7 +25,7 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 	NavInvoker = CreateDefaultSubobject<UARTNavigationInvokerComponent>(TEXT("NavInvokerComp"));
 
 	//Create Ability System Component
-	ASC = CreateDefaultSubobject<UARTAbilitySystemComponent>(TEXT("AbilitySystemComp"));
+	ASC = CreateDefaultSubobject<UARTAbilitySystemComponent>(AbilitySystemComponentName);
 	ASC->SetIsReplicated(true);
 
 	// Minimal Mode means that no GameplayEffects will replicate. They will only live on the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
@@ -34,14 +34,8 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 	// Create the attribute set, this replicates by default
 	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
-	if(AttributeSetClass)
-	{
-		Attribute = Cast<UARTCharacterAttributeSet>(CreateDefaultSubobject(TEXT("Attribute"), AttributeSetClass, AttributeSetClass, true,  false));
-	}
-	else
-	{
-		Attribute = CreateDefaultSubobject<UARTCharacterAttributeSet>(TEXT("Attribute"));
-	}
+
+	Attribute = CreateDefaultSubobject<UARTAttributeSetBase>(AttributeComponentName);
 
 	//selectcomp
 	SelectComponent = CreateDefaultSubobject<UARTSelectComponent>(TEXT("SelectComponent"));
@@ -58,6 +52,9 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 
 	//not using controller Yaw, might want to change this
 	bUseControllerRotationYaw = false;
+
+	//-1 means belong to no group
+	GroupIndex = -1;
 }
 
 void AARTCharacterAI::BeginPlay()
@@ -78,11 +75,6 @@ void AARTCharacterAI::BeginPlay()
 		AddCharacterAbilities();
 		InitializeTagPropertyMap();
 		InitializeTagResponseTable();
-
-		// Attribute change callbacks
-		HealthChangedDelegateHandle = ASC->
-		                              GetGameplayAttributeValueChangeDelegate(Attribute->GetHealthAttribute()).
-		                              AddUObject(this, &AARTCharacterAI::HealthChanged);
 	}
 
 	// Setup FloatingStatusBar UI for Locally Owned Players only, not AI or the server's copy of the PlayerControllers
@@ -127,4 +119,24 @@ void AARTCharacterAI::HealthChanged(const FOnAttributeChangeData& Data)
 	{
 		Die();
 	}
+}
+
+int32 AARTCharacterAI::GetGroupIndex()
+{
+	return GroupIndex;
+}
+
+bool AARTCharacterAI::IsInGroup()
+{
+	return GroupIndex>-1 ? true : false;
+}
+
+void AARTCharacterAI::SetGroupIndex(int32 InIndex)
+{
+	GroupIndex = InIndex;
+}
+
+void AARTCharacterAI::RemoveFromGroup()
+{
+	SetGroupIndex(-1);
 }

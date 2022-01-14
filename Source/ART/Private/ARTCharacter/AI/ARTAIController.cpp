@@ -271,7 +271,7 @@ void AARTAIController::FindPathForMoveRequest(const FAIMoveRequest& MoveRequest,
 {
     Super::FindPathForMoveRequest(MoveRequest, Query, OutPath);
     
-    TArray<FNavPathPoint> Path;
+    /*TArray<FNavPathPoint> Path;
     if(AIConductor && AIConductor->FindPathForGroup(GroupIndex, Query.EndLocation, Path))
     {
          Path[0].Location = Query.StartLocation;
@@ -281,7 +281,7 @@ void AARTAIController::FindPathForMoveRequest(const FAIMoveRequest& MoveRequest,
          //If not set, goal location is original from move call and on navPathEvent::NavigationUpdated the agent will repath to original goal location
          Query.SetPathInstanceToUpdate(OutPath);
          OutPath->SetQueryData(Query);
-    }
+    }*/
 }
 
 FPathFollowingRequestResult AARTAIController::MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath)

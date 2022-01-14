@@ -48,7 +48,7 @@ void AARTPlayerController::CreateHUD()
 	UIHUDWidget->AddToViewport();
 
 	// Set attributes
-	UIHUDWidget->SetCurrentShield(PS->GetShield());
+	/*UIHUDWidget->SetCurrentShield(PS->GetShield());
 	UIHUDWidget->SetMaxShield(PS->GetMaxShield());
 	UIHUDWidget->SetShieldRegen(PS->GetShieldRegen());
 	UIHUDWidget->SetShieldPercentage(PS->GetShield() / PS->GetMaxShield());
@@ -103,7 +103,7 @@ void AARTPlayerController::CreateHUD()
 
 	UIHUDWidget->SetMoveSpeed(PS->GetMoveSpeed());
 
-	UIHUDWidget->SetCharacterLevel(PS->GetCharacterLevel());
+	UIHUDWidget->SetCharacterLevel(PS->GetCharacterLevel());*/
 
 	AARTSurvivor* Survivor = GetPawn<AARTSurvivor>();
 	if (Survivor)
@@ -188,7 +188,7 @@ void AARTPlayerController::ServerKill_Implementation()
 	AARTPlayerState* PS = GetPlayerState<AARTPlayerState>();
 	if (PS)
 	{
-		PS->GetAttributeSetBase()->SetHealth(0.0f);
+		PS->GetAttributeSet()->SetHealth(0.0f);
 	}
 }
 
