@@ -88,7 +88,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "GAS Movement")
 	bool IsBlocking;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS Movement")
+	UPROPERTY(BlueprintReadWrite, Category = "GAS Movement")
 	bool IsAttacking;
 
 
@@ -134,6 +134,9 @@ public:
 	//group movement, flocking, steering
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group Movement")
 	uint8 bUseGroupMovement:1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group Movement")
+	uint8 bUseContextualSteering:1;
 	
 	/* The weight of the Alignment vector component */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
@@ -205,7 +208,7 @@ public:
 	
 	UPROPERTY(EditAnywhere , BlueprintReadWrite, Category = "AI|Steering Behavior Component", meta = (Tooltip=
 		"If enable components forces will be visible"))
-	bool bEnableDebugDraw;
+	bool bEnableSteeringDraw;
 
 	UPROPERTY(EditAnywhere , BlueprintReadWrite, Category = "AI|Steering Behavior Component", meta = (ClampMin=0.1f,
 		ClampMax=10.0f))
@@ -213,18 +216,50 @@ public:
 
 	const float DefaultNormalizeVectorTolerance = 0.0001f;
 
+	//contextual steering variables
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Contextual Steering")
+	float SteerForce;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Contextual Steering")
+	float SightRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Contextual Steering")
+	int32 SightRayNum;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Contextual Steering")
+	float ContextualLocktimer;
+
+	UPROPERTY(EditAnywhere , BlueprintReadWrite, Category = "AI|Contextual Steering", meta = (Tooltip=
+		"If enable contextual steering force will be visible"))
+	bool bEnableContextualDraw;
+
+	TArray<FVector> SightDirections;
+	TArray<float> Interest;
+	TArray<float> Obstacle;
+	FVector ContextualDirection;
+	float ContextualLocktimerCache;
+
+	void SetSightRayNum(int32 SightNum);
+	void Ready();
+	void SetInterest(FVector NavigationMoveDir);
+	void SetObstacle();
+	void ChooseDirection();
+	
+	
 	void SetAIConductor(UARTAIConductor* InAIConductor);
 	virtual void RemoveFromGroup();
-	virtual void SetBoidGroup(int32 Key);
+	virtual void SetGroupKey(int32 Key);
 
 	UFUNCTION(BlueprintPure, Category="AIBoid")
-	int32 GetBoidGroupKey();
+	int32 GetGroupKey();
 	virtual void SetGroupMovementUID(int32 UID);
 	virtual int32 GetGroupMovementUID();
 	virtual void RequestPathMove(const FVector& MoveInput) override;
 	virtual void RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed) override;
 	virtual bool ApplyRequestedMove(float DeltaTime, float MaxAccel, float MaxSpeed, float Friction, float BrakingDeceleration, FVector& OutAcceleration, float& OutRequestedSpeed) override;
-	
+
+	virtual void BeginPlay() override;
 protected:
 	//if 0 has no group
 	int32 BoidListIndex;

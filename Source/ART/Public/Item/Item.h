@@ -117,6 +117,6 @@ public:
 
 	UFUNCTION()
 	void OnRep_Quantity();
-
+	
 	void MarkDirtyForReplication();
 };

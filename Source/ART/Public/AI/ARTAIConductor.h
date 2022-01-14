@@ -3,25 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ARTCharacter/ARTPathFollowingComponent.h"
 
 #include "Components/ActorComponent.h"
 #include "ARTAIConductor.generated.h"
 
 class AARTCharacterAI;
 
-USTRUCT()
-struct FFlock
-{
-	GENERATED_BODY()
-	UPROPERTY()
-	TArray<AARTCharacterAI*> BoidList;
-};
-
 UCLASS()
 class ART_API UARTAIConductor : public UActorComponent
 {
 	GENERATED_BODY()
-	
+	friend  class UARTAIGroup;
 public:	
 	// Sets default values for this actor's properties
 	UARTAIConductor();
@@ -39,7 +32,7 @@ protected:
 	TArray<FVector> MoveLocations;
 
 public:
-	//AlliesList
+	//General Allies List
 	UFUNCTION(BlueprintPure, Category="AIManager")
 	TArray<AARTCharacterAI*> GetAlliesList() const;
 	
@@ -49,7 +42,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="AIManager")
 	void RemoveAlliesFromList(AARTCharacterAI* AI);
 	
-	// AI LIST
 	UFUNCTION(BlueprintPure, Category="AIManager")
 	TArray<AARTCharacterAI*> GetAIList() const;
 
@@ -64,23 +56,43 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="AIManager")
     void AddLocationToList(FVector Location);
-	
-	TMap<int32, FFlock> BoidMap;
+
+	// Group List
+	UPROPERTY()
+	TMap<int32, UARTAIGroup*> GroupList;
 	int32 ListBuffer;
 
 	UFUNCTION(BlueprintPure, Category="AIManager")
-	TArray<AARTCharacterAI*> GetBoidList(int32 Key) const;
+	TArray<AARTCharacterAI*> GetAgentInGroup(int32 Key);
 	
 	UFUNCTION(BlueprintCallable, Category="AIManager")
-	int32 CreateFlock();
+	int32 CreateEmptyGroup();
+	
+	UARTAIGroup* GetGroup(int32 Key);
+	
+	UFUNCTION(BlueprintCallable, Category="AIManager")
+	bool TryRemoveGroup(int32 ListKey);
 
 	UFUNCTION(BlueprintCallable, Category="AIManager")
-	bool TryRemoveBoidList(int32 ListKey);
+	bool TryAddAgentToGroup(int32 ListKey, AARTCharacterAI* InAgent);
 
 	UFUNCTION(BlueprintCallable, Category="AIManager")
-	bool TryAddBoidToList(int32 ListKey, AARTCharacterAI* InBoid);
+	bool TryRemoveAgentFromGroup(AARTCharacterAI* InAgent);
+
+	UFUNCTION(BlueprintPure, Category="AIManager")
+	int32 GetNumberOfGroup();
+
+	UFUNCTION(BlueprintPure, Category="AIManager")
+	int32 GetGroupUnitCount(int32 GroupIndex);
+
+	UFUNCTION(BlueprintPure, Category="AIManager")
+	AARTCharacterAI* GetLeader(int32 GroupIndex);
+
+	bool FindPathForGroup(int32 GroupIndex, FVector& PathEnd, TArray<FNavPathPoint>& PathLanes);
 
 	UFUNCTION(BlueprintCallable, Category="AIManager")
-	bool TryRemoveBoidFromList(AARTCharacterAI* InBoid);
+	void DrawDebugPathForGroup(int32 GroupIndex, FVector PathEnd);
+
+	void DrawDebugPath(const TArray<FNavPathPoint> PathPoints, FColor Color);
 };
 

@@ -9,21 +9,31 @@
 
 #include "AI/Order/ARTOrderHelper.h"
 #include "ARTCharacter/ARTCharacterBase.h"
+#include "ARTCharacter/ARTPathFollowingComponent.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
+#include "Framework/ARTGameState.h"
 
 AARTAIController::AARTAIController(const FObjectInitializer& ObjectInitializer)
-: Super(ObjectInitializer)
+: Super(ObjectInitializer.SetDefaultSubobjectClass<UARTPathFollowingComponent>(TEXT("PathFollowingComponent")))
 {
     PrimaryActorTick.bCanEverTick = true;
     /*UCrowdFollowingComponent* CrowdFollowingComponent = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent());
     CrowdFollowingComponent->SetCrowdSeparation(true);
     CrowdFollowingComponent->SetCrowdSeparationWeight(500);*/
+    
+    //no group at start
+    GroupIndex = -1;
+}
+
+void AARTAIController::BeginPlay()
+{
+    Super::BeginPlay();
 }
 
 void AARTAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
-
+    
     // Make AI use assigned blackboard.
     UBlackboardComponent* BlackboardComponent;
 
@@ -43,6 +53,14 @@ void AARTAIController::OnPossess(APawn* InPawn)
         UBehaviorTree* BehaviorTree = UARTOrderHelper::GetBehaviorTree(DefaultOrder.Get());
         RunBehaviorTree(BehaviorTree);
     }
+
+    //try to get AIConductor straight from possessed
+    AIConductor = AARTGameState::GetAIConductor(GetWorld());
+}
+
+UAbilitySystemComponent* AARTAIController::GetAbilitySystemComponent() const
+{
+    return Cast<AARTCharacterBase>(GetPawn())->GetAbilitySystemComponent();
 }
 
 bool AARTAIController::HasOrder(TSubclassOf<UARTOrder> OrderType) const
@@ -197,4 +215,76 @@ void AARTAIController::Tick(float DeltaTime)
     }
 
     BehaviorTreeResult = EBTNodeResult::InProgress;
+
+    if(bShowNavigationPath) DrawDebugNavigationPath();
+}
+
+void AARTAIController::DrawDebugNavigationPath()
+{
+    //make sure path following comp is valid
+    UPathFollowingComponent* PathComp = GetPathFollowingComponent();
+    if(!PathComp) return;
+
+    //make sure we have a valid path
+    if(!PathComp->HasValidPath()) return;
+	
+    const FNavPathSharedPtr PathPtr =  PathComp->GetPath();
+    FNavigationPath* Path = PathPtr.Get();
+    
+    TArray<FNavPathPoint> PathPoints = Path->GetPathPoints();
+
+    if(PathPoints.IsEmpty()) return;
+	
+    UWorld* World = GetWorld();
+    for(int32 i = 0; i< PathPoints.Num(); i++)
+    {
+        DrawDebugPoint(World, PathPoints[i].Location, 25.f, FColor::Green, false);
+        if(i == 0) continue;
+		
+        DrawDebugLine(World, PathPoints[i-1].Location,
+            PathPoints[i].Location,
+            FColor::Green,
+            false,
+            -1.f,
+            0,
+            2.f);
+    }
+}
+
+void AARTAIController::SetAIConductor(UARTAIConductor* InAIConductor)
+{
+    if (InAIConductor) AIConductor = InAIConductor;
+}
+
+void AARTAIController::SetGroupKey(int32 InGroupIndex)
+{
+    GroupIndex = InGroupIndex;
+}
+
+int32 AARTAIController::GetGroupKey()
+{
+    return GroupIndex;
+}
+
+void AARTAIController::FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query,
+    FNavPathSharedPtr& OutPath) const
+{
+    Super::FindPathForMoveRequest(MoveRequest, Query, OutPath);
+    
+    TArray<FNavPathPoint> Path;
+    if(AIConductor && AIConductor->FindPathForGroup(GroupIndex, Query.EndLocation, Path))
+    {
+         Path[0].Location = Query.StartLocation;
+         Path.Last().Location = OutPath->GetPathPoints().Last().Location;
+         OutPath->GetPathPoints() = Path;
+         
+         //If not set, goal location is original from move call and on navPathEvent::NavigationUpdated the agent will repath to original goal location
+         Query.SetPathInstanceToUpdate(OutPath);
+         OutPath->SetQueryData(Query);
+    }
+}
+
+FPathFollowingRequestResult AARTAIController::MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath)
+{
+     return Super::MoveTo(MoveRequest, OutPath);
 }

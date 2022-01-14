@@ -5,7 +5,6 @@
 #include "ARTCharacter/ARTCharacterBase.h"
 #include <AbilitySystemComponent.h>
 #include "GameplayTagContainer.h"
-#include "AVEncoder/Public/Microsoft/AVEncoderIMFSampleWrapper.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 
 UARTCharacterMovementComponent::UARTCharacterMovementComponent()
@@ -16,7 +15,7 @@ UARTCharacterMovementComponent::UARTCharacterMovementComponent()
 	AttackingMultiplier = 0.0f;
 	bUseControllerDesiredRotation = true;
 	bUseGroupMovement = false;
-	MaxAcceleration = MAX_flt;	
+	MaxAcceleration = MAX_flt;
 
 	//flocking
 	AlignmentWeight = 1.0f;
@@ -39,8 +38,18 @@ UARTCharacterMovementComponent::UARTCharacterMovementComponent()
 	PositiveStimuliMaxFactor = 0.0f;
 	InertiaWeigh = 0.0f;
 	BoidPhysicalRadius = 45.0f;
-	bEnableDebugDraw = false;
+	bEnableSteeringDraw = false;
 	DebugRayDuration = 0.12f;
+
+	BoidListIndex = -1;
+	//contextual steering
+	SteerForce = 0.1f;
+	SightRadius = 200.f;
+	SightRayNum = 8;
+	bEnableContextualDraw = false;
+	ContextualLocktimer = 0.25f;
+	ContextualLocktimerCache = 0.0f;
+	ContextualDirection = FVector(0);
 }
 
 float UARTCharacterMovementComponent::GetMaxSpeed() const
@@ -364,26 +373,27 @@ void UARTCharacterMovementComponent::RequestDirectMove(const FVector& MoveVeloci
 
 void UARTCharacterMovementComponent::SetAIConductor(UARTAIConductor* InAIConductor)
 {
-	if(InAIConductor) AIConductor = InAIConductor;
+	if (InAIConductor) AIConductor = InAIConductor;
 }
 
 void UARTCharacterMovementComponent::RemoveFromGroup()
 {
-	BoidListIndex = 0;
+	BoidListIndex = -1;
 }
 
-void UARTCharacterMovementComponent::SetBoidGroup(int32 Key)
+void UARTCharacterMovementComponent::SetGroupKey(int32 Key)
 {
 	BoidListIndex = Key;
 }
 
-int32 UARTCharacterMovementComponent::GetBoidGroupKey()
+int32 UARTCharacterMovementComponent::GetGroupKey()
 {
 	return BoidListIndex;
 }
 
 bool UARTCharacterMovementComponent::ApplyRequestedMove(float DeltaTime, float MaxAccel, float MaxSpeed, float Friction,
-	float BrakingDeceleration, FVector& OutAcceleration, float& OutRequestedSpeed)
+                                                        float BrakingDeceleration, FVector& OutAcceleration,
+                                                        float& OutRequestedSpeed)
 {
 	if (bHasRequestedVelocity)
 	{
@@ -397,14 +407,14 @@ bool UARTCharacterMovementComponent::ApplyRequestedMove(float DeltaTime, float M
 		float RequestedSpeed = FMath::Sqrt(RequestedSpeedSquared);
 		const FVector RequestedMoveDir = RequestedVelocity / RequestedSpeed;
 		RequestedSpeed = (bRequestedMoveWithMaxSpeed ? MaxSpeed : FMath::Min(MaxSpeed, RequestedSpeed));
-		
+
 		// Compute actual requested velocity
 		const FVector MoveVelocity = RequestedMoveDir * RequestedSpeed;
-		
+
 		// Compute acceleration. Use MaxAccel to limit speed increase, 1% buffer.
 		FVector NewAcceleration = FVector::ZeroVector;
 		const float CurrentSpeedSq = Velocity.SizeSquared();
-			
+
 		if (ShouldComputeAccelerationToReachRequestedVelocity(RequestedSpeed))
 		{
 			//BOIDMOVEMENT HERE
@@ -420,6 +430,41 @@ bool UARTCharacterMovementComponent::ApplyRequestedMove(float DeltaTime, float M
 				// How much do we need to accelerate to get to the new velocity?
 				NewAcceleration = ((m_NewMoveVector * RequestedSpeed - Velocity) / DeltaTime);
 				NewAcceleration = NewAcceleration.GetClampedToMaxSize(MaxAccel);
+			}
+			else if (bUseContextualSteering)
+			{
+				ContextualLocktimerCache -= DeltaTime;
+				if(ContextualLocktimerCache <0.0f)
+				{
+					SetInterest(RequestedMoveDir);
+					SetObstacle();
+					ChooseDirection();
+
+					// Turn in the same manner as with input acceleration.
+					const float VelSize = FMath::Sqrt(CurrentSpeedSq);
+					Velocity = Velocity - (Velocity - ContextualDirection * VelSize) * FMath::Min(DeltaTime * Friction, 1.f);
+                
+					FVector NewMoveVelocity = ContextualDirection * RequestedSpeed;
+					// How much do we need to accelerate to get to the new velocity?
+					NewAcceleration = ((NewMoveVelocity - Velocity) / DeltaTime);
+					NewAcceleration = NewAcceleration.GetClampedToMaxSize(MaxAccel);
+
+					//reset timer
+					ContextualLocktimerCache =ContextualLocktimer;
+				}
+				if (bEnableContextualDraw)
+				{
+					const UWorld* World = GetWorld();
+					const FVector& Location = GetActorLocation();
+
+					DrawDebugLine(World, Location,
+								  Location + RequestedMoveDir * 400.0f,
+								  FColor::Purple, false, DebugRayDuration, 0, 2.0f);
+
+					DrawDebugLine(World, Location,
+								  Location + ContextualDirection * 400.0f,
+								  FColor::Blue, false, DebugRayDuration, 0, 2.0f);
+				}
 			}
 			else
 			{
@@ -438,12 +483,11 @@ bool UARTCharacterMovementComponent::ApplyRequestedMove(float DeltaTime, float M
 			// If decelerating we do so instantly, so we don't slide through the destination if we can't brake fast enough.
 			Velocity = MoveVelocity;
 		}
-		
-		
+
 		// Copy to out params
 		OutRequestedSpeed = RequestedSpeed;
 		OutAcceleration = NewAcceleration;
-		
+
 		return true;
 	}
 
@@ -453,14 +497,14 @@ bool UARTCharacterMovementComponent::ApplyRequestedMove(float DeltaTime, float M
 void UARTCharacterMovementComponent::UpdateBoidNeighbourhood()
 {
 	Neighbourhood.Empty();
-	for(auto& Boid : AIConductor->GetBoidList(BoidListIndex))
+	for (auto& Boid : AIConductor->GetAgentInGroup(BoidListIndex))
 	{
 		//continue if the boid is the current character
-		if(!Boid || GetPawnOwner() == Boid) continue;
-		
+		if (!Boid || GetPawnOwner() == Boid) continue;
+
 		float Distance = (GetActorLocation() - Boid->GetActorLocation()).Size();
 		//if in vision
-		if(Distance > 0.0f && Distance < VisionRadius)
+		if (Distance > 0.0f && Distance < VisionRadius)
 		{
 			Neighbourhood.Add(Boid);
 		}
@@ -471,7 +515,7 @@ void UARTCharacterMovementComponent::CalculateNewMoveVector()
 {
 	ResetComponents();
 	CalculateAlignmentComponentVector();
-	
+
 	if (Neighbourhood.Num() > 0)
 	{
 		CalculateCohesionComponentVector();
@@ -480,7 +524,7 @@ void UARTCharacterMovementComponent::CalculateNewMoveVector()
 
 	ComputeAggregationOfComponents();
 
-	if (bEnableDebugDraw)
+	if (bEnableSteeringDraw)
 	{
 		DebugDraw();
 	}
@@ -494,7 +538,7 @@ void UARTCharacterMovementComponent::CalculateAlignmentComponentVector()
 		AlignmentComponent += Boid->GetVelocity().GetSafeNormal(DefaultNormalizeVectorTolerance);
 	}
 	AlignmentComponent = (m_CurrentMoveVector + AlignmentComponent).GetSafeNormal(DefaultNormalizeVectorTolerance);*/
-	AlignmentComponent  = m_CurrentMoveVector;
+	AlignmentComponent = m_CurrentMoveVector;
 }
 
 void UARTCharacterMovementComponent::CalculateCohesionComponentVector()
@@ -502,7 +546,7 @@ void UARTCharacterMovementComponent::CalculateCohesionComponentVector()
 	const FVector& Location = GetActorLocation();
 	for (AARTCharacterAI* Boid : Neighbourhood)
 	{
-		CohesionComponent += Boid->GetActorLocation()- Location;
+		CohesionComponent += Boid->GetActorLocation() - Location;
 	}
 
 	CohesionComponent = (CohesionComponent / Neighbourhood.Num()) / CohesionLerp;
@@ -568,18 +612,126 @@ void UARTCharacterMovementComponent::DebugDraw() const
 	const UWorld* World = GetWorld();
 	const FVector& Location = GetActorLocation();
 	DrawDebugLine(World, Location,
-				Location + m_CurrentMoveVector * 300.0f,
-				FColor::Red, false, DebugRayDuration, 0, 1.0f);
+	              Location + m_CurrentMoveVector * 300.0f,
+	              FColor::Red, false, DebugRayDuration, 0, 2.0f);
 
 	DrawDebugLine(World, Location,
-				Location + CohesionComponent * CohesionWeight * 100.0f,
-				FColor::Orange, false, DebugRayDuration, 0, 1.0f);
+	              Location + CohesionComponent * CohesionWeight * 100.0f,
+	              FColor::Orange, false, DebugRayDuration, 0, 2.0f);
 
 	DrawDebugLine(World, Location,
-				Location + AlignmentComponent * AlignmentWeight * 100.0f,
-				FColor::Purple, false, DebugRayDuration, 0, 1.0f);
+	              Location + AlignmentComponent * AlignmentWeight * 100.0f,
+	              FColor::Purple, false, DebugRayDuration, 0, 2.0f);
 
 	DrawDebugLine(World, Location,
-				Location + (SeparationComponent * SeparationWeight * 100.0f),
-				FColor::Blue, false, DebugRayDuration, 0, 1.0f);
+	              Location + (SeparationComponent * SeparationWeight * 100.0f),
+	              FColor::Blue, false, DebugRayDuration, 0, 2.0f);
+}
+
+//CONTEXTUAL STEERING
+void UARTCharacterMovementComponent::Ready()
+{
+	SightDirections.Empty();
+	Interest.Empty();
+	Obstacle.Empty();
+
+	for (int32 i = 0; i < SightRayNum; i++)
+	{
+		float Angle = i * 360.f / SightRayNum;
+		SightDirections.Add(FVector::RightVector.RotateAngleAxis(Angle, FVector::UpVector));
+		Interest.Emplace();
+		Obstacle.Emplace();
+	}
+}
+
+void UARTCharacterMovementComponent::SetInterest(FVector NavigationMoveDir)
+{
+	FRotator OwnerRot = GetOwner()->GetActorRotation();
+	for (int32 i = 0; i < SightRayNum; i++)
+	{
+		float D = FVector::DotProduct(OwnerRot.RotateVector(SightDirections[i]), NavigationMoveDir);
+		Interest[i] = FMath::Max(0.0f, D);
+	}
+
+	if (bEnableContextualDraw)
+	{
+		const UWorld* World = GetWorld();
+		const FVector& Location = GetActorLocation();
+		for (int32 i = 0; i < SightRayNum; i++)
+		{
+			if (Interest[i] > 0.0f)
+			{
+				DrawDebugLine(World, Location,
+				              Location + OwnerRot.RotateVector(SightDirections[i]) * 300.0f * Interest[i],
+				              FColor::Green, false, DebugRayDuration, 0, 2.0f);
+			}
+		}
+	}
+}
+
+void UARTCharacterMovementComponent::SetObstacle()
+{
+	FRotator OwnerRot = GetOwner()->GetActorRotation();
+	for (int32 i = 0; i < SightRayNum; i ++)
+	{
+		FCollisionQueryParams TraceParams;
+		TraceParams.bTraceComplex = true;
+		TraceParams.bReturnPhysicalMaterial = false;
+		TraceParams.AddIgnoredActor(GetOwner());
+
+		FHitResult Hit(ForceInit);
+
+		FVector ActorLocation = GetOwner()->GetActorLocation();
+		bool Result = GetWorld()->LineTraceSingleByChannel(Hit,
+		                                                   ActorLocation,
+		                                                   ActorLocation + OwnerRot.RotateVector(SightDirections[i]) *
+		                                                   SightRadius,
+		                                                   ECC_WorldStatic,
+		                                                   TraceParams);
+		Obstacle[i] = Result ? 1.0f : 0.0f;
+	}
+
+	if (bEnableContextualDraw)
+	{
+		const UWorld* World = GetWorld();
+		const FVector& Location = GetActorLocation();
+		for (int32 i = 0; i < SightRayNum; i++)
+		{
+			if (Obstacle[i] > 0.0f)
+			{
+				DrawDebugLine(World, Location,
+				              Location + OwnerRot.RotateVector(SightDirections[i]) * 400.0f,
+				              FColor::Red, false, DebugRayDuration, 0, 2.0f);
+			}
+		}
+	}
+}
+
+void UARTCharacterMovementComponent::ChooseDirection()
+{
+	for (int32 i = 0; i < SightRayNum; i++)
+	{
+		if (Obstacle[i] > 0.0f) Interest[i] = 0.0f;
+	}
+
+	ContextualDirection = FVector(0);
+
+	for (int32 i = 0; i < SightRayNum; i++)
+	{
+		ContextualDirection += SightDirections[i] * Interest[i];
+	}
+	ContextualDirection = GetOwner()->GetActorRotation().RotateVector(ContextualDirection);
+	ContextualDirection.Normalize();
+}
+
+void UARTCharacterMovementComponent::SetSightRayNum(int32 SightNum)
+{
+	SightRayNum = SightNum;
+	Ready();
+}
+
+void UARTCharacterMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	Ready();
 }

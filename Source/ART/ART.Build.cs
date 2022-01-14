@@ -50,7 +50,7 @@ public class ART : ModuleRules
 				"OnlineSubsystem",
 				"OnlineSubsystemUtils",
 				"Networking",
-				"TheCurviestCurve"
+				"TheCurviestCurve",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

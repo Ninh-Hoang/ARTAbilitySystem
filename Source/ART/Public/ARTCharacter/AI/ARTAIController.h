@@ -44,25 +44,28 @@ public:
 	FVector GetHomeLocation();
 
 protected:
+
+	virtual void BeginPlay() override;
+	
 	virtual void OnPossess(APawn* InPawn) override;
 	
 private:
 	class UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 	/** Collision object types that are used to detect attack targets. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART", meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Order", meta = (AllowPrivateAccess = true))
 	TArray<TEnumAsByte<EObjectTypeQuery>> AttackTargetDetectionChannels;
 
 	/** Collision object types that are used to find free locations. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART", meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Order", meta = (AllowPrivateAccess = true))
 	TArray<TEnumAsByte<EObjectTypeQuery>> FindLocationDetectionChannels;
 
 	/** The order to stop the character and put him in the idle state. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART", meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Order", meta = (AllowPrivateAccess = true))
 	TSoftClassPtr<UARTOrder> DefaultOrder;
 
 	/** Blackboard to use for holding all data relevant to the character AI. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART", meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Order", meta = (AllowPrivateAccess = true))
 	UBlackboardData* CharacterBlackboardAsset;
 
 	TArray<FARTOrderData> OrderQueue;
@@ -76,4 +79,30 @@ private:
 	void ApplyOrder(const FARTOrderData& Order, UBehaviorTree* BehaviorTree);
 
 	bool VerifyBlackboard() const;
+
+	// RTS Group Movement
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RTS | Debug")
+	bool bShowNavigationPath;
+	
+	UFUNCTION(BlueprintCallable, Category="RTS | Debug")
+	void DrawDebugNavigationPath();
+
+	//if 0 has no group
+	int32 GroupIndex;
+	
+	bool bIsLeader;
+	
+	UPROPERTY()
+	class UARTAIConductor* AIConductor;
+
+public:
+	
+	void SetAIConductor(UARTAIConductor* InAIConductor);
+	void SetGroupKey(int32 InGroupIndex);
+	int32 GetGroupKey();
+
+	virtual void FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const override;
+
+	virtual FPathFollowingRequestResult MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath = nullptr);
 };
