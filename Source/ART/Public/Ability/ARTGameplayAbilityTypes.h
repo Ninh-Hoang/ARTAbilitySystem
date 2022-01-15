@@ -1,12 +1,6 @@
 ﻿#pragma once
 
 #include "Abilities/GameplayAbilityTypes.h"
-
-#include "ARTCharacter/ARTCharacterMovementComponent.h"
-#include "ARTCharacter/AI/ARTAIController.h"
-#include "ARTCharacter/AI/ARTCharacterAI.h"
-
-
 #include "ARTGameplayAbilityTypes.generated.h"
 
 USTRUCT(BlueprintType)

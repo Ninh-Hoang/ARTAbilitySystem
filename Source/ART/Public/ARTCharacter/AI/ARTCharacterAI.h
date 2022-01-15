@@ -27,9 +27,6 @@ public:
 	virtual void FinishDying() override;
 
 protected:
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Abilities")
-	class TSubclassOf<UARTAttributeSetBase> AttributeSetClass;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UARTNavigationInvokerComponent* NavInvoker;
 

@@ -207,9 +207,9 @@ void UARTAutoOrderComponent::CheckAutoOrders()
 
     AActor* Owner = GetOwner();
 
-    // NOTE(np): A Year Of Rain distingushes between auto orders for human and AI.
-    //bool bIsAIUnit = UARTUtilities::IsAIUnit(Owner);
-    bool bIsAIUnit = false;
+    //TODO: this is determine if pawn is player or AI, need a custom one to determine is player team or hostile team
+    bool bIsAIUnit = Cast<ACharacter>(Owner)->IsPlayerControlled() ? false : true;
+    //bool bIsAIUnit = false;
 
     {
         SCOPE_CYCLE_COUNTER(STAT_ARTAutoOrderTargetAcquisition);
@@ -300,11 +300,11 @@ bool UARTAutoOrderComponent::IssueAutoOrder(const FARTOrderTypeWithIndex& Order)
         {
             // TODO: Orders with no target type (this basically resolves to 'self') are only issued when their is an
             // enemy nearby. This might not always be the case (e.g self only heal).
-            if (UARTOrderHelper::IsEnemyInAcquisitionRadius(Owner, AcquisitionRadius))
-            {
+            /*if (UARTOrderHelper::IsEnemyInAcquisitionRadius(Owner, AcquisitionRadius))
+            {*/
                 OrderComponent->InsertOrderBeforeCurrentOrder(FARTOrderData(Order.OrderType, Order.Index));
                 return true;
-            }
+            //}
         }
         break;
         case EARTTargetType::ACTOR:

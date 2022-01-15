@@ -20,15 +20,8 @@ AARTPlayerState::AARTPlayerState()
 	// Mixed mode means we only are replicated the GEs to ourself, not the GEs to simulated proxies. If another GDPlayerState (Hero) receives a GE,
 	// we won't be told about it by the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
-
-	if(AttributeSetClass)
-	{
-		AttributeSet = Cast<UARTAttributeSetBase>(CreateDefaultSubobject(TEXT("Attribute"), AttributeSetClass, AttributeSetClass, true,  false));
-	}
-	else
-	{
-		AttributeSet = CreateDefaultSubobject<UARTAttributeSetBase>(TEXT("Attribute"));
-	}
+	
+	AttributeSet = CreateDefaultSubobject<UARTAttributeSetBase>(TEXT("Attribute"));
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory Component"));
 	InventoryComponent->SetIsReplicated(true);

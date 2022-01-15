@@ -5,6 +5,11 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "Ability/ARTGameplayAbilityTypes.h"
+#include "AI/Order/ARTOrderGroupExecutionType.h"
+#include "AI/Order/ARTOrderPreviewData.h"
+#include "AI/Order/ARTOrderTagRequirements.h"
+#include "AI/Order/ARTOrderTargetData.h"
+#include "AI/Order/ARTOrderTargetType.h"
 #include "ART/ART.h"
 #include "ARTGameplayAbility.generated.h"
 
@@ -92,7 +97,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Input")
 	EARTAbilityInputID AbilityID = EARTAbilityInputID::None;
 
-	// Tells an ability to activate immediately when its granted. Used for passive abilities and abilites forced on others.
+	// Tells an ability to activate immediately when its granted. Used for passive abilities and abilities forced on others.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Ability|Activation")
 	bool bActivateAbilityOnGranted;
 
@@ -193,7 +198,7 @@ public:
 	//	Override cooldown related function for dynamic cooldown GE
 	// ----------------------------------------------------------------------------------------------------------------
 
-	/** Event for generating ultility score */
+	/** Event for generating utility score */
 	UFUNCTION(BlueprintImplementableEvent, Category = Ability, DisplayName="ScoreAbilityutility",
 		meta=(ScriptName="ScoreAbilityUtility"))
 	float K2_ScoreAbilityUtility(FGameplayAbilityActorInfo ActorInfo) const;
@@ -305,7 +310,7 @@ protected:
 	UPROPERTY()
 	TArray<FAbilityMeshMontage> CurrentAbilityMeshMontages;
 
-	bool FindAbillityMeshMontage(USkeletalMeshComponent* InMesh, FAbilityMeshMontage& InAbilityMontage);
+	bool FindAbilityMeshMontage(USkeletalMeshComponent* InMesh, FAbilityMeshMontage& InAbilityMontage);
 
 	/** Immediately jumps the active montage to a section */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Animation")
@@ -317,7 +322,7 @@ protected:
 
 	/**
 	 * Stops the current animation montage.
-	 *
+	 * @param InMesh mesh with montage that need to be stop
 	 * @param OverrideBlendOutTime If >= 0, will override the BlendOutTime parameter on the AnimMontage instance
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Animation", Meta = (AdvancedDisplay = "OverrideBlendOutTime"))
@@ -336,7 +341,7 @@ public:
 	//	ARTAvatarActorInfo Getter
 	// ----------------------------------------------------------------------------------------------------------------
 
-	const FARTGameplayAbilityActorInfo* GetARTActorInfo(const FGameplayAbilityActorInfo* Info) const;
+	/*const FARTGameplayAbilityActorInfo* GetARTActorInfo(const FGameplayAbilityActorInfo* Info) const;
 
 	UFUNCTION(BlueprintPure, Category = "Ability|ActorInfo")
 	FARTGameplayAbilityActorInfo BP_GetARTActorInfo();
@@ -345,7 +350,7 @@ public:
 	UAnimInstance* GetAnimInstance() const;
 
 	UFUNCTION(BlueprintPure, Category = "Ability|ActorInfo")
-	AWeapon* BP_GetWeapon() const;
+	AWeapon* BP_GetWeapon() const;*/
 
 
 protected:
@@ -403,7 +408,7 @@ protected:
 	UPROPERTY(Category = "Ability|AutoOrder", EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	bool bIsAcquisitionRadiusOverridden; // InlineEditConditionToggle caused Editor crashes here.
 
-	/** Auto order priority, lower means will be priotized */
+	/** Auto order priority, lower means will be prioritized */
 	UPROPERTY(Category = "Ability|AutoOrder", EditDefaultsOnly, BlueprintReadOnly,meta = (AllowPrivateAccess = true))
 	int32 AutoOrderPriority;
 	

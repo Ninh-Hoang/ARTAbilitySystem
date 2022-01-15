@@ -30,9 +30,6 @@ public:
 	class UARTAttributeSetBase* GetAttributeSet() const;
 
 	class UInventoryComponent* GetInventoryComponent() const;
-
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ART|Abilities")
-	class TSubclassOf<UARTAttributeSetBase> AttributeSetClass;
 	
 	UFUNCTION(BlueprintCallable, Category = "ART|ARTPlayerState")
 	bool IsAlive() const;

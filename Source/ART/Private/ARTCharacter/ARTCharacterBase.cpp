@@ -441,49 +441,49 @@ void AARTCharacterBase::EndCrouch()
 
 float AARTCharacterBase::GetHealth() const
 {
-	if (Attribute)
+	if (ASC)
 	{
-		return Attribute->GetHealth();
+		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetHealthAttribute());
 	}
 
-	return 0.0f;
+	return -1.f;
 }
 
 float AARTCharacterBase::GetMaxHealth() const
 {
-	if (Attribute)
+	if (ASC)
 	{
-		return Attribute->GetMaxHealth();
+		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetMaxHealthAttribute());
 	}
 
-	return 0.0f;
+	return -1.f;
 }
 
 float AARTCharacterBase::GetMoveSpeed() const
 {
-	if (Attribute)
+	if (ASC)
 	{
-		return Attribute->GetMoveSpeed();
+		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetMoveSpeedAttribute());
 	}
 
-	return 0.0f;
+	return -1.f;
 }
 
 float AARTCharacterBase::GetRotateRate() const
 {
-	if (Attribute)
+	if (ASC)
 	{
-		return Attribute->GetRotateRate();
+		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetRotateRateAttribute());
 	}
 
-	return 0.0f;
+	return -1.f;
 }
 
 void AARTCharacterBase::SetHealth(float Health)
 {
-	if (Attribute)
+	if (ASC)
 	{
-		Attribute->SetHealth(Health);
+		ASC->SetNumericAttributeBase(UARTAttributeSetBase::GetHealthAttribute(), Health);
 	}
 }
 

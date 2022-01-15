@@ -75,7 +75,7 @@ UARTGameplayAbility::UARTGameplayAbility()
 
 	bHumanPlayerAutoAbility = false;
 	bHumanPlayerAutoAutoAbilityInitialState = false;
-	bAIPlayerAutoAbility = true;
+	bAIPlayerAutoAbility = false;
 }
 
 
@@ -475,7 +475,7 @@ bool UARTGameplayAbility::IsInputPressed() const
 UAnimMontage* UARTGameplayAbility::GetCurrentMontageForMesh(USkeletalMeshComponent* InMesh)
 {
 	FAbilityMeshMontage AbilityMeshMontage;
-	if (FindAbillityMeshMontage(InMesh, AbilityMeshMontage))
+	if (FindAbilityMeshMontage(InMesh, AbilityMeshMontage))
 	{
 		return AbilityMeshMontage.Montage;
 	}
@@ -488,7 +488,7 @@ void UARTGameplayAbility::SetCurrentMontageForMesh(USkeletalMeshComponent* InMes
 	ensure(IsInstantiated());
 
 	FAbilityMeshMontage AbilityMeshMontage;
-	if (FindAbillityMeshMontage(InMesh, AbilityMeshMontage))
+	if (FindAbilityMeshMontage(InMesh, AbilityMeshMontage))
 	{
 		AbilityMeshMontage.Montage = InCurrentMontage;
 	}
@@ -529,7 +529,7 @@ void UARTGameplayAbility::BP_ApplyAbilityTagsToGameplayEffectSpec(FGameplayEffec
 	Spec.MergeSetByCallerMagnitudes(AbilitySpec.SetByCallerTagMagnitudes);
 }
 
-bool UARTGameplayAbility::FindAbillityMeshMontage(USkeletalMeshComponent* InMesh,
+bool UARTGameplayAbility::FindAbilityMeshMontage(USkeletalMeshComponent* InMesh,
                                                   FAbilityMeshMontage& InAbilityMeshMontage)
 {
 	for (FAbilityMeshMontage& MeshMontage : CurrentAbilityMeshMontages)
@@ -604,7 +604,7 @@ void UARTGameplayAbility::MontageStopForAllMeshes(float OverrideBlendOutTime)
 //	ARTAvatarActorInfo Getter
 // ----------------------------------------------------------------------------------------------------------------
 
-const FARTGameplayAbilityActorInfo* UARTGameplayAbility::GetARTActorInfo(const FGameplayAbilityActorInfo* InInfo) const
+/*const FARTGameplayAbilityActorInfo* UARTGameplayAbility::GetARTActorInfo(const FGameplayAbilityActorInfo* InInfo) const
 {
 	return static_cast<const FARTGameplayAbilityActorInfo*>(InInfo);
 }
@@ -623,7 +623,7 @@ AWeapon* UARTGameplayAbility::BP_GetWeapon() const
 {
 	const FARTGameplayAbilityActorInfo* KaosActorInfo = GetARTActorInfo(CurrentActorInfo);
 	return KaosActorInfo ? KaosActorInfo->GetWeapon() : nullptr;
-}
+}*/
 
 /*
  * Order functions
