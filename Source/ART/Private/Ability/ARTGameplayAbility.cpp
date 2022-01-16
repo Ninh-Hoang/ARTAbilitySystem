@@ -50,7 +50,19 @@ UARTGameplayAbility::UARTGameplayAbility()
 	{
 		static FName FuncName = FName(TEXT("K2_GetTargetScore"));
 		UFunction* TargetScoreFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintScoreUtility = ImplementedInBlueprintTargetScore(TargetScoreFunction);
+		bHasBlueprintGetTargetScore = ImplementedInBlueprintTargetScore(TargetScoreFunction);
+	}
+
+	auto ImplementedInBlueprintOrderTargetData = [](const UFunction* Func) -> bool
+	{
+		return Func && ensure(Func->GetOuter())
+			&& (Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass()) || Func->GetOuter()->IsA(
+				UDynamicClass::StaticClass()));
+	};
+	{
+		static FName FuncName = FName(TEXT("K2_GetOrderTargetData"));
+		UFunction* OrderTargetDataFunction = GetClass()->FindFunctionByName(FuncName);
+		bHasBlueprintGetOrderTargetData = ImplementedInBlueprintOrderTargetData(OrderTargetDataFunction);
 	}
 
 	auto ImplementedInBlueprintAbilityRange = [](const UFunction* Func) -> bool
@@ -62,7 +74,7 @@ UARTGameplayAbility::UARTGameplayAbility()
 	{
 		static FName FuncName = FName(TEXT("K2_GetRange"));
 		UFunction* AbilityRangeFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintScoreUtility = ImplementedInBlueprintAbilityRange(AbilityRangeFunction);
+		bHasBlueprintGetRange = ImplementedInBlueprintAbilityRange(AbilityRangeFunction);
 	}
 
 	//order system
@@ -275,13 +287,9 @@ bool UARTGameplayAbility::IsPredictionKeyValidForMorePrediction() const
 
 float UARTGameplayAbility::ScoreAbilityUtility()
 {
-	if (!ensure(CurrentActorInfo))
-	{
-		return 0.0f;
-	}
 	if (bHasBlueprintScoreUtility)
 	{
-		return K2_ScoreAbilityUtility(*CurrentActorInfo);
+		return K2_ScoreAbilityUtility();
 	}
 	return 0.0f;
 }
@@ -750,21 +758,32 @@ void UARTGameplayAbility::OnAbilityLevelChanged_Implementation(int32 NewLevel)
 {
 }
 
-float UARTGameplayAbility::GetTargetScore(const AActor* OrderedActor, const FARTOrderTargetData& TargetData,
+float UARTGameplayAbility::GetTargetScore(const FARTOrderTargetData& TargetData,
                                           int32 Index) const
 {
-	return K2_GetTargetScore(OrderedActor, TargetData, Index);
+	if(bHasBlueprintGetTargetScore)
+	{
+		return K2_GetTargetScore(TargetData, Index);
+	}
+	return 0.0f;
 }
 
-float UARTGameplayAbility::GetRange(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-                                    const FGameplayAbilityActivationInfo ActivationInfo) const
+FARTOrderTargetData UARTGameplayAbility::GetOrderTargetData() const
 {
-	return K2_GetRange();
-}
+	if(bHasBlueprintGetOrderTargetData)
+	{
+		return K2_GetOrderTargetData();
+	}
+	return FARTOrderTargetData();
+}	
 
-float UARTGameplayAbility::BP_GetRange()
+float UARTGameplayAbility::GetRange() const
 {
-	return K2_GetRange();
+	if(bHasBlueprintGetRange)
+	{
+		return K2_GetRange();
+	}
+	return AbilityBaseRange.GetValue();
 }
 
 EARTAbilityProcessPolicy UARTGameplayAbility::GetAbilityProcessPolicy() const

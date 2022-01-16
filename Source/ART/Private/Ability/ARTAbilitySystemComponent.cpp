@@ -1433,7 +1433,7 @@ float UARTAbilitySystemComponent::GetAbilityRange(int32 Index)
 		if (Spec.InputID == Index)
 		{
 			UARTGameplayAbility* AbilityCDO = Cast<UARTGameplayAbility>(Spec.Ability);
-			return AbilityCDO->GetRange(Spec.Handle, AbilityActorInfo.Get(), FGameplayAbilityActivationInfo());
+			return AbilityCDO->GetRange();
 		}
 	}
 
@@ -1448,8 +1448,7 @@ float UARTAbilitySystemComponent::GetAbilityRange(const FGameplayTagContainer& O
 	if (AbilitiesToActivate.Num() > 0)
 	{
 		UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitiesToActivate[0]->Ability);
-		return Ability->GetRange(AbilitiesToActivate[0]->Handle, AbilityActorInfo.Get(),
-		                         FGameplayAbilityActivationInfo());
+		return Ability->GetRange();
 	}
 	return 0.0f;
 }

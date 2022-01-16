@@ -5,6 +5,8 @@
 
 #include "AbilitySystemComponent.h"
 #include "VorbisAudioInfo.h"
+#include "Ability/ARTAbilitySystemComponent.h"
+#include "Ability/ARTGameplayAbility.h"
 #include "Ability/ARTGlobalTags.h"
 #include "AI/Order/ARTAutoOrderComponent.h"
 #include "AI/Order/ARTOrderComponent.h"
@@ -857,7 +859,7 @@ AActor* UARTOrderHelper::FindTargetForOrder(TSoftClassPtr<UARTOrder> OrderType, 
 	{
 		return nullptr;
 	}
-
+	
 	return FindTargetForOrderInChaseDistance(OrderType, OrderedActor, OrderTags, Index, AcquisitionRadius,
 	                                         AcquisitionRadius,
 	                                         OrderedActor->GetActorLocation(), OutScore);
@@ -1056,4 +1058,23 @@ AActor* UARTOrderHelper::FindMostSuitableActorToObeyTheOrder(TSoftClassPtr<UARTO
 	}
 
 	return HighestScoredActor.Get<0>();
+}
+
+FARTOrderTargetData UARTOrderHelper::FindOrderTargetDataFromAbility(const AActor* AbilityActor,
+	const FGameplayTagContainer& AbilityTags)
+{
+	UAbilitySystemComponent* ASC = UARTBlueprintFunctionLibrary::GetAbilitySystemComponent(const_cast<AActor*>(AbilityActor));
+	if(ASC)
+	{
+		TArray<FGameplayAbilitySpec*> SpecArray;
+		ASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(AbilityTags, SpecArray);
+
+		if (SpecArray.Num() > 0)
+		{
+			UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(SpecArray[0]->Ability);
+			if(Ability) return Ability->GetOrderTargetData();
+		}
+	}
+
+	return FARTOrderTargetData();
 }

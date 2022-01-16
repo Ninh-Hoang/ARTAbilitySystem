@@ -25,7 +25,7 @@ class ART_API UARTUseAbilityOrder : public UARTOrderWithBehavior
 
 public:
 	UARTUseAbilityOrder();
-
+	
 	//~ Begin UARTOrder Interface
 	virtual bool CanObeyOrder(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags, int32 Index,
 	                          FARTOrderErrorTags* OutErrorTags = nullptr) const override;
@@ -76,7 +76,6 @@ public:
 	                                    const FARTOrderTargetData& TargetData,
 	                                    const FGameplayTagContainer& OrderTags, int32 Index) override;
 	//~ End UARTOrder Interface
-
 protected:
 	virtual UGameplayAbility* GetAbility(const UARTAbilitySystemComponent* AbilitySystem, int32 Index) const;
 	virtual UGameplayAbility* GetAbility(const UARTAbilitySystemComponent* AbilitySystem,

@@ -395,7 +395,7 @@ float UARTUseAbilityOrder::GetTargetScore(const AActor* OrderedActor, const FART
 		return Super::GetTargetScore(OrderedActor, TargetData, OrderTags, Index);
 	}
 
-	return Ability->GetTargetScore(OrderedActor, TargetData, Index);
+	return Ability->GetTargetScore(TargetData, Index);
 }
 
 void UARTUseAbilityOrder::GetTagRequirements(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags,

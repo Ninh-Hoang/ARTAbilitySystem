@@ -22,7 +22,7 @@
 #include "Weapon/Weapon.h"
 #include <Ability/ARTAbilitySystemGlobals.h>
 #include <Kismet/GameplayStatics.h>
-#include "Widget/ARTDamageTextWidgetComponent.h"
+#include "Widget/ARTStatusTextWidgetComponent.h"
 #include <Ability/ARTGameplayAbility.h>
 #include <ARTCharacter/Voxel/ARTSimpleInvokerComponent.h>
 #include <ARTCharacter/ARTGameplayAbilitySet.h>
@@ -325,7 +325,7 @@ void AARTCharacterBase::ShowDamageNumber()
 {
 	if (DamageNumberQueue.Num() > 0 && IsValid(this))
 	{
-		UARTDamageTextWidgetComponent* DamageText = NewObject<UARTDamageTextWidgetComponent>(this, DamageNumberClass);
+		UARTStatusTextWidgetComponent* DamageText = NewObject<UARTStatusTextWidgetComponent>(this, DamageNumberClass);
 		DamageText->RegisterComponent();
 		DamageText->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 		DamageText->SetDamageText(DamageNumberQueue[0].DamageAmount, DamageNumberQueue[0].Tags);

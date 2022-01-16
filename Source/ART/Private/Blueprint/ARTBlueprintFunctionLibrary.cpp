@@ -11,6 +11,7 @@
 #include <Ability/ARTGameplayAbilityUIData.h>
 
 #include "Ability/ARTGlobalTags.h"
+#include "ARTCharacter/AI/ARTAIController.h"
 #include "Blueprint/SlateBlueprintLibrary.h"
 
 
@@ -500,12 +501,13 @@ void UARTBlueprintFunctionLibrary::GetSourceAndTargetTags(const AActor* SourceAc
 FGameplayTagContainer UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(const AActor* Actor, const AActor* Other)
 {
 	FGameplayTagContainer RelationshipTags;
-	if (Actor == nullptr || Other == nullptr)
-	{
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Neutral());
-		return RelationshipTags;
-	}
-	if (Actor == Other)
+	
+	const AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(Actor);
+	const AARTCharacterBase* OtherCharacter = Cast<AARTCharacterBase>(Other);
+	
+	if(!SourceCharacter || !OtherCharacter) return RelationshipTags;
+	
+	if (SourceCharacter == OtherCharacter)
 	{
 		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Friendly());
 		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Self());
@@ -513,8 +515,7 @@ FGameplayTagContainer UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(const AA
 		return RelationshipTags;
 	}
 	
-	const AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(Actor);
-	ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*Other);
+	ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*OtherCharacter);
 
 	switch (TeamAttitude)
 	{

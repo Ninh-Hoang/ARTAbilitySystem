@@ -199,13 +199,13 @@ public:
 	// ----------------------------------------------------------------------------------------------------------------
 
 	/** Event for generating utility score */
-	UFUNCTION(BlueprintImplementableEvent, Category = Ability, DisplayName="ScoreAbilityutility",
-		meta=(ScriptName="ScoreAbilityUtility"))
-	float K2_ScoreAbilityUtility(FGameplayAbilityActorInfo ActorInfo) const;
 
 	bool bHasBlueprintScoreUtility;
-
-	virtual float ScoreAbilityUtility();
+	UFUNCTION(BlueprintImplementableEvent, Category = Ability, DisplayName="ScoreAbilityutility",
+		meta=(ScriptName="ScoreAbilityUtility"))
+	float K2_ScoreAbilityUtility() const;
+	UFUNCTION(BlueprintPure, Category=Order)
+	float ScoreAbilityUtility();
 
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	                                const FGameplayTagContainer* SourceTags = nullptr,
@@ -485,11 +485,24 @@ public:
 	 * Evaluates the target and returns a score that can be used to compare the different targets. A higher score means
 	 * a better target for the ability.
 	 */
+	bool bHasBlueprintGetTargetScore;
+	
 	UFUNCTION(BlueprintImplementableEvent, Category = Order, DisplayName="AbilityTargetScore",
 		meta=(ScriptName="AbilityTargetScore"))
-	float K2_GetTargetScore(const AActor* OrderedActor, const FARTOrderTargetData& TargetData, int32 Index) const;
-	virtual float GetTargetScore(const AActor* OrderedActor, const FARTOrderTargetData& TargetData, int32 Index) const;
+	float K2_GetTargetScore(const FARTOrderTargetData& TargetData, int32 Index) const;
 
+	UFUNCTION(BlueprintPure, Category=Order)
+	float GetTargetScore(const FARTOrderTargetData& TargetData, int32 Index) const;
+
+	bool bHasBlueprintGetOrderTargetData;
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = Order, DisplayName="AbilityOrderTargetData",
+		meta=(ScriptName="AbilityOrderTargetData"))
+	FARTOrderTargetData K2_GetOrderTargetData() const;
+
+	UFUNCTION(BlueprintPure, Category=Order)
+	FARTOrderTargetData GetOrderTargetData() const;
+	
 	/** Gets the ability process policy of this ability. */
 	EARTAbilityProcessPolicy GetAbilityProcessPolicy() const;
 
@@ -510,13 +523,15 @@ public:
 	 * Gets the minimum range between the caster and the target that is needed to activate the ability.
 	 * '0' value is returned if the ability has no range.
 	 */
+
+	bool bHasBlueprintGetRange;
+	
 	UFUNCTION(BlueprintImplementableEvent, Category = Order, DisplayName="AbilityRange",
 		meta=(ScriptName="AbilityRange"))
 	float K2_GetRange() const;
-	virtual float GetRange(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-	                       const FGameplayAbilityActivationInfo ActivationInfo) const;
+	
 	UFUNCTION(BlueprintPure, Category=Order)
-	float BP_GetRange();
+	float GetRange() const;
 	
 	/** Gets the specific acquisition radius for this ability. */
 	bool GetAcquisitionRadiusOverride(float& OutAcquisitionRadius) const;

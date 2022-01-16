@@ -75,6 +75,11 @@ void AARTCharacterAI::BeginPlay()
 		AddCharacterAbilities();
 		InitializeTagPropertyMap();
 		InitializeTagResponseTable();
+
+		// Attribute change callbacks
+		HealthChangedDelegateHandle = ASC->
+									  GetGameplayAttributeValueChangeDelegate(Attribute->GetHealthAttribute()).
+									  AddUObject(this, &AARTCharacterAI::HealthChanged);
 	}
 
 	// Setup FloatingStatusBar UI for Locally Owned Players only, not AI or the server's copy of the PlayerControllers

@@ -236,7 +236,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * Checks if their is an actor that has a hostile relationship with the ordered actor inside the specified
      * acquisition radius.
      */
-    UFUNCTION(Category = "Order", BlueprintCallable)
+    UFUNCTION(Category = "Order", BlueprintPure)
     static bool IsEnemyInAcquisitionRadius(const AActor* OrderedActor, float AcquisitionRadius);
 
     /**
@@ -248,7 +248,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * @param OutScore                  Score of the returned target if a target was found.
      * @return                          The target or 'nullptr' if no target was found.
      */
-    UFUNCTION(Category = "Order", BlueprintCallable)
+    UFUNCTION(Category = "Order", BlueprintPure)
     static AActor* FindTargetForOrder(TSoftClassPtr<UARTOrder> OrderType, const AActor* OrderedActor, const FGameplayTagContainer& OrderTags, int32 Index,
                                       float AcquisitionRadius, float& OutScore);
 
@@ -264,7 +264,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * @param OutScore                  Score of the returned target if a target was found.
      * @return                          The target or 'nullptr' if no target was found.
      */
-    UFUNCTION(Category = "Order", BlueprintCallable)
+    UFUNCTION(Category = "Order", BlueprintPure)
     static AActor* FindTargetForOrderInChaseDistance(TSoftClassPtr<UARTOrder> OrderType, const AActor* OrderedActor,
                                                      const FGameplayTagContainer& OrderTags, int32 Index, float AcquisitionRadius, float ChaseDistance,
                                                      const FVector& OrderedActorHomeLocation, float& OutScore);
@@ -277,6 +277,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * @param Index                     Order index. This is needed for certain orders to differentiate. Default '-1'.
      * @return                          The target or 'nullptr' if no target was found.
      */
+    UFUNCTION(Category = "Order", BlueprintPure)
     static AActor* FindMostSuitableActorToObeyTheOrder(TSoftClassPtr<UARTOrder> OrderType,
                                                        const TArray<AActor*> OrderedActors,
                                                        const FARTOrderTargetData TargetData, const FGameplayTagContainer& OrderTags, int32 Index);
@@ -315,4 +316,8 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      */
     static AActor* FindBestScoredTargetForOrder(TSoftClassPtr<UARTOrder> OrderType, const AActor* OrderedActor,
                                                 const TArray<AActor*> Targets, const FGameplayTagContainer& OrderTags, int32 Index, float& OutScore);
+
+
+    UFUNCTION(BlueprintPure, Category=Order)
+    static FARTOrderTargetData FindOrderTargetDataFromAbility(const AActor* AbilityActor, const FGameplayTagContainer& AbilityTags);
 };

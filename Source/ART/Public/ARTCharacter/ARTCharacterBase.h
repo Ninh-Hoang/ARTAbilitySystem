@@ -57,7 +57,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Character")
 	FText CharacterName;
 
-	//TEAM STUFFS handle by Interface
+	//Team ID, handled by Interface, different ID are hostile except +50 ID as Neutral
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|Character")
 	int TeamNumber;
 
@@ -145,7 +145,7 @@ protected:
 	class UWidgetComponent* UIFloatingStatusBarComponent;
 	
 	UPROPERTY(EditAnywhere, Category = "ART|UI")
-	TSubclassOf<class UARTDamageTextWidgetComponent> DamageNumberClass;
+	TSubclassOf<class UARTStatusTextWidgetComponent> DamageNumberClass;
 
 	// Grant abilities on the Server. The Ability Specs will be replicated to the owning client.
 	virtual void AddCharacterAbilities();
