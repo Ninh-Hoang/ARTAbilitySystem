@@ -20,7 +20,7 @@ UARTOrderComponent::UARTOrderComponent(const FObjectInitializer& ObjectInitializ
 	// Set this component to be initialized when the game staART, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	//SetIsReplicated(true);
-
+	PrimaryComponentTick.bCanEverTick = false;
 	LastOrderHomeLocation = FVector::ZeroVector;
 	bIsHomeLocationSet = false;
 	// ...
@@ -140,7 +140,7 @@ void UARTOrderComponent::IssueOrder(const FARTOrderData& Order)
 
 			if (CheckOrder(Order))
 			{
-				ObeyOrder(Order);
+					ObeyOrder(Order);
 			}
 			else
 			{

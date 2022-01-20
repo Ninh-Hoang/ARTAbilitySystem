@@ -540,7 +540,15 @@ FGameplayEffectSpecHandle UARTAbilitySystemComponent::MakeOutgoingSpec(TSubclass
 		UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
 		if (UARTGameplayEffect* ArtGE = Cast<UARTGameplayEffect>(GameplayEffect))
 		{
-			if (UARTCurve* GECurve = ArtGE->Curves)
+			//TODO: some strange execution flow here, is soft pointer is valid, the hard ref would be too
+			if(!ArtGE->Curves.IsValid())
+			{
+				ArtGE->Curves.LoadSynchronous();
+			}
+			
+			UARTCurve* GECurve = ArtGE->Curves.Get();
+			
+			if (GECurve)
 			{
 				//for each curve in ARTCurve asset, take the curve's tag and use it to SetByCallerMagnitude for GE
 				FGameplayTagContainer TagList;
@@ -1425,33 +1433,6 @@ bool UARTAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Validate
 /*
 * Order System
 */
-
-float UARTAbilitySystemComponent::GetAbilityRange(int32 Index)
-{
-	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
-	{
-		if (Spec.InputID == Index)
-		{
-			UARTGameplayAbility* AbilityCDO = Cast<UARTGameplayAbility>(Spec.Ability);
-			return AbilityCDO->GetRange();
-		}
-	}
-
-	return 0.0f;
-}
-
-float UARTAbilitySystemComponent::GetAbilityRange(const FGameplayTagContainer& OrderTags)
-{
-	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
-	GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, AbilitiesToActivate, false);
-
-	if (AbilitiesToActivate.Num() > 0)
-	{
-		UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitiesToActivate[0]->Ability);
-		return Ability->GetRange();
-	}
-	return 0.0f;
-}
 
 void UARTAbilitySystemComponent::GetAutoOrders_Implementation(TArray<FARTOrderTypeWithIndex>& OutAutoOrders)
 {

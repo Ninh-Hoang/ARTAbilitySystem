@@ -59,7 +59,7 @@ public:
 
 	//Team ID, handled by Interface, different ID are hostile except +50 ID as Neutral
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|Character")
-	int TeamNumber;
+	uint8 TeamNumber;
 
 	FGenericTeamId GetGenericTeamId() const override;
 

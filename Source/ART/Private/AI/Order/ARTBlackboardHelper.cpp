@@ -49,3 +49,4 @@ FVector UARTBlackboardHelper::GetBlackboardOrderHomeLocation(UBTNode* NodeOwner)
     UBlackboardComponent* BlackboardComp = UBTFunctionLibrary::GetOwnersBlackboard(NodeOwner);
     return BlackboardComp ? BlackboardComp->GetValueAsVector(BLACKBOARD_KEY_HOME_LOCATION) : FVector::ZeroVector;
 }
+                    

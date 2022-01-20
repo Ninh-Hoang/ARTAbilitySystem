@@ -8,7 +8,6 @@
 #include "Ability/ARTGameplayAbilityTypes.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include <Ability/ARTGameplayEffectUIData.h>
-#include <Ability/ARTGameplayAbilityUIData.h>
 
 #include "Ability/ARTGlobalTags.h"
 #include "ARTCharacter/AI/ARTAIController.h"
@@ -119,12 +118,10 @@ TArray<FActiveGameplayEffectHandle> UARTBlueprintFunctionLibrary::ApplyExternalE
 	const FARTGameplayEffectContainerSpec& ContainerSpec)
 {
 	TArray<FActiveGameplayEffectHandle> AllEffects;
-
+	
 	// Iterate list of gameplay effects
 	for (const FGameplayEffectSpecHandle& SpecHandle : ContainerSpec.TargetGameplayEffectSpecs)
 	{
-		if (SpecHandle.IsValid())
-		{
 			// If effect is valid, iterate list of targets and apply to all
 			for (TSharedPtr<FGameplayAbilityTargetData> Data : ContainerSpec.TargetData.Data)
 			{
@@ -146,8 +143,21 @@ TArray<FActiveGameplayEffectHandle> UARTBlueprintFunctionLibrary::ApplyExternalE
 					}
 				}
 			}
+	}
+
+	for(const FGameplayEffectSpecHandle& SpecHandle :ContainerSpec.SourceGameplayEffectSpecs)
+	{
+		// If effect is valid, iterate list of targets and apply to all
+		if(SpecHandle.IsValid())
+		{
+			//if instigator ASC still alive
+			if (UAbilitySystemComponent* ASC = SpecHandle.Data.Get()->GetContext().GetInstigatorAbilitySystemComponent())
+			{
+				AllEffects.Add(ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get()));
+			}
 		}
 	}
+	
 	return AllEffects;
 }
 
@@ -231,14 +241,12 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 
 FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByTeamAttitude(AActor* FilterActor,
 	FGameplayTagContainer InFilterTagContainer,
-	bool InFilterTag,
 	TEnumAsByte<ETeamAttitude::Type> InTeamAttitude,
 	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter,
 	TSubclassOf<AActor> InRequiredActorClass, bool InReverseFilter)
 {
 	FARTTargetFilterTeamID Filter;
 	Filter.FilterTagContainer = InFilterTagContainer;
-	Filter.FilterTag = InFilterTag;
 	Filter.TeamAttitude = InTeamAttitude;
 	Filter.SelfFilter = InSelfFilter;
 	Filter.RequiredActorClass = InRequiredActorClass;
@@ -321,20 +329,6 @@ UARTGameplayEffectUIData* UARTBlueprintFunctionLibrary::GetGameplayEffectUIDataF
 			const FActiveGameplayEffect* ActiveEffect = ASC->GetActiveGameplayEffect(InActiveHandle);
 			UGameplayEffectUIData* Data = ActiveEffect->Spec.Def->UIData;
 			return Cast<UARTGameplayEffectUIData>(Data);
-		}
-	}
-	return nullptr;
-}
-
-UARTGameplayAbilityUIData* UARTBlueprintFunctionLibrary::GetGameplayAbilityUIDataFromInput(
-	UAbilitySystemComponent* InASC, const EARTAbilityInputID Input)
-{
-	if (InASC)
-	{
-		if (FGameplayAbilitySpec* Spec = InASC->FindAbilitySpecFromInputID(static_cast<int32>(Input)))
-		{
-			UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(Spec->Ability);
-			//return Cast<UARTGameplayAbilityUIData>(Ability->UIData);
 		}
 	}
 	return nullptr;

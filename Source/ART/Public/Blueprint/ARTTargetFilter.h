@@ -126,9 +126,6 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
 	FGameplayTagContainer FilterTagContainer;
 	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
-	bool FilterTag;
-	
 	virtual bool FilterPassesForActor(const AActor* ActorToBeFiltered) const override
 	{
 		return TargetPassesFilter(ActorToBeFiltered);
@@ -151,9 +148,9 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 		else
 		{
 			AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(SelfActor);
-			if(FilterTag)
+			if(FilterTagContainer.IsValid())
 			{
-				UAbilitySystemComponent* ASC = Cast<AARTCharacterBase>(TargetActor)->GetAbilitySystemComponent();
+				UAbilitySystemComponent* ASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();;
 				if(ASC && ASC->HasAllMatchingGameplayTags(FilterTagContainer))
 				{
 					bPassFilter = false;

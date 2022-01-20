@@ -13,6 +13,7 @@ UBTComposite_Utility::UBTComposite_Utility(const FObjectInitializer& ObjectIniti
 	bUseNodeActivationNotify = true;
 
 	SelectionMethod = EUtilitySelectionMethod::Priority;
+	ExecuteNextChildIfSelectedChildFail = false;
 
 	//OnNextChild.BindUObject(this, &UBTComposite_Utility::GetNextChildHandler);
 }
@@ -29,18 +30,27 @@ void UBTComposite_Utility::InitializeMemory(UBehaviorTreeComponent& OwnerComp, u
 
 FString UBTComposite_Utility::GetStaticDescription() const
 {
+	FString Description;
 	switch (SelectionMethod)
 	{
-	case EUtilitySelectionMethod::Priority:
-		return TEXT("Priority selection");
-
-	case EUtilitySelectionMethod::Proportional:
-		return TEXT("Proportional selection");
-
-	default:
-		check(false);
-		return {};
+		case EUtilitySelectionMethod::Priority:
+			Description.Append(TEXT("Priority selection"));
+			break;
+		case EUtilitySelectionMethod::Proportional:
+			Description.Append(TEXT("Proportional selection"));
+			break;
+		default:
+			break;
 	}
+	
+	Description.Append(LINE_TERMINATOR);
+	
+	if(ExecuteNextChildIfSelectedChildFail)
+	{
+		Description.Append(TEXT("Execute next highest score child if chosen child fail"));
+	}
+
+	return Description;
 }
 
 const UBTDecorator_UtilityFunction* UBTComposite_Utility::FindChildUtilityFunction(int32 ChildIndex) const
@@ -139,11 +149,14 @@ int32 UBTComposite_Utility::GetNextChildHandler(FBehaviorTreeSearchData& SearchD
 	{
 		// @NOTE: Linear search to find position in ordering of last executed child. This could be avoided but overhead is negligible
 		// so seems better to avoid storing extra state in the node memory.
-		int32 OrderingIndex = NodeMemory->ExecutionOrdering.IndexOfByKey(PrevChild) + 1;
-		if (OrderingIndex < NodeMemory->ExecutionOrdering.Num())
+		if(ExecuteNextChildIfSelectedChildFail)
 		{
-			// failed = choose next child in the ordering
-			NextChildIdx = NodeMemory->ExecutionOrdering[OrderingIndex];
+			int32 OrderingIndex = NodeMemory->ExecutionOrdering.IndexOfByKey(PrevChild) + 1;
+			if (OrderingIndex < NodeMemory->ExecutionOrdering.Num())
+			{
+				// failed = choose next child in the ordering
+				NextChildIdx = NodeMemory->ExecutionOrdering[OrderingIndex];
+			}
 		}
 	}
 

@@ -2,6 +2,8 @@
 
 
 #include "Blueprint/ARTTargetType.h"
+
+#include "Ability/ARTGameplayEffectTypes.h"
 #include "ARTCharacter/ARTCharacterBase.h"
 
 void UARTTargetType::GetTargets_Implementation(AARTCharacterBase* TargetingCharacter, AActor* TargetingActor,

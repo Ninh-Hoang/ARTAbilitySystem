@@ -12,6 +12,7 @@
 #include "ARTCharacter/ARTPathFollowingComponent.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 #include "Framework/ARTGameState.h"
+#include "Perception/AIPerceptionComponent.h"
 
 AARTAIController::AARTAIController(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UARTPathFollowingComponent>(TEXT("PathFollowingComponent")))
@@ -20,9 +21,39 @@ AARTAIController::AARTAIController(const FObjectInitializer& ObjectInitializer)
     /*UCrowdFollowingComponent* CrowdFollowingComponent = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent());
     CrowdFollowingComponent->SetCrowdSeparation(true);
     CrowdFollowingComponent->SetCrowdSeparationWeight(500);*/
+
+    PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
     
     //no group at start
     GroupIndex = -1;
+}
+
+FGenericTeamId AARTAIController::GetGenericTeamId() const
+{
+    return Super::GetGenericTeamId();
+}
+
+ETeamAttitude::Type AARTAIController::GetTeamAttitudeTowards(const AActor& Other) const
+{
+    ETeamAttitude::Type Attitude = ETeamAttitude::Neutral;
+    if (const IGenericTeamAgentInterface* OtherPawn = Cast<IGenericTeamAgentInterface>(&Other))
+    {
+        //Create an alliance with Team with ID 10 and set all the other teams as Hostiles:
+        FGenericTeamId OtherTeamID = OtherPawn->GetGenericTeamId();
+        if (OtherTeamID == FGenericTeamId(TeamNumber))
+        {
+            Attitude = ETeamAttitude::Friendly;
+        }
+        else if (OtherTeamID.GetId() > 50)
+        {
+            Attitude = ETeamAttitude::Neutral;
+        }
+        else
+        {
+            Attitude = ETeamAttitude::Hostile;
+        }
+    }
+    return Attitude;
 }
 
 void AARTAIController::BeginPlay()
@@ -33,6 +64,11 @@ void AARTAIController::BeginPlay()
 void AARTAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
+    //handling team by reading from pawn
+    if(IGenericTeamAgentInterface* Interface = Cast<IGenericTeamAgentInterface>(InPawn))
+    {
+        TeamNumber = Interface->GetGenericTeamId().GetId();
+    }
     
     // Make AI use assigned blackboard.
     UBlackboardComponent* BlackboardComponent;
@@ -107,15 +143,18 @@ void AARTAIController::BehaviorTreeEnded(EBTNodeResult::Type Result)
     switch (Result)
     {
         case EBTNodeResult::InProgress:
-            return;
+            break;
         case EBTNodeResult::Failed:
             BehaviorTreeResult = EBTNodeResult::Failed;
-            return;
+            CurrentOrderResultCallback.Broadcast(EARTOrderResult::FAILED);
+            break;
         case EBTNodeResult::Aborted:
-            return;
+            CurrentOrderResultCallback.Broadcast(EARTOrderResult::CANCELED);
+            break;
         case EBTNodeResult::Succeeded:
             BehaviorTreeResult = EBTNodeResult::Succeeded;
-            return;
+            CurrentOrderResultCallback.Broadcast(EARTOrderResult::SUCCEEDED);
+            break;
     }
 }
 
@@ -172,7 +211,14 @@ void AARTAIController::ApplyOrder(const FARTOrderData& Order, UBehaviorTree* Beh
         }
         else
         {
-            BehaviorTreeComponent->StartTree(*BehaviorTree, EBTExecutionMode::SingleRun);
+            if (UARTOrderHelper::ShouldLoopBehaviourTree(Order.OrderType.Get()))
+            {
+                BehaviorTreeComponent->StartTree(*BehaviorTree, EBTExecutionMode::Looped);
+            }
+            else
+            {
+                BehaviorTreeComponent->StartTree(*BehaviorTree, EBTExecutionMode::SingleRun);
+            }
         }
     }
 }
@@ -195,7 +241,7 @@ void AARTAIController::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (Blackboard == nullptr)
+    /*if (Blackboard == nullptr)
     {
         return;
     }
@@ -212,7 +258,7 @@ void AARTAIController::Tick(float DeltaTime)
         case EBTNodeResult::Succeeded:
             CurrentOrderResultCallback.Broadcast(EARTOrderResult::SUCCEEDED);
             break;
-    }
+    }*/
 
     BehaviorTreeResult = EBTNodeResult::InProgress;
 

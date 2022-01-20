@@ -66,10 +66,10 @@ FGenericTeamId AARTCharacterBase::GetGenericTeamId() const
 ETeamAttitude::Type AARTCharacterBase::GetTeamAttitudeTowards(const AActor& Other) const
 {
 	ETeamAttitude::Type Attitude = ETeamAttitude::Neutral;
-	if (const AARTCharacterBase* OtherPawn = Cast<AARTCharacterBase>(&Other))
+	if (const IGenericTeamAgentInterface* Interface = Cast<IGenericTeamAgentInterface>(&Other))
 	{
 		//Create an alliance with Team with ID 10 and set all the other teams as Hostiles:
-		FGenericTeamId OtherTeamID = OtherPawn->GetGenericTeamId();
+		FGenericTeamId OtherTeamID = Interface->GetGenericTeamId();
 		if (OtherTeamID == FGenericTeamId(TeamNumber))
 		{
 			Attitude = ETeamAttitude::Friendly;

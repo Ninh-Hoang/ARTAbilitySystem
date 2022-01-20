@@ -386,9 +386,6 @@ public:
 	/*
 	 * Order System
 	 */
-	float GetAbilityRange(int32 Index);
-
-	float GetAbilityRange(const FGameplayTagContainer& OrderTags);
 	
 	//~ Begin IRTSAutoOrderProvider Interface
 	virtual void GetAutoOrders_Implementation(TArray<FARTOrderTypeWithIndex>& OutAutoOrders) override;

@@ -11,6 +11,7 @@
 #include "AI/Order/ARTOrderTargetData.h"
 #include "AI/Order/ARTOrderTargetType.h"
 #include "ART/ART.h"
+#include "Blueprint/ARTCurve.h"
 #include "ARTGameplayAbility.generated.h"
 
 /**
@@ -47,7 +48,7 @@ public:
 * the cooldown of the ability.
 */
 UENUM(BlueprintType)
-enum class EARTAbilityProcessPolicy : uint8
+enum class EAbilityProcessPolicy : uint8
 {
 	/**
 	* The ability has no duration. If it has been activated it is considered to be finished instantly. Note that this
@@ -80,6 +81,18 @@ enum class EARTAbilityProcessPolicy : uint8
 	// clang-format on
 };
 
+USTRUCT(BlueprintType)
+struct FAbilityFloat{
+	
+	GENERATED_BODY()
+public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	float Value;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FGameplayTag CurveTag;
+};
+
 UCLASS()
 class ART_API UARTGameplayAbility : public UGameplayAbility
 {
@@ -88,14 +101,14 @@ class ART_API UARTGameplayAbility : public UGameplayAbility
 public:
 	UARTGameplayAbility();
 
-	// Abilities with this set will automatically activate when the input is pressed
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Input")
-	EARTAbilityInputID AbilityInputID = EARTAbilityInputID::None;
-
 	// Value to associate an ability with an slot without tying it to an automatically activated input.
 	// Passive abilities won't be tied to an input so we need a way to generically associate abilities with slots.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Input")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Activation")
 	EARTAbilityInputID AbilityID = EARTAbilityInputID::None;
+	
+	// Abilities with this set will automatically activate when the input is pressed
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Activation")
+	EARTAbilityInputID AbilityInputID = EARTAbilityInputID::None;
 
 	// Tells an ability to activate immediately when its granted. Used for passive abilities and abilities forced on others.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Ability|Activation")
@@ -123,18 +136,22 @@ public:
 	bool bCancelWhenLevelup;
 
 	//Ability that can stack/charge or not, 1 mean no stack
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Ability|Charge")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Ability|Data")
+	TSoftObjectPtr<UARTCurve> AbilityData;
+	
+	//Ability that can stack/charge or not, 1 mean no stack
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Ability|Data")
 	int32 AbilityCharge = 1;
 
 	//cooldown duration
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Cooldown")
-	FScalableFloat CooldownDuration;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Data")
+	FAbilityFloat CooldownDuration;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Cooldown")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Data")
 	FGameplayTagContainer CooldownTags;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Cost")
-	FScalableFloat Cost;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Data")
+	FAbilityFloat Cost;
 
 	/** Ability will be cancel if these tag added on ASC */
 	UPROPERTY(EditDefaultsOnly, Category = Tags, meta=(Categories="AbilityTagCategory"))
@@ -361,7 +378,7 @@ protected:
 	*/
 
 	UPROPERTY(Category = "Ability|Order", EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	EARTAbilityProcessPolicy AbilityProcessPolicy;
+	EAbilityProcessPolicy AbilityProcessPolicy;
 
 	/**
 	 * To how many and which of the selected units should this order be issued to.
@@ -469,10 +486,6 @@ public:
 	virtual void FormatDescription_Implementation(const FText& InDescription, const AActor* Actor,
 	                                              FText& OutDescription) const;
 
-	/** Whether to show this ability as a default order in the UI, instead of as an ability. */
-	UFUNCTION(Category = ART, BlueprintPure)
-	bool ShouldShowAsOrderInUI();
-
 	/**
 	 * Called by the owning gameplay ability system when the level of the owner has been changed. Note that this is not
 	 * called on non instanced abilities.
@@ -489,22 +502,21 @@ public:
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = Order, DisplayName="AbilityTargetScore",
 		meta=(ScriptName="AbilityTargetScore"))
-	float K2_GetTargetScore(const FARTOrderTargetData& TargetData, int32 Index) const;
+	float K2_GetTargetScore(FGameplayAbilityActorInfo ActorInfo, const FGameplayAbilitySpecHandle Handle, const FARTOrderTargetData& TargetData, int32 Index) const;
 
-	UFUNCTION(BlueprintPure, Category=Order)
-	float GetTargetScore(const FARTOrderTargetData& TargetData, int32 Index) const;
+
+	float GetTargetScore(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle, const FARTOrderTargetData& TargetData, int32 Index) const;
 
 	bool bHasBlueprintGetOrderTargetData;
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = Order, DisplayName="AbilityOrderTargetData",
 		meta=(ScriptName="AbilityOrderTargetData"))
-	FARTOrderTargetData K2_GetOrderTargetData() const;
-
-	UFUNCTION(BlueprintPure, Category=Order)
-	FARTOrderTargetData GetOrderTargetData() const;
+	bool K2_GetOrderTargetData(FGameplayAbilityActorInfo ActorInfo, const FGameplayAbilitySpecHandle Handle, FARTOrderTargetData& OrderTargetData) const;
+	
+	bool GetOrderTargetData(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle, OUT FARTOrderTargetData* OrderTargetData = nullptr) const;
 	
 	/** Gets the ability process policy of this ability. */
-	EARTAbilityProcessPolicy GetAbilityProcessPolicy() const;
+	EAbilityProcessPolicy GetAbilityProcessPolicy() const;
 
 	/** Gets the tags the activating actor needs to have in order to activate the ability. */
 	UFUNCTION(Category = Order, BlueprintPure)
@@ -528,10 +540,9 @@ public:
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = Order, DisplayName="AbilityRange",
 		meta=(ScriptName="AbilityRange"))
-	float K2_GetRange() const;
-	
-	UFUNCTION(BlueprintPure, Category=Order)
-	float GetRange() const;
+	float K2_GetRange(FGameplayAbilityActorInfo ActorInfo, const FGameplayAbilitySpecHandle Handle) const;
+
+	float GetRange(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const;
 	
 	/** Gets the specific acquisition radius for this ability. */
 	bool GetAcquisitionRadiusOverride(float& OutAcquisitionRadius) const;
@@ -560,10 +571,16 @@ public:
 	//~ End UGameplayAbility Interface
 
 	UFUNCTION(BlueprintPure, Category="Order")
-	FVector GetOrderLocation();
+	FVector GetBlackboardOrderLocation();
 
 	UFUNCTION(BlueprintPure, Category="Order")
-	AActor* GetOrderTarget();
+	AActor* GetBlackboardOrderTarget();
+
+	UFUNCTION(BlueprintPure, Category="Order")
+	FVector GetBlackboardOrderHomeLocation();
+
+	UFUNCTION(BlueprintPure, Category="Order")
+	float GetBlackboardOrderRange();
 
 	UFUNCTION(BlueprintPure, Category="Ability|Targeting")
 	bool DoesSatisfyTargetTagRequirement(AActor* Target);

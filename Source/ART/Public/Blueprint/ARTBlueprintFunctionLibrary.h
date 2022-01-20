@@ -130,7 +130,6 @@ public:
 	static FGameplayTargetDataFilterHandle MakeTargetDataFilterByTeamAttitude(
 		AActor* FilterActor,
 		FGameplayTagContainer InFilterTagContainer,
-		bool InFilterTag,
 		TEnumAsByte<ETeamAttitude::Type> InTeamAttitude,
 		TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
 		bool InReverseFilter);
@@ -174,15 +173,7 @@ public:
 		"Get GE UI Data from Active Handle"))
 	static UARTGameplayEffectUIData* GetGameplayEffectUIDataFromActiveHandle(
 		const FActiveGameplayEffectHandle& InActiveHandle);
-
-	/*
-	* Get UI information from Ability Input, Spec, or Handle?
-	*/
-
-	UFUNCTION(BlueprintPure, Category = "Ability|ActiveAbility", Meta = (DisplayName = "Get GA UI Data from Input"))
-	static UARTGameplayAbilityUIData* GetGameplayAbilityUIDataFromInput(UAbilitySystemComponent* InASC,
-	                                                                    const EARTAbilityInputID Input);
-
+	
 	/*
 	 * GetWorldLocation to Screen/Widget space
 	 */

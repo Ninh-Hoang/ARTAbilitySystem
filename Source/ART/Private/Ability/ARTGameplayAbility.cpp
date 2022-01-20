@@ -29,7 +29,7 @@ UARTGameplayAbility::UARTGameplayAbility()
 	InteractingTag = FGameplayTag::RequestGameplayTag("State.Interacting");
 	InteractingRemovalTag = FGameplayTag::RequestGameplayTag("State.InteractingRemoval");
 
-	auto ImplementedInBlueprintUtilityScore = [](const UFunction* Func) -> bool
+	auto ImplementedInBlueprint = [](const UFunction* Func) -> bool
 	{
 		return Func && ensure(Func->GetOuter())
 			&& (Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass()) || Func->GetOuter()->IsA(
@@ -38,47 +38,29 @@ UARTGameplayAbility::UARTGameplayAbility()
 	{
 		static FName FuncName = FName(TEXT("K2_ScoreAbilityUtility"));
 		UFunction* ScoreUtilityFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintScoreUtility = ImplementedInBlueprintUtilityScore(ScoreUtilityFunction);
+		bHasBlueprintScoreUtility = ImplementedInBlueprint(ScoreUtilityFunction);
 	}
-
-	auto ImplementedInBlueprintTargetScore = [](const UFunction* Func) -> bool
-	{
-		return Func && ensure(Func->GetOuter())
-			&& (Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass()) || Func->GetOuter()->IsA(
-				UDynamicClass::StaticClass()));
-	};
+	
 	{
 		static FName FuncName = FName(TEXT("K2_GetTargetScore"));
 		UFunction* TargetScoreFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintGetTargetScore = ImplementedInBlueprintTargetScore(TargetScoreFunction);
+		bHasBlueprintGetTargetScore = ImplementedInBlueprint(TargetScoreFunction);
 	}
-
-	auto ImplementedInBlueprintOrderTargetData = [](const UFunction* Func) -> bool
-	{
-		return Func && ensure(Func->GetOuter())
-			&& (Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass()) || Func->GetOuter()->IsA(
-				UDynamicClass::StaticClass()));
-	};
+	
 	{
 		static FName FuncName = FName(TEXT("K2_GetOrderTargetData"));
 		UFunction* OrderTargetDataFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintGetOrderTargetData = ImplementedInBlueprintOrderTargetData(OrderTargetDataFunction);
+		bHasBlueprintGetOrderTargetData = ImplementedInBlueprint(OrderTargetDataFunction);
 	}
-
-	auto ImplementedInBlueprintAbilityRange = [](const UFunction* Func) -> bool
-	{
-		return Func && ensure(Func->GetOuter())
-			&& (Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass()) || Func->GetOuter()->IsA(
-				UDynamicClass::StaticClass()));
-	};
+	
 	{
 		static FName FuncName = FName(TEXT("K2_GetRange"));
 		UFunction* AbilityRangeFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintGetRange = ImplementedInBlueprintAbilityRange(AbilityRangeFunction);
+		bHasBlueprintGetRange = ImplementedInBlueprint(AbilityRangeFunction);
 	}
 
 	//order system
-	AbilityProcessPolicy = EARTAbilityProcessPolicy::INSTANT;
+	AbilityProcessPolicy = EAbilityProcessPolicy::INSTANT;
 
 	GroupExecutionType = EARTOrderGroupExecutionType::MOST_SUITABLE_UNIT;
 
@@ -216,6 +198,11 @@ FARTGameplayEffectContainerSpec UARTGameplayAbility::MakeEffectContainerSpecFrom
 			ReturnSpec.TargetGameplayEffectSpecs.
 			           Add(MakeOutgoingGameplayEffectSpec(EffectClass, OverrideGameplayLevel));
 		}
+		for (const TSubclassOf<UGameplayEffect>& EffectClass : Container.SourceGameplayEffectClasses)
+		{
+			ReturnSpec.SourceGameplayEffectSpecs.
+						Add(MakeOutgoingGameplayEffectSpec(EffectClass, OverrideGameplayLevel));
+		}
 	}
 	return ReturnSpec;
 }
@@ -296,9 +283,9 @@ float UARTGameplayAbility::ScoreAbilityUtility()
 
 bool UARTGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                              const FGameplayAbilityActorInfo* ActorInfo,
-                                             const FGameplayTagContainer* SourceTAART,
-                                             const FGameplayTagContainer* TargetTAART,
-                                             OUT FGameplayTagContainer* OptionalRelevantTAART) const
+                                             const FGameplayTagContainer* SourceTag,
+                                             const FGameplayTagContainer* TargetTag,
+                                             OUT FGameplayTagContainer* OptionalRelevantTag) const
 {
 	if (bCannotActivateWhileInteracting)
 	{
@@ -316,17 +303,17 @@ bool UARTGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Ha
 		if (Hero && Hero->GetCurrentWeapon() && static_cast<UObject*>(Hero->GetCurrentWeapon()) == GetSourceObject(
 			Handle, ActorInfo))
 		{
-			return Super::CanActivateAbility(Handle, ActorInfo, SourceTAART, TargetTAART, OptionalRelevantTAART);
+			return Super::CanActivateAbility(Handle, ActorInfo, SourceTag, TargetTag, OptionalRelevantTag);
 		}
 		return false;
 	}
-	return Super::CanActivateAbility(Handle, ActorInfo, SourceTAART, TargetTAART, OptionalRelevantTAART);
+	return Super::CanActivateAbility(Handle, ActorInfo, SourceTag, TargetTag, OptionalRelevantTag);
 }
 
 bool UARTGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-                                    OUT FGameplayTagContainer* OptionalRelevantTAART) const
+                                    OUT FGameplayTagContainer* OptionalRelevantTag) const
 {
-	return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTAART) && ARTCheckCost(Handle, *ActorInfo);
+	return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTag) && ARTCheckCost(Handle, *ActorInfo);
 }
 
 void UARTGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
@@ -339,8 +326,25 @@ void UARTGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 		FGameplayEffectSpecHandle SpecHandle =
 			MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 		SpecHandle.Data.Get()->DynamicGrantedTags.AppendTags(CooldownTags);
+		
+		float Duration = CooldownDuration.Value;
+
+		//read curve if possible
+		if(CooldownDuration.CurveTag.IsValid())
+		{
+			if(!AbilityData.IsValid())
+			{
+				AbilityData.LoadSynchronous();
+			}
+			UARTCurve* Curve = AbilityData.Get();
+			if(Curve)
+			{
+				Duration = Curve->GetCurveValueByTag(CooldownDuration.CurveTag, GetAbilityLevel());
+			}
+		}
+		
 		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Cooldown")),
-		                                               CooldownDuration.GetValueAtLevel(GetAbilityLevel()));
+		                                               Duration);
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 }
@@ -363,7 +367,6 @@ bool UARTGameplayAbility::CheckCooldown(const FGameplayAbilitySpecHandle Handle,
 				{
 					OptionalRelevantTags->AddTag(FailCDTag);
 				}
-
 				return false;
 			}
 		}
@@ -633,9 +636,9 @@ AWeapon* UARTGameplayAbility::BP_GetWeapon() const
 	return KaosActorInfo ? KaosActorInfo->GetWeapon() : nullptr;
 }*/
 
-/*
- * Order functions
- */
+// ----------------------------------------------------------------------------------------------------------------
+// Order functions
+// ----------------------------------------------------------------------------------------------------------------
 
 EARTTargetType UARTGameplayAbility::GetTargetType() const
 {
@@ -692,11 +695,6 @@ void UARTGameplayAbility::FormatDescription_Implementation(const FText& InDescri
 
 {
 	OutDescription = InDescription;
-}
-
-bool UARTGameplayAbility::ShouldShowAsOrderInUI()
-{
-	return bShouldShowAsOrderInUI;
 }
 
 bool UARTGameplayAbility::GetAcquisitionRadiusOverride(float& OutAcquisitionRadius) const
@@ -758,35 +756,35 @@ void UARTGameplayAbility::OnAbilityLevelChanged_Implementation(int32 NewLevel)
 {
 }
 
-float UARTGameplayAbility::GetTargetScore(const FARTOrderTargetData& TargetData,
+float UARTGameplayAbility::GetTargetScore(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle, const FARTOrderTargetData& TargetData,
                                           int32 Index) const
 {
 	if(bHasBlueprintGetTargetScore)
 	{
-		return K2_GetTargetScore(TargetData, Index);
+		return K2_GetTargetScore(*ActorInfo, Handle, TargetData, Index);
 	}
 	return 0.0f;
 }
 
-FARTOrderTargetData UARTGameplayAbility::GetOrderTargetData() const
+bool UARTGameplayAbility::GetOrderTargetData(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle, OUT FARTOrderTargetData* OrderTargetData) const
 {
 	if(bHasBlueprintGetOrderTargetData)
 	{
-		return K2_GetOrderTargetData();
+		return K2_GetOrderTargetData(*ActorInfo, Handle, *OrderTargetData);
 	}
-	return FARTOrderTargetData();
+	return false;
 }	
 
-float UARTGameplayAbility::GetRange() const
+float UARTGameplayAbility::GetRange(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const
 {
 	if(bHasBlueprintGetRange)
 	{
-		return K2_GetRange();
+		return K2_GetRange(*ActorInfo, Handle);
 	}
 	return AbilityBaseRange.GetValue();
 }
 
-EARTAbilityProcessPolicy UARTGameplayAbility::GetAbilityProcessPolicy() const
+EAbilityProcessPolicy UARTGameplayAbility::GetAbilityProcessPolicy() const
 {
 	return AbilityProcessPolicy;
 }
@@ -818,14 +816,24 @@ void UARTGameplayAbility::GetTargetTagRequirements(FGameplayTagContainer& OutReq
 	OutBlockedTags.AppendTags(TargetBlockedTags);
 }
 
-FVector UARTGameplayAbility::GetOrderLocation()
+FVector UARTGameplayAbility::GetBlackboardOrderLocation()
 {
 	return UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsVector(FName("Order_Location"));
 }
 
-AActor* UARTGameplayAbility::GetOrderTarget()
+AActor* UARTGameplayAbility::GetBlackboardOrderTarget()
 {
 	return Cast<AActor>(UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsObject(FName("Order_Target")));
+}
+
+FVector UARTGameplayAbility::GetBlackboardOrderHomeLocation()
+{
+	return UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsVector(FName("Order_HomeLocation"));
+}
+
+float UARTGameplayAbility::GetBlackboardOrderRange()
+{
+	return UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsFloat(FName("Order_Range"));
 }
 
 bool UARTGameplayAbility::DoesSatisfyTargetTagRequirement(AActor* TargetActor)

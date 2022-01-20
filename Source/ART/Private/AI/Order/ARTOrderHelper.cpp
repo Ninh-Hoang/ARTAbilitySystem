@@ -2,9 +2,8 @@
 
 
 #include "AI/Order/ARTOrderHelper.h"
-
 #include "AbilitySystemComponent.h"
-#include "VorbisAudioInfo.h"
+#include "Abilities/Tasks/AbilityTask.h"
 #include "Ability/ARTAbilitySystemComponent.h"
 #include "Ability/ARTGameplayAbility.h"
 #include "Ability/ARTGlobalTags.h"
@@ -316,6 +315,21 @@ bool UARTOrderHelper::ShouldRestartBehaviourTree(TSoftClassPtr<UARTOrderWithBeha
 	}
 
 	return OrderType->GetDefaultObject<UARTOrderWithBehavior>()->ShouldRestartBehaviorTree();
+}
+
+bool UARTOrderHelper::ShouldLoopBehaviourTree(TSoftClassPtr<UARTOrderWithBehavior> OrderType)
+{
+	if (OrderType == nullptr)
+	{
+		return true;
+	}
+
+	if (!OrderType.IsValid())
+	{
+		OrderType.LoadSynchronous();
+	}
+
+	return OrderType->GetDefaultObject<UARTOrderWithBehavior>()->ShouldLoopBehaviourTree();
 }
 
 FARTOrderTargetData UARTOrderHelper::CreateOrderTargetData(const AActor* OrderedActor, AActor* TargetActor,
@@ -1060,21 +1074,29 @@ AActor* UARTOrderHelper::FindMostSuitableActorToObeyTheOrder(TSoftClassPtr<UARTO
 	return HighestScoredActor.Get<0>();
 }
 
-FARTOrderTargetData UARTOrderHelper::FindOrderTargetDataFromAbility(const AActor* AbilityActor,
-	const FGameplayTagContainer& AbilityTags)
+bool UARTOrderHelper::FindOrderTargetDataFromAbility(const AActor* AbilityActor,
+	const FGameplayTagContainer& AbilityTags, FARTOrderTargetData& OrderTargetData)
 {
 	UAbilitySystemComponent* ASC = UARTBlueprintFunctionLibrary::GetAbilitySystemComponent(const_cast<AActor*>(AbilityActor));
 	if(ASC)
 	{
 		TArray<FGameplayAbilitySpec*> SpecArray;
 		ASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(AbilityTags, SpecArray);
-
-		if (SpecArray.Num() > 0)
+		if(SpecArray.Num() > 0)
 		{
-			UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(SpecArray[0]->Ability);
-			if(Ability) return Ability->GetOrderTargetData();
+			FGameplayAbilitySpec* Spec = SpecArray[0];
+		
+			UGameplayAbility* CDOAbility = Spec->Ability;
+			UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+			UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+		
+			if(UARTGameplayAbility* ARTAbility = Cast<UARTGameplayAbility>(AbilitySource))
+			{
+				return ARTAbility->GetOrderTargetData(ASC->AbilityActorInfo.Get(), SpecArray[0]->Handle, &OrderTargetData);
+			}
 		}
 	}
 
-	return FARTOrderTargetData();
+	return false;
 }

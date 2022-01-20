@@ -20,5 +20,19 @@ float UARTAbilityCost_MMC::CalculateBaseMagnitude_Implementation(const FGameplay
 		return 0.0f;
 	}
 
-	return Ability->Cost.GetValueAtLevel(Ability->GetAbilityLevel());
+	float Cost = Ability->Cost.Value;
+	
+	if(Ability->Cost.CurveTag.IsValid())
+	{
+		if(!Ability->AbilityData.IsValid())
+		{
+			Ability->AbilityData.LoadSynchronous();
+		}
+		UARTCurve* Curve = Ability->AbilityData.Get();
+		if(Curve)
+		{
+			Cost = Curve->GetCurveValueByTag(Ability->Cost.CurveTag, Ability->GetAbilityLevel());
+		}
+	}
+	return Cost;
 }

@@ -103,7 +103,7 @@ class AWeapon* FARTGameplayAbilityActorInfo::GetWeapon() const
 
 bool FARTGameplayEffectContainerSpec::HasValidEffects() const
 {
-	return TargetGameplayEffectSpecs.Num() > 0;
+	return (TargetGameplayEffectSpecs.Num() > 0 || SourceGameplayEffectSpecs.Num() > 0);
 }
 
 bool FARTGameplayEffectContainerSpec::HasValidTargets() const

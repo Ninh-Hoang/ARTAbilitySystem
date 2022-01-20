@@ -42,6 +42,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Utility")
 	EUtilitySelectionMethod SelectionMethod;
 
+	UPROPERTY(EditAnywhere, Category = "Utility")
+	bool ExecuteNextChildIfSelectedChildFail;
+
 public:
 	virtual void InitializeMemory(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTMemoryInit::Type InitType) const override;
 	virtual uint16 GetInstanceMemorySize() const override;

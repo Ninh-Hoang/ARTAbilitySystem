@@ -38,7 +38,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UARTAutoOrderComponent* AutoOrderComponent;
-
+		
 	FDelegateHandle HealthChangedDelegateHandle;
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);

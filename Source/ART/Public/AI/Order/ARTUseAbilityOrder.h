@@ -77,8 +77,7 @@ public:
 	                                    const FGameplayTagContainer& OrderTags, int32 Index) override;
 	//~ End UARTOrder Interface
 protected:
-	virtual UGameplayAbility* GetAbility(const UARTAbilitySystemComponent* AbilitySystem, int32 Index) const;
-	virtual UGameplayAbility* GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
+	virtual UARTGameplayAbility* GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
 	                                     FGameplayTagContainer OrderTags) const;
 private:
 	UTexture2D* GetIcon(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags, int32 Index) const;

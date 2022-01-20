@@ -14,6 +14,7 @@
 #include "AI/Order/ARTSelectComponent.h"
 #include "ARTCharacter/AI/ARTNavigationInvokerComponent.h"
 #include "Framework/ARTGameState.h"
+#include "Perception/AIPerceptionComponent.h"
 
 
 AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -48,7 +49,7 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	//affact navigation
-	SetCanAffectNavigationGeneration(true);
+	SetCanAffectNavigationGeneration(false);
 
 	//not using controller Yaw, might want to change this
 	bUseControllerRotationYaw = false;

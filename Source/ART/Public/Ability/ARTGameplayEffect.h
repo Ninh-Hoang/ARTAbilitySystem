@@ -126,7 +126,7 @@ class ART_API UARTGameplayEffect : public UGameplayEffect
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "ART")
-	class UARTCurve* Curves;
+	TSoftObjectPtr<class UARTCurve> Curves;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ART")
 	TArray<FGameplayEffectEvent> GameplayEvents;

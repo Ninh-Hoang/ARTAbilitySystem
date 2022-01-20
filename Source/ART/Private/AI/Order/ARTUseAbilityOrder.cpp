@@ -15,47 +15,44 @@ bool UARTUseAbilityOrder::CanObeyOrder(const AActor* OrderedActor, const FGamepl
                                        FARTOrderErrorTags* OutErrorTags /*= nullptr*/) const
 {
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	const UGameplayAbility* Ability = GetAbility(AbilitySystem, OrderTags);
+	if(!AbilitySystem) return false;
 
-	if (Ability != nullptr)
+	TArray<FGameplayAbilitySpec*> SpecArray;
+	//only get activatable ability
+	AbilitySystem->GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, SpecArray, true);
+	if (SpecArray.Num() > 0)
 	{
-		const TArray<FGameplayAbilitySpec>& AbilitySpecs = AbilitySystem->GetActivatableAbilities();
-		for (const FGameplayAbilitySpec& Spec : AbilitySpecs)
+		FGameplayAbilitySpec* Spec = SpecArray[0];
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+		
+		if(AbilitySource)
 		{
-			if (Spec.Ability == Ability)
+			// Check if ability has been learned yet.
+			/*if (Spec.Level <= 0)
 			{
-				// Check if ability has been learned yet.
-				/*if (Spec.Level <= 0)
+				return false;
+			}*/
+			
+			FGameplayTagContainer FailureTags;
+
+			// Don't pass any source and target tags to can activate ability. These tags has already been checked in
+			// 'UARTOrderHelper'. Only the activation required and activation blocked tags are checked here.
+			if (!AbilitySource->CanActivateAbility(Spec->Handle, AbilitySystem->AbilityActorInfo.Get(), nullptr, nullptr,
+											 &FailureTags))
+			{
+				if (OutErrorTags != nullptr)
 				{
-					return false;
-				}*/
-
-				FGameplayTagContainer FailureTags;
-
-				// Don't pass any source and target tags to can activate ability. These tags has already been checked in
-				// 'UARTOrderHelper'. Only the activation required and activation blocked tags are checked here.
-				if (!Ability->CanActivateAbility(Spec.Handle, AbilitySystem->AbilityActorInfo.Get(), nullptr, nullptr,
-				                                 &FailureTags))
-				{
-					if (OutErrorTags != nullptr)
-					{
-						OutErrorTags->ErrorTags = FailureTags;
-					}
-
-					return false;
+					OutErrorTags->ErrorTags = FailureTags;
 				}
 
-				// Not the nicest place to check this but it avoids adding this tag to every ability.
-				/*if (AbilitySystem->HasMatchingGameplayTag(UARTGlobalTags::Status_Changing_Constructing()))
-				{
-					return false;
-				}*/
-
-				return true;
+				return false;
 			}
+			return true;
 		}
 	}
-
 	return false;
 }
 
@@ -213,33 +210,46 @@ EARTOrderProcessPolicy UARTUseAbilityOrder::GetOrderProcessPolicy(const AActor* 
 	}
 
 	UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
-	if (Ability == nullptr)
+	if(!AbilitySystem) return Super::GetOrderProcessPolicy(OrderedActor, OrderTags, Index);
+	
+	TArray<FGameplayAbilitySpec*> SpecArray;
+	FGameplayAbilitySpec* Spec = nullptr;
+	UARTGameplayAbility* Ability = nullptr;
+	AbilitySystem->GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, SpecArray, false);
+	if (SpecArray.Num() > 0)
 	{
-		return Super::GetOrderProcessPolicy(OrderedActor, OrderTags, Index);
+		Spec = SpecArray[0];
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+		
+		Ability = Cast<UARTGameplayAbility>(AbilitySource);
 	}
+	
+	if (!Spec || !Ability) return Super::GetOrderProcessPolicy(OrderedActor, OrderTags, Index);
 
-	EARTAbilityProcessPolicy AbilityProcessPolicy = Ability->GetAbilityProcessPolicy();
+	EAbilityProcessPolicy AbilityProcessPolicy = Ability->GetAbilityProcessPolicy();
 
 	// If this ability does not have a target type or location and is instant we can execute it here directly without
 	// altering the AI behavior.
 	if ((Ability->GetTargetType() == EARTTargetType::NONE || Ability->GetTargetType() == EARTTargetType::PASSIVE) &&
-		AbilityProcessPolicy == EARTAbilityProcessPolicy::INSTANT)
+		AbilityProcessPolicy == EAbilityProcessPolicy::INSTANT)
 	{
 		return EARTOrderProcessPolicy::INSTANT;
 	}
 
-	if (AbilityProcessPolicy == EARTAbilityProcessPolicy::CAN_NOT_BE_CANCELED)
+	if (AbilityProcessPolicy == EAbilityProcessPolicy::CAN_NOT_BE_CANCELED)
 	{
 		return EARTOrderProcessPolicy::CAN_NOT_BE_CANCELED;
 	}
 
-	if (AbilityProcessPolicy == EARTAbilityProcessPolicy::CAN_BE_CANCELED)
+	if (AbilityProcessPolicy == EAbilityProcessPolicy::CAN_BE_CANCELED)
 	{
 		return EARTOrderProcessPolicy::CAN_BE_CANCELED;
 	}
 
-	if (AbilityProcessPolicy == EARTAbilityProcessPolicy::CAN_BE_CANCELED_WHEN_NO_GAMEPLAY_TASK_IS_RUNNING)
+	if (AbilityProcessPolicy == EAbilityProcessPolicy::CAN_BE_CANCELED_WHEN_NO_GAMEPLAY_TASK_IS_RUNNING)
 	{
 		if (Ability->GetInstancingPolicy() == EGameplayAbilityInstancingPolicy::NonInstanced)
 		{
@@ -247,30 +257,13 @@ EARTOrderProcessPolicy UARTUseAbilityOrder::GetOrderProcessPolicy(const AActor* 
 			return EARTOrderProcessPolicy::CAN_BE_CANCELED;
 		}
 
-		FGameplayAbilitySpec AbilitySpec;
-
-		const TArray<FGameplayAbilitySpec>& AbilitySpecs = AbilitySystem->GetActivatableAbilities();
-		for (const FGameplayAbilitySpec& Spec : AbilitySpecs)
-		{
-			if (Spec.Ability == Ability)
-			{
-				AbilitySpec = Spec;
-				break;
-			}
-		}
-
-		if (AbilitySpec.Ability == nullptr)
-		{
-			return EARTOrderProcessPolicy::CAN_BE_CANCELED;
-		}
-
 		// Iterate through every active instance to check if any of them has an active ability task.
-		TArray<UGameplayAbility*> AbilityInstances = AbilitySpec.GetAbilityInstances();
+		TArray<UGameplayAbility*> AbilityInstances = Spec->GetAbilityInstances();
 		for (UGameplayAbility* AbilityInstance : AbilityInstances)
 		{
 			UARTGameplayAbility* ARTAbilityInstance = Cast<UARTGameplayAbility>(AbilityInstance);
 
-			if (AbilityInstance != nullptr && ARTAbilityInstance->AreAbilityTasksActive())
+			if (ARTAbilityInstance != nullptr && ARTAbilityInstance->AreAbilityTasksActive())
 			{
 				return EARTOrderProcessPolicy::CAN_NOT_BE_CANCELED;
 			}
@@ -379,28 +372,8 @@ bool UARTUseAbilityOrder::GetAcquisitionRadiusOverride(const AActor* OrderedActo
 	return false;
 }
 
-float UARTUseAbilityOrder::GetTargetScore(const AActor* OrderedActor, const FARTOrderTargetData& TargetData,
-                                          const FGameplayTagContainer& OrderTags, int32 Index) const
-{
-	if (OrderedActor == nullptr)
-	{
-		return Super::GetTargetScore(OrderedActor, TargetData, OrderTags, Index);
-	}
-
-	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
-
-	if (Ability == nullptr || !Ability->IsTargetScoreOverriden())
-	{
-		return Super::GetTargetScore(OrderedActor, TargetData, OrderTags, Index);
-	}
-
-	return Ability->GetTargetScore(TargetData, Index);
-}
-
 void UARTUseAbilityOrder::GetTagRequirements(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags,
-                                             int32 Index,
-                                             FARTOrderTagRequirements& OutTagRequirements) const
+                                             int32 Index,FARTOrderTagRequirements& OutTagRequirements) const
 {
 	if (OrderedActor == nullptr)
 	{
@@ -415,16 +388,56 @@ void UARTUseAbilityOrder::GetTagRequirements(const AActor* OrderedActor, const F
 	}
 }
 
+float UARTUseAbilityOrder::GetTargetScore(const AActor* OrderedActor, const FARTOrderTargetData& TargetData,
+                                          const FGameplayTagContainer& OrderTags, int32 Index) const
+{
+	if (!OrderedActor) return Super::GetTargetScore(OrderedActor, TargetData, OrderTags, Index);
+	
+	UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
+	if(!AbilitySystem) return Super::GetTargetScore(OrderedActor, TargetData, OrderTags, Index);
+
+	TArray<FGameplayAbilitySpec*> SpecArray;
+	AbilitySystem->GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, SpecArray, false);
+	if (SpecArray.Num() > 0)
+	{
+		FGameplayAbilitySpec* Spec = SpecArray[0];
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+		
+		if(UARTGameplayAbility* ARTAbility =  Cast<UARTGameplayAbility>(AbilitySource))
+		{
+			return ARTAbility->GetRange(AbilitySystem->AbilityActorInfo.Get(), Spec->Handle);
+		}
+	}
+	return Super::GetTargetScore(OrderedActor, TargetData, OrderTags, Index);
+}
+
 float UARTUseAbilityOrder::GetRequiredRange(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags,
                                             int32 Index) const
 {
-	if (OrderedActor == nullptr)
-	{
-		return 0.0f;
-	}
-
+	if (OrderedActor == nullptr) return Super::GetRequiredRange(OrderedActor, OrderTags, Index);
+	
 	UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	return AbilitySystem->GetAbilityRange(OrderTags);
+	if(!AbilitySystem) return Super::GetRequiredRange(OrderedActor, OrderTags, Index);
+
+	TArray<FGameplayAbilitySpec*> SpecArray;
+	AbilitySystem->GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, SpecArray, false);
+	if (SpecArray.Num() > 0)
+	{
+		FGameplayAbilitySpec* Spec = SpecArray[0];
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+		
+		if(UARTGameplayAbility* ARTAbility =  Cast<UARTGameplayAbility>(AbilitySource))
+		{
+			return ARTAbility->GetRange(AbilitySystem->AbilityActorInfo.Get(), Spec->Handle);
+		}
+	}
+	return Super::GetRequiredRange(OrderedActor, OrderTags, Index);
 }
 
 void UARTUseAbilityOrder::InitializePreviewActor(AARTOrderPreview* PreviewActor, const AActor* OrderedActor,
@@ -436,27 +449,20 @@ void UARTUseAbilityOrder::InitializePreviewActor(AARTOrderPreview* PreviewActor,
 	PreviewActor->SetInstigatorAbility(Cast<UARTGameplayAbility>(Ability));
 }
 
-UGameplayAbility* UARTUseAbilityOrder::GetAbility(const UARTAbilitySystemComponent* AbilitySystem, int32 Index) const
-{
-	for (const FGameplayAbilitySpec& Spec : AbilitySystem->GetActivatableAbilities())
-	{
-		if (Spec.InputID == Index)
-		{
-			return Spec.Ability;
-		}
-	}
-
-	return nullptr;
-}
-
-UGameplayAbility* UARTUseAbilityOrder::GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
+UARTGameplayAbility* UARTUseAbilityOrder::GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
                                                   FGameplayTagContainer OrderTags) const
 {
 	TArray<FGameplayAbilitySpec*> SpecArray;
 	AbilitySystem->GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, SpecArray, false);
 	if (SpecArray.Num() > 0)
 	{
-		return SpecArray[0]->Ability;
+		FGameplayAbilitySpec* Spec = SpecArray[0];
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+		
+		return Cast<UARTGameplayAbility>(AbilitySource);
 	}
 
 	return nullptr;

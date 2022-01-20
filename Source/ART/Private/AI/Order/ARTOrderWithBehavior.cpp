@@ -27,6 +27,11 @@ bool UARTOrderWithBehavior::ShouldRestartBehaviorTree() const
 	return bShouldRestartBehaviorTree;
 }
 
+bool UARTOrderWithBehavior::ShouldLoopBehaviourTree() const
+{
+	return bShouldLoopBehaviourTree;
+}
+
 void UARTOrderWithBehavior::IssueOrder(AActor* OrderedActor, const FARTOrderTargetData& TargetData,
                                        const FGameplayTagContainer& OrderTags, int32 Index,
                                        FARTOrderCallback Callback, const FVector& HomeLocation)

@@ -91,6 +91,10 @@ class ART_API UARTOrderHelper : public UBlueprintFunctionLibrary
     UFUNCTION(Category = "Order", BlueprintPure)
     static bool ShouldRestartBehaviourTree(TSoftClassPtr<UARTOrderWithBehavior> OrderType);
 
+    /** Whether to loop the behaviour tree of this specific order type. */
+    UFUNCTION(Category = "Order", BlueprintPure)
+    static bool ShouldLoopBehaviourTree(TSoftClassPtr<UARTOrderWithBehavior> OrderType);
+
     /** Creates order target data using the specified target actor. */
     UFUNCTION(Category = "Order", BlueprintPure)
     static FARTOrderTargetData CreateOrderTargetData(const AActor* OrderedActor, AActor* TargetActor,
@@ -212,7 +216,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
 
     /** Whether the specified order order allows auto orders when it is active. */
     UFUNCTION(Category = "Order", BlueprintPure)
- static bool AreAutoOrdersAllowedDuringOrder(TSoftClassPtr<UARTOrder> OrderType,
+    static bool AreAutoOrdersAllowedDuringOrder(TSoftClassPtr<UARTOrder> OrderType,
                                                                const AActor* OrderedActor, const FGameplayTagContainer& OrderTags, int32 Index = -1);
 
     /**
@@ -248,7 +252,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * @param OutScore                  Score of the returned target if a target was found.
      * @return                          The target or 'nullptr' if no target was found.
      */
-    UFUNCTION(Category = "Order", BlueprintPure)
+    UFUNCTION(BlueprintCallable, Category = "Order")
     static AActor* FindTargetForOrder(TSoftClassPtr<UARTOrder> OrderType, const AActor* OrderedActor, const FGameplayTagContainer& OrderTags, int32 Index,
                                       float AcquisitionRadius, float& OutScore);
 
@@ -264,7 +268,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * @param OutScore                  Score of the returned target if a target was found.
      * @return                          The target or 'nullptr' if no target was found.
      */
-    UFUNCTION(Category = "Order", BlueprintPure)
+    UFUNCTION(BlueprintCallable, Category = "Order")
     static AActor* FindTargetForOrderInChaseDistance(TSoftClassPtr<UARTOrder> OrderType, const AActor* OrderedActor,
                                                      const FGameplayTagContainer& OrderTags, int32 Index, float AcquisitionRadius, float ChaseDistance,
                                                      const FVector& OrderedActorHomeLocation, float& OutScore);
@@ -282,7 +286,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
                                                        const TArray<AActor*> OrderedActors,
                                                        const FARTOrderTargetData TargetData, const FGameplayTagContainer& OrderTags, int32 Index);
 
-    /**
+    /**          
      * Finds all actors inside the specified acquisition radius.
      * @param WorldContextObject        World context.
      * @param AcquisitionRadius         Max distance from the ordered actor to a potential target.
@@ -297,7 +301,7 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
      * @param WorldContextObject        World context.
      * @param AcquisitionRadius         Max distance from the ordered actor to a potential target.
      * @param ChaseDistance             Max distance from the 'OrderedActorHomeLocation' to a potential target.
-     * @param OrderedActorLocation      Current location of the ordered actor.
+     * @param OrderedActorLocation      Current location of the ordered actor.        
      * @param OrderedActorHomeLocation  Home location of the ordered actor'. Used in conjunction with 'ChaseDistance'
      * @param OutActorsInRange          All found actors in range.
      */
@@ -318,6 +322,6 @@ const FARTOrderTargetData& TargetData, const FGameplayTagContainer& OrderTags, i
                                                 const TArray<AActor*> Targets, const FGameplayTagContainer& OrderTags, int32 Index, float& OutScore);
 
 
-    UFUNCTION(BlueprintPure, Category=Order)
-    static FARTOrderTargetData FindOrderTargetDataFromAbility(const AActor* AbilityActor, const FGameplayTagContainer& AbilityTags);
+    UFUNCTION(BlueprintCallable, Category=Order)
+    static bool FindOrderTargetDataFromAbility(const AActor* AbilityActor, const FGameplayTagContainer& AbilityTags, FARTOrderTargetData& OrderTargetData);
 };

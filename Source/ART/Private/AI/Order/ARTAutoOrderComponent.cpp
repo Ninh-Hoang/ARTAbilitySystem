@@ -279,8 +279,6 @@ void UARTAutoOrderComponent::OnOwnerChanged(APlayerState* PreviousOwner, APlayer
 
 bool UARTAutoOrderComponent::IssueAutoOrder(const FARTOrderTypeWithIndex& Order)
 {
-    float AcquisitionRadius = GetAcquisitionRadius(Order);
-
     AActor* Owner = GetOwner();
     if (!UARTOrderHelper::CanObeyOrder(Order.OrderType, GetOwner(), Order.OrderTags, Order.Index))
     {
@@ -292,6 +290,8 @@ bool UARTAutoOrderComponent::IssueAutoOrder(const FARTOrderTypeWithIndex& Order)
     {
         return false;
     }
+
+    float AcquisitionRadius = GetAcquisitionRadius(Order);
 
     EARTTargetType TargetType = UARTOrderHelper::GetTargetType(Order.OrderType, Owner, Order.OrderTags, Order.Index);
     switch (TargetType)

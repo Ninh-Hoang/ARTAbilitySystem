@@ -97,6 +97,15 @@ protected:
 	class UARTAIConductor* AIConductor;
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UAIPerceptionComponent* PerceptionComp;
+
+	//Team ID, handled by Interface, different ID are hostile except +50 ID as Neutral
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|Character")
+	uint8 TeamNumber;
+	
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
 	void SetAIConductor(UARTAIConductor* InAIConductor);
 	void SetGroupKey(int32 InGroupIndex);
