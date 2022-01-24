@@ -1,7 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AI/Navigation/InfNodeGraph.h"
+#include "AI/Navigation/InfGraph.h"
+
+#include "chrono"
 
 #include "DrawDebugHelpers.h"
 #include "AI/Navigation/InfMapFunctionLibrary.h"
@@ -24,7 +26,7 @@ namespace FNavMeshRenderingHelpers
 }
 
 // Sets default values
-AInfNodeGraph::AInfNodeGraph()
+AInfGraph::AInfGraph()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
@@ -36,44 +38,45 @@ AInfNodeGraph::AInfNodeGraph()
 	bClearDrawDebug = false;
 }
 
-void AInfNodeGraph::OnConstruction(const FTransform& Transform)
+void AInfGraph::OnConstruction(const FTransform& Transform)
 {
 	UInfMapFunctionLibrary::DestroyAllButFirstSpawnActor(this, StaticClass());
 }
 
-void AInfNodeGraph::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void AInfGraph::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	FName PropertyName = (PropertyChangedEvent.Property != NULL)
 		                     ? PropertyChangedEvent.Property->GetFName()
 		                     : NAME_None;
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfNodeGraph, bGenerateNodeGraph))
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfGraph, bGenerateNodeGraph))
 	{
 		bGenerateNodeGraph = false;
 		GenerateGraph();
 	}
 
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfNodeGraph, bClearNodeGraph))
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfGraph, bClearNodeGraph))
 	{
 		bClearNodeGraph = false;
 		ClearGraph();
+		FlushPersistentDebugLines(GetWorld());
 	}
 
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfNodeGraph, bDrawNodeGraph))
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfGraph, bDrawNodeGraph))
 	{
 		bDrawNodeGraph = false;
 		FlushPersistentDebugLines(GetWorld());
 		DrawDebugNodeGraph(DrawDebugType == EDebugMenu::NODES_NEIGHBOR);
 	}
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfNodeGraph, bClearDrawDebug))
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfGraph, bClearDrawDebug))
 	{
 		bClearDrawDebug = false;
 		FlushPersistentDebugLines(GetWorld());
 	}
 }
 
-void AInfNodeGraph::GenerateGraph()
+void AInfGraph::GenerateGraph()
 {
 	NavMeshCache = UInfMapFunctionLibrary::GetInfNavMesh(this);
 	if (NavMeshCache == nullptr)
@@ -84,15 +87,23 @@ void AInfNodeGraph::GenerateGraph()
 		       ));
 		return;
 	}
+#if WITH_EDITOR
+	const auto StartTime = std::chrono::high_resolution_clock::now();
+#endif
+	
 	// generating empty infmap
 	SpawnAndConnectingNodes();
 	ConnectingNodeIslands();
+
+#if WITH_EDITOR
+	const float Duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - StartTime).count() / 1000.0f;
+	
+#endif
 }
 
-void AInfNodeGraph::SpawnAndConnectingNodes()
+void AInfGraph::SpawnAndConnectingNodes()
 {
 	int NewID = 0, SkipCount = 0;
-
 	const int NavMeshTileCount = NavMeshCache->GetNavMeshTilesCount();
 	for (int TileSetIdx = 0; TileSetIdx < NavMeshTileCount; TileSetIdx++)
 	{
@@ -117,7 +128,7 @@ void AInfNodeGraph::SpawnAndConnectingNodes()
 				continue;
 			}
 
-			TArray<FInfNode*> SpawnNodes;
+			TArray<FIntVector> SpawnNodes;
 
 			//spawn a node for each poly vert
 			SpawnNodes.Reserve(PolyVerts.Num());
@@ -129,10 +140,15 @@ void AInfNodeGraph::SpawnAndConnectingNodes()
 				FVector Middle = (PolyVerts[VertIdx] + PolyVerts[(VertIdx + 1) % PolyVerts.Num()]) * 0.5f;
 				FIntVector IntMiddle = FIntVector(Middle);
 
-
-				FInfNode* Node = (NodeGraph.Contains(IntMiddle)) ? NodeGraph[IntMiddle] : nullptr;
-				if (Node == nullptr)
+				FInfNode* Node;
+				if(NodeGraph.NodeMap.Contains(IntMiddle))
 				{
+					Node = &NodeGraph.NodeMap[IntMiddle];
+				}
+				else
+				{
+					FInfNode TempNode = FInfNode();
+					Node = &TempNode;
 					Node->SetID(NewID++);
 					Node->SetRegionTileID(TileSetIdx);
 					Node->SetGraphLocation(IntMiddle);
@@ -141,18 +157,17 @@ void AInfNodeGraph::SpawnAndConnectingNodes()
 					//maybe offset z abit so it is can be seen when debug
 					Node->SetNodeLocation(Middle/* + FVector(0.f, 0.f, 10.f)*/);
 
-					NodeGraph.Add(IntMiddle, Node);
+					NodeGraph.NodeMap.Add(IntMiddle, *Node);
 				}
-
-				//set neighbour for node from this tile
-				SpawnNodes.Add(Node);
-				for (FInfNode* Other : SpawnNodes)
+				SpawnNodes.Add(IntMiddle);
+			}
+			//set neighbour for node from this tile
+			for (const FIntVector NodeA : SpawnNodes)
+			{
+				for(const FIntVector NodeB : SpawnNodes)
+				if (NodeA != NodeB)
 				{
-					if (Node != Other)
-					{
-						Node->AddNeighbor(Other);
-						Other->AddNeighbor(Node);
-					}
+					GetNode(NodeA)->AddNeighbor(NodeB);
 				}
 			}
 		}
@@ -165,64 +180,68 @@ void AInfNodeGraph::SpawnAndConnectingNodes()
 	}
 }
 
-void AInfNodeGraph::ConnectingNodeIslands()
+void AInfGraph::ConnectingNodeIslands()
 {
 }
 
-void AInfNodeGraph::ClearGraph()
+void AInfGraph::ClearGraph()
 {
-	NodeGraph.Empty();
+	NodeGraph.Reset();
 }
 
-const TMap<FIntVector, FInfNode*>& AInfNodeGraph::GetNodeGraphData() const
+FInfMap* AInfGraph::GetNodeGraphData()
 {
-	return NodeGraph;
+	return &NodeGraph;
 }
 
-const FInfNode* AInfNodeGraph::GetNode(const FIntVector& Key) const
+FInfNode* AInfGraph::GetNode(const FIntVector& Key)
 {
-	return NodeGraph.Contains(Key) ? NodeGraph[Key] : nullptr;
+	return NodeGraph.NodeMap.Contains(Key) ? &NodeGraph.NodeMap[Key] : nullptr;
 }
 
-void AInfNodeGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
+const FVector AInfGraph::GetNodeLocation(const FIntVector& Key) const
+{
+	return NodeGraph.NodeMap.Contains(Key) ? NodeGraph.NodeMap[Key].GetNodeLocation() : FVector(0);
+}
+
+void AInfGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
 {
 	int Idx = 0;
-	FVector HeightOffset = FVector(0.f, 0.f, 10.f);
-	for (auto Pair : NodeGraph)
+	FVector HeightOffset = FVector(0.f, 0.f, 40.f);
+	for (auto Pair : NodeGraph.NodeMap)
 	{
-		const FInfNode* Node = Pair.Value;
-		DrawDebugSolidPlane(GetWorld(), FPlane(Node->GetNodeLocation() + HeightOffset, FVector::UpVector),
-		                    Node->GetNodeLocation() + HeightOffset, 20.f,
-		                    FNavMeshRenderingHelpers::GetClusterColor(Node->GetRegionTileID()), true);
+		const FInfNode Node = Pair.Value;
+
+		if(!InDebugRange(Node.GetNodeLocation())) continue;
+			
+		DrawDebugPoint(GetWorld(), Node.GetNodeLocation() + HeightOffset, 20.f, FNavMeshRenderingHelpers::GetClusterColor(Node.GetRegionTileID()), true);
 		if (bDrawConnectingNeighbor)
 		{
-			for (const FInfNode* Neighbor : Node->GetNeighbor())
+			for (const FIntVector Neighbor : Node.GetNeighbor())
 			{
-				if (Neighbor == nullptr)
+				if (!NodeGraph.NodeMap.Contains(Neighbor))
 					continue;
-				FVector LineEnd = Node->GetNodeLocation() + (Neighbor->GetNodeLocation() - Node->GetNodeLocation()) *
+				FVector LineEnd = Node.GetNodeLocation() + (GetNodeLocation(Neighbor) - Node.GetNodeLocation()) *
 					0.4f;
-				DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation(), LineEnd, 50.f, FColor::Green, true, -1.f,
-				                          0, 1.5f);
-			}
-			for (const FInfNode* Neighbor : Node->GetNeighbor())
-			{
-				if (Neighbor == nullptr)
-					continue;
-				FVector LineEnd = Node->GetNodeLocation() + (Neighbor->GetNodeLocation() - Node->GetNodeLocation()) *
-					0.4f;
-				DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation(), LineEnd, 50.f, FColor::Green, true, -1.f,
+				DrawDebugDirectionalArrow(GetWorld(), Node.GetNodeLocation()+ HeightOffset, LineEnd+ HeightOffset, 50.f, FColor::Green, true, -1.f,
 				                          0, 1.5f);
 			}
 		}
 	}
 }
 
-FInfNode* AInfNodeGraph::FindNearestNode(const FVector& FeetLocation) const
+bool AInfGraph::InDebugRange(FVector Location) const
+{
+	if (!GetWorld()) return true;
+	if (GetWorld()->ViewLocationsRenderedLastFrame.Num() == 0) return true;
+	return FVector::Dist(GetWorld()->ViewLocationsRenderedLastFrame[0], Location) < 10000;
+}
+
+FInfNode* AInfGraph::FindNearestNode(const FVector& FeetLocation)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_AInfNodeGraph_FindNearestNode);
 
-	check(NodeGraph.Num() > 0)
+	check(NodeGraph.NodeMap.Num() > 0)
 
 	// Step 1:FeetLocation‚ª‘®‚·‚éƒiƒrƒƒbƒVƒ…ƒ^ƒCƒ‹‚ðŒŸõ‚·‚é.
 	int TargetTileIdx = FindNavmeshTilesContainsLocation(FeetLocation);
@@ -234,10 +253,11 @@ FInfNode* AInfNodeGraph::FindNearestNode(const FVector& FeetLocation) const
 	if (NearestNodeKey == FIntVector::NoneValue)
 		return nullptr;
 
-	return NodeGraph[NearestNodeKey];
+	FInfNode Node = NodeGraph.NodeMap[NearestNodeKey];
+	return &Node;
 }
 
-int AInfNodeGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) const
+int AInfGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) const
 {
 	const int ActiveNavMeshTileCount = NavMeshCache->GetNavMeshTilesCount();
 	for (int TileSetIdx = 0; TileSetIdx < ActiveNavMeshTileCount; TileSetIdx++)
@@ -261,7 +281,7 @@ int AInfNodeGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation)
 	return INDEX_NONE;
 }
 
-FIntVector AInfNodeGraph::FindNearestNodeKey(int TargetTileIdx, const FVector& FeetLocation) const
+FIntVector AInfGraph::FindNearestNodeKey(int TargetTileIdx, const FVector& FeetLocation) const
 {
 	// ƒiƒrƒƒbƒVƒ…ƒ^ƒCƒ‹‚ÉŠÜ‚Ü‚ê‚éƒ|ƒŠƒSƒ“ƒf[ƒ^‚ðŽæ“¾.
 	TArray<FNavPoly> Polys;

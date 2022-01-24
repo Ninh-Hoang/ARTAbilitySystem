@@ -9,7 +9,7 @@ AInfNavMesh::AInfNavMesh(const FObjectInitializer& ObjectInitializer)
 	FindPathImplementation = FindPath;
 }
 
-FPathFindingResult AInfNavMesh::FindPath(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
+FPathFindingResult AInfNavMesh::	FindPath(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
 {
 	//declare our own performance log
 	SCOPE_CYCLE_COUNTER(STAT_Navigation_CustomPathfinding);

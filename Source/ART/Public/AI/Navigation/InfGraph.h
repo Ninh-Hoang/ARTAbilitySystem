@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InfNode.h"
 #include "GameFramework/Actor.h"
-#include "InfNodeGraphInterface.h"
-#include "InfNodeGraph.generated.h"
+#include "InfGraphInterface.h"
+#include "InfStruct.h"
+#include "InfGraph.generated.h"
 
 UENUM()
 enum class EDebugMenu : uint8
@@ -16,18 +16,18 @@ enum class EDebugMenu : uint8
 };
 
 UCLASS()
-class ART_API AInfNodeGraph : public AActor, public IInfNodeGraphInterface
+class ART_API AInfGraph : public AActor, public IInfGraphInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AInfNodeGraph();
+	AInfGraph();
 
-	// ƒm[ƒhƒOƒ‰ƒt‚Ì¶¬.
+
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Generator")
 	bool bGenerateNodeGraph;
-	// ƒm[ƒhƒOƒ‰ƒt‚ÌÁ‹Ž
+
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Generator")
 	bool bClearNodeGraph;
 
@@ -39,7 +39,7 @@ public:
 	bool bClearDrawDebug;
 
 private:
-	TMap<FIntVector, FInfNode*> NodeGraph;
+	FInfMap NodeGraph;
 	UPROPERTY()
 	const class AInfNavMesh* NavMeshCache;
 
@@ -58,15 +58,17 @@ private:
 
 	//inf node graph interface
 public:
-	virtual FInfNode* FindNearestNode(const FVector& FeetLocation) const override;
-	virtual const TMap<FIntVector, FInfNode*>& GetNodeGraphData()const override;
-	virtual const FInfNode* GetNode(const FIntVector& Key) const override;
+	virtual FInfNode* FindNearestNode(const FVector& FeetLocation) override;
+	virtual FInfMap* GetNodeGraphData() override;
+	virtual FInfNode* GetNode(const FIntVector& Key) override;
+	const FVector GetNodeLocation(const FIntVector& Key) const;
 
 private:
 	int FindNavmeshTilesContainsLocation(const FVector& FeetLocation) const;
 	FIntVector FindNearestNodeKey(int TargetTileIdx, const FVector& FeetLocation) const;
 
 private:
-
+	
 	void DrawDebugNodeGraph(bool bDrawConnectingNeighbor = false) const;
+	bool InDebugRange(FVector Location) const;
 };

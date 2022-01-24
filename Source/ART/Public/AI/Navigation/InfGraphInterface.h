@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InfNode.h"
+#include "InfStruct.h"
 #include "UObject/Interface.h"
-#include "InfNodeGraphInterface.generated.h"
+#include "InfGraphInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UInfNodeGraphInterface : public UInterface
+class UInfGraphInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -17,13 +17,13 @@ class UInfNodeGraphInterface : public UInterface
 /**
  * 
  */
-class ART_API IInfNodeGraphInterface
+class ART_API IInfGraphInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual FInfNode* FindNearestNode(const FVector& FeetLocation) const = 0;
-	virtual const TMap<FIntVector, FInfNode*>& GetNodeGraphData()const = 0;
-	virtual const FInfNode* GetNode(const FIntVector& Key) const = 0;
+	virtual FInfNode* FindNearestNode(const FVector& FeetLocation);
+	virtual FInfMap* GetNodeGraphData();
+	virtual FInfNode* GetNode(const FIntVector& Key);
 };
