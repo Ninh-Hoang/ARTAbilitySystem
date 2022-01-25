@@ -48,7 +48,7 @@ AARTCharacterBase::AARTCharacterBase(const class FObjectInitializer& ObjectIniti
 	DeadTag = FGameplayTag::RequestGameplayTag("State.Dead");
 	EffectRemoveOnDeathTag = FGameplayTag::RequestGameplayTag("Effect.RemoveOnDeath");
 
-	SetGenericTeamId(FGenericTeamId(TeamNumber));
+	SetGenericTeamId(FGenericTeamId(TeamID));
 
 	//setup floating status bar
 	UIFloatingStatusBarComponent = CreateDefaultSubobject<UWidgetComponent>(FName("UIFloatingStatusBarComponent"));
@@ -58,9 +58,15 @@ AARTCharacterBase::AARTCharacterBase(const class FObjectInitializer& ObjectIniti
 	UIFloatingStatusBarComponent->SetDrawSize(FVector2D(500, 500));
 }
 
+void AARTCharacterBase::SetGenericTeamId(const FGenericTeamId& NewTeamID)
+{
+	OnCharacterTeamChanged.Broadcast(TeamID, NewTeamID);
+	TeamID = NewTeamID;
+}
+
 FGenericTeamId AARTCharacterBase::GetGenericTeamId() const
 {
-	return FGenericTeamId(TeamNumber);
+	return FGenericTeamId(TeamID);
 }
 
 ETeamAttitude::Type AARTCharacterBase::GetTeamAttitudeTowards(const AActor& Other) const
@@ -70,7 +76,7 @@ ETeamAttitude::Type AARTCharacterBase::GetTeamAttitudeTowards(const AActor& Othe
 	{
 		//Create an alliance with Team with ID 10 and set all the other teams as Hostiles:
 		FGenericTeamId OtherTeamID = Interface->GetGenericTeamId();
-		if (OtherTeamID == FGenericTeamId(TeamNumber))
+		if (OtherTeamID == TeamID)
 		{
 			Attitude = ETeamAttitude::Friendly;
 		}

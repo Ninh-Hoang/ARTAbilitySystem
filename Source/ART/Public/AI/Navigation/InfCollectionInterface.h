@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InfStruct.h"
+#include "GameplayTagContainer.h"
 #include "UObject/Interface.h"
-#include "InfGraphInterface.generated.h"
+#include "InfCollectionInterface.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(MinimalAPI)
-class UInfGraphInterface : public UInterface
+UINTERFACE()
+class UInfCollectionInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -17,13 +17,12 @@ class UInfGraphInterface : public UInterface
 /**
  * 
  */
-class ART_API IInfGraphInterface
+class ART_API IInfCollectionInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual FInfNode* FindNearestNode(const FVector& FeetLocation) const = 0;
-	virtual const FInfMap* GetNodeGraphData() const = 0;
-	virtual const FInfNode* GetNode(const FIntVector& Key) const = 0;
+	virtual class IInfMapInterface* GetMapSafe(const FGameplayTag& MapTag) const = 0;
+	virtual const class IInfGraphInterface* GetNodeGraph() const = 0;
 };

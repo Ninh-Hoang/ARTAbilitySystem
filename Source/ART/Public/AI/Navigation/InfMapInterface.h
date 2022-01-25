@@ -22,8 +22,8 @@ class ART_API IInfMapInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void Initialize(class IInfluenceMapCollectionInterface* MapCollectionInterface) = 0;
-	virtual void AddPropagator(class IInfluencePropagatorInterface* NewPropagator) = 0;
-	virtual const TArray<class IInfluencePropagatorInterface*>& GetPropagators() const = 0;
-	virtual TMap<FIntVector, float> GatherTeamMap(const TArray<int32>& Teams, const class IInfluencePropagatorInterface* Self, bool bIgnoreSelf = false, float GatherDistance = 0.f) const = 0;
+	virtual void Initialize(class IInfCollectionInterface* MapCollectionInterface) = 0;
+	virtual void AddPropagator(class IInfPropagatorInterface* NewPropagator) = 0;
+	virtual const TArray<class IInfPropagatorInterface*>& GetPropagators() const = 0;
+	virtual TMap<FIntVector, float> GatherTeamMap(const TArray<int32>& Teams, const class IInfPropagatorInterface* Self, bool bIgnoreSelf = false, float GatherDistance = 0.f) const = 0;
 };

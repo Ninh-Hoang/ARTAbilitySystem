@@ -7,7 +7,6 @@
 #include "AI/Order/ARTOrderData.h"
 #include "AI/Order/ARTOrder.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
-
 #include "ARTAIController.generated.h"
 
 /**
@@ -48,7 +47,6 @@ protected:
 	virtual void BeginPlay() override;
 	
 	virtual void OnPossess(APawn* InPawn) override;
-	
 private:
 	class UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
@@ -100,13 +98,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UAIPerceptionComponent* PerceptionComp;
 
-	//Team ID, handled by Interface, different ID are hostile except +50 ID as Neutral
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|Character")
-	uint8 TeamNumber;
-	
+	//team stuffs
 	virtual FGenericTeamId GetGenericTeamId() const override;
-	ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
-	
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+
+public:
 	void SetAIConductor(UARTAIConductor* InAIConductor);
 	void SetGroupKey(int32 InGroupIndex);
 	int32 GetGroupKey();

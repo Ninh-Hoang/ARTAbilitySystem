@@ -8,12 +8,8 @@
 #include "ART/ART.h"
 #include "GameplayEffectTypes.h"
 #include <GenericTeamAgentInterface.h>
-
 #include "ARTAttributeSetBase.h"
-
 #include "ARTCharacterBase.generated.h"
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, AARTCharacterBase*, Character);
 
 class AWeapon;
 
@@ -37,6 +33,9 @@ struct ART_API FARTDamageNumber
 	}
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, AARTCharacterBase*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterTeamChanged, FGenericTeamId, NewTeamID, FGenericTeamId, OldteamID);
+
 UCLASS()
 class ART_API AARTCharacterBase : public ACharacter, public IAbilitySystemInterface,
                                   public IGenericTeamAgentInterface
@@ -59,8 +58,13 @@ public:
 
 	//Team ID, handled by Interface, different ID are hostile except +50 ID as Neutral
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|Character")
-	uint8 TeamNumber;
+	FGenericTeamId TeamID;
 
+	UPROPERTY(BlueprintAssignable, Category = "ART | Team")
+	FOnCharacterTeamChanged OnCharacterTeamChanged;
+
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
+	
 	FGenericTeamId GetGenericTeamId() const override;
 
 	ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
@@ -86,7 +90,6 @@ public:
 	virtual void FinishDying();
 
 	virtual void AddDamageNumber(float Damage, FGameplayTagContainer DamageNumberTags);
-
 protected:
 	FGameplayTag DeadTag;
 	FGameplayTag EffectRemoveOnDeathTag;

@@ -30,30 +30,20 @@ AARTAIController::AARTAIController(const FObjectInitializer& ObjectInitializer)
 
 FGenericTeamId AARTAIController::GetGenericTeamId() const
 {
-    return Super::GetGenericTeamId();
+    if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(GetPawn()))
+    {
+        return TeamInterface->GetGenericTeamId();
+    }
+    return FGenericTeamId();
 }
 
 ETeamAttitude::Type AARTAIController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-    ETeamAttitude::Type Attitude = ETeamAttitude::Neutral;
-    if (const IGenericTeamAgentInterface* OtherPawn = Cast<IGenericTeamAgentInterface>(&Other))
+    if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(GetPawn()))
     {
-        //Create an alliance with Team with ID 10 and set all the other teams as Hostiles:
-        FGenericTeamId OtherTeamID = OtherPawn->GetGenericTeamId();
-        if (OtherTeamID == FGenericTeamId(TeamNumber))
-        {
-            Attitude = ETeamAttitude::Friendly;
-        }
-        else if (OtherTeamID.GetId() > 50)
-        {
-            Attitude = ETeamAttitude::Neutral;
-        }
-        else
-        {
-            Attitude = ETeamAttitude::Hostile;
-        }
+        return TeamInterface->GetTeamAttitudeTowards(Other);
     }
-    return Attitude;
+    return ETeamAttitude::Neutral;
 }
 
 void AARTAIController::BeginPlay()
@@ -65,10 +55,6 @@ void AARTAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
     //handling team by reading from pawn
-    if(IGenericTeamAgentInterface* Interface = Cast<IGenericTeamAgentInterface>(InPawn))
-    {
-        TeamNumber = Interface->GetGenericTeamId().GetId();
-    }
     
     // Make AI use assigned blackboard.
     UBlackboardComponent* BlackboardComponent;
@@ -93,6 +79,7 @@ void AARTAIController::OnPossess(APawn* InPawn)
     //try to get AIConductor straight from possessed
     AIConductor = AARTGameState::GetAIConductor(GetWorld());
 }
+
 
 UAbilitySystemComponent* AARTAIController::GetAbilitySystemComponent() const
 {

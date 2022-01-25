@@ -24,7 +24,6 @@ public:
 	// Sets default values for this actor's properties
 	AInfGraph();
 
-
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Generator")
 	bool bGenerateNodeGraph;
 
@@ -58,9 +57,9 @@ private:
 
 	//inf node graph interface
 public:
-	virtual FInfNode* FindNearestNode(const FVector& FeetLocation) override;
-	virtual FInfMap* GetNodeGraphData() override;
-	virtual FInfNode* GetNode(const FIntVector& Key) override;
+	virtual FInfNode* FindNearestNode(const FVector& FeetLocation) const override;
+	virtual const FInfMap* GetNodeGraphData() const override;
+	virtual const FInfNode* GetNode(const FIntVector& Key) const override;
 	const FVector GetNodeLocation(const FIntVector& Key) const;
 
 private:

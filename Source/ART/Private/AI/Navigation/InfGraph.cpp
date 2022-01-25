@@ -97,7 +97,10 @@ void AInfGraph::GenerateGraph()
 
 #if WITH_EDITOR
 	const float Duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - StartTime).count() / 1000.0f;
+	int32 NumBytes = NodeGraph.GetSize();
 	
+	UE_LOG(LogTemp, Display, TEXT("Generation Time : %f seconds"), Duration);
+	UE_LOG(LogTemp, Display, TEXT("Total Graph btyes : %i"), NumBytes);
 #endif
 }
 
@@ -167,7 +170,7 @@ void AInfGraph::SpawnAndConnectingNodes()
 				for(const FIntVector NodeB : SpawnNodes)
 				if (NodeA != NodeB)
 				{
-					GetNode(NodeA)->AddNeighbor(NodeB);
+					NodeGraph.NodeMap[NodeA].AddNeighbor(NodeB);
 				}
 			}
 		}
@@ -189,12 +192,12 @@ void AInfGraph::ClearGraph()
 	NodeGraph.Reset();
 }
 
-FInfMap* AInfGraph::GetNodeGraphData()
+const FInfMap* AInfGraph::GetNodeGraphData() const
 {
 	return &NodeGraph;
 }
 
-FInfNode* AInfGraph::GetNode(const FIntVector& Key)
+const FInfNode* AInfGraph::GetNode(const FIntVector& Key) const
 {
 	return NodeGraph.NodeMap.Contains(Key) ? &NodeGraph.NodeMap[Key] : nullptr;
 }
@@ -214,7 +217,11 @@ void AInfGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
 
 		if(!InDebugRange(Node.GetNodeLocation())) continue;
 			
-		DrawDebugPoint(GetWorld(), Node.GetNodeLocation() + HeightOffset, 20.f, FNavMeshRenderingHelpers::GetClusterColor(Node.GetRegionTileID()), true);
+		DrawDebugPoint(GetWorld(), Node.GetNodeLocation() + HeightOffset, 20.f, FNavMeshRenderingHelpers::GetClusterColor(Node.GetRegionTileID()), true, -1.f);
+		
+		FIntVector GraphLocation = Node.GetGraphLocation();
+		DrawDebugString(GetWorld(), Node.GetNodeLocation() + HeightOffset + FVector(0.f,0.f, 20.f), *GraphLocation.ToString(), nullptr, FColor::Blue, -1.f);
+
 		if (bDrawConnectingNeighbor)
 		{
 			for (const FIntVector Neighbor : Node.GetNeighbor())
@@ -237,7 +244,7 @@ bool AInfGraph::InDebugRange(FVector Location) const
 	return FVector::Dist(GetWorld()->ViewLocationsRenderedLastFrame[0], Location) < 10000;
 }
 
-FInfNode* AInfGraph::FindNearestNode(const FVector& FeetLocation)
+FInfNode* AInfGraph::FindNearestNode(const FVector& FeetLocation) const
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_AInfNodeGraph_FindNearestNode);
 
