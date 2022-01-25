@@ -218,28 +218,28 @@ void AInfGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
 	FVector HeightOffset = FVector(0.f, 0.f, 40.f);
 	for (auto Pair : NodeGraph.NodeMap)
 	{
-		const FInfNode Node = Pair.Value;
+		const FInfNode* Node = &Pair.Value;
 
-		if(!InDebugRange(Node.GetNodeLocation())) continue;
+		if(!InDebugRange(Node->GetNodeLocation())) continue;
 			
-		DrawDebugPoint(GetWorld(), Node.GetNodeLocation() + HeightOffset, 20.f, FNavMeshRenderingHelpers::GetClusterColor(Node.GetRegionTileID()), true, -1.f);
+		DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + HeightOffset, 20.f, FNavMeshRenderingHelpers::GetClusterColor(Node->GetRegionTileID()), true, -1.f);
 
 		if (bDrawConnectingNeighbor)
 		{
-			for (const FIntVector Neighbor : Node.GetNeighbor())
+			for (const FIntVector Neighbor : Node->GetNeighbor())
 			{
 				if (!NodeGraph.NodeMap.Contains(Neighbor))
 					continue;
-				FVector LineEnd = Node.GetNodeLocation() + (GetNodeLocation(Neighbor) - Node.GetNodeLocation()) *
+				FVector LineEnd = Node->GetNodeLocation() + (GetNodeLocation(Neighbor) - Node->GetNodeLocation()) *
 					0.4f;
-				DrawDebugDirectionalArrow(GetWorld(), Node.GetNodeLocation()+ HeightOffset, LineEnd+ HeightOffset, 50.f, FColor::Green, true, -1.f,
+				DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation()+ HeightOffset, LineEnd+ HeightOffset, 50.f, FColor::Green, true, -1.f,
 				                          0, 1.5f);
 			}
 		}
 	}
 }
 
-bool AInfGraph::InDebugRange(FVector Location) const
+bool AInfGraph::InDebugRange(const FVector& Location) const
 {
 	if (!GetWorld()) return true;
 	if (GetWorld()->ViewLocationsRenderedLastFrame.Num() == 0) return true;
@@ -252,16 +252,43 @@ FInfNode* AInfGraph::FindNearestNode(const FVector& FeetLocation) const
 
 	check(NodeGraph.NodeMap.Num() > 0)
 	
-	int TargetTileIdx = FindNavmeshTilesContainsLocation(FeetLocation);
+	/*int TargetTileIdx = FindNavmeshTilesContainsLocation(FeetLocation);
 	if (TargetTileIdx == INDEX_NONE)
 		return nullptr;
 	
-	FIntVector NearestNodeKey = FindNearestNodeKey(TargetTileIdx, FeetLocation);
+	const FIntVector NearestNodeKey = FindNearestNodeKey(TargetTileIdx, FeetLocation);
 	if (NearestNodeKey == FIntVector::NoneValue)
 		return nullptr;
 
 	FInfNode Node = NodeGraph.NodeMap[NearestNodeKey];
-	return &Node;
+	return &Node;*/
+	
+	NavNodeRef NavNode = NavMeshCache->FindNearestPoly(FeetLocation,
+		FVector(0,0, NavMeshCache->AgentHeight),
+		NavMeshCache->GetDefaultQueryFilter());
+	
+	TArray<FVector> PolyVerts;
+	NavMeshCache->GetPolyVerts(NavNode, PolyVerts);
+	
+	if(PolyVerts.Num() < 1) return nullptr;
+
+	float MinDistSq = FLT_MAX;
+	FIntVector NearestNodeKey(0);
+	
+	for (int VertIdx = 0; VertIdx < PolyVerts.Num(); VertIdx++)
+	{
+		FVector Middle = (PolyVerts[VertIdx] + PolyVerts[(VertIdx + 1) % PolyVerts.Num()]) * 0.5f;
+
+		float DistSq = FVector::DistSquared(FeetLocation, Middle);
+		if (MinDistSq > DistSq)
+		{
+			MinDistSq = DistSq;
+
+			NearestNodeKey = FIntVector(Middle);
+		}
+	}
+	const FInfNode* Node = &NodeGraph.NodeMap[NearestNodeKey];
+	return const_cast<FInfNode*>(Node);
 }
 
 int AInfGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) const
@@ -273,11 +300,11 @@ int AInfGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) con
 		if (!TileBounds.IsValid)
 			continue;
 		
-		FVector QueryExtent(0.f, 0.f, NavMeshCache->AgentHeight * 0.5f);
-		FBox QueryBounds(FeetLocation, FeetLocation - QueryExtent);
+		FVector QueryExtent(2.f, 2.f, NavMeshCache->AgentHeight * 100.f);
+		FBox QueryBounds(FeetLocation - QueryExtent, FeetLocation + QueryExtent);
 
 		//TODO: Fix this bound bounding thing
-		if (!TileBounds.IsInsideXY(FeetLocation))
+		if (!TileBounds.Intersect(QueryBounds))
 			continue;
 
 		return TileSetIdx;
@@ -289,11 +316,12 @@ int AInfGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) con
 
 FIntVector AInfGraph::FindNearestNodeKey(int TargetTileIdx, const FVector& FeetLocation) const
 {
+	FIntVector NearestNodeKey(0);
+	
 	TArray<FNavPoly> Polys;
 	if (!NavMeshCache->GetPolysInTile(TargetTileIdx, Polys))
-		return FIntVector::NoneValue;
+		return NearestNodeKey;
 	
-	FIntVector NearestNodeKey(0);
 	float MinDistSq = FLT_MAX;
 	for (const FNavPoly& Poly : Polys)
 	{

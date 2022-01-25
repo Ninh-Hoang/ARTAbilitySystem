@@ -271,7 +271,7 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_UInfPropagator_CreateNewMap);
 
-	// get map and zie
+	// get map and size
 	const auto& InfluenceGraph = InfluenceMapCollectionRef->GetNodeGraph()->GetNodeGraphData();
 	const TMap<FIntVector, FInfNode>* InfluenceMap = &InfluenceGraph->NodeMap;
 	const int INFLUENCEMAP_SIZE = InfluenceMap->Num();
@@ -315,7 +315,8 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 		Visited.Emplace(CurrentNode.Key, true);
 
 		//for each neighbour of current node, check if they are in range
-		const TArray<FIntVector>* Neighbors = InfluenceMap->Find(CurrentNode.Key)->GetNeighbor();
+		const TArray<FIntVector> Neighbors = InfluenceMap->Find(CurrentNode.Key)->GetNeighbor();
+		
 		for (const FIntVector Neighbor : Neighbors)
 		{
 			const FInfNode* NeighborNode = InfluenceMap->Find(Neighbor);

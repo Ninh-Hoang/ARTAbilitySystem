@@ -23,23 +23,23 @@ private:
 
 public:
 	void SetID(int NewID) { ID = NewID; }
-	void SetGraphLocation(FIntVector NewGraphLocation) {GraphLocation = NewGraphLocation; }
-	void AddNeighbor(FIntVector NeighborNode) { Neighbor.Add(NeighborNode); }
+	void SetGraphLocation(const FIntVector& NewGraphLocation) {GraphLocation = NewGraphLocation; }
+	void AddNeighbor(const FIntVector& NeighborNode) { Neighbor.Add(NeighborNode); }
 	void SetRegionTileID(uint_fast32_t NewRegionTileID) {RegionTileID = NewRegionTileID; };
-	void SetNodeLocation(FVector InLocation) {NodeLocation = InLocation; }; 
-	void SetSpawnSegment(FVector Begin, FVector End)
+	void SetNodeLocation(const FVector& InLocation) {NodeLocation = InLocation; }; 
+	void SetSpawnSegment(const FVector& Begin, const FVector& End)
 	{
 		SpawnSegmentBegin = Begin;
 		SpawnSegmentEnd = End;
 	}
 
-	uint_fast32_t GetID() const { return ID; }
-	const FIntVector GetGraphLocation() const { return GraphLocation; }
-	const TArray<FIntVector> GetNeighbor() const { return Neighbor; }
+	const uint_fast32_t GetID() const { return ID; }
+	const FIntVector& GetGraphLocation() const { return GraphLocation; }
+	const TArray<FIntVector>& GetNeighbor() const { return Neighbor; }
 	const uint_fast32_t GetRegionTileID() const { return RegionTileID; }
-	const FVector GetNodeLocation() const {return NodeLocation; }
-	const FVector GetSpawnSegmentBegin() const { return SpawnSegmentBegin; }
-	const FVector GetSpawnSegmentEnd() const { return SpawnSegmentEnd; }
+	const FVector& GetNodeLocation() const {return NodeLocation; }
+	const FVector& GetSpawnSegmentBegin() const { return SpawnSegmentBegin; }
+	const FVector& GetSpawnSegmentEnd() const { return SpawnSegmentEnd; }
 	
 	bool operator==(const FInfNode* Other) const { return ID == Other->ID; }
 	bool operator==(const FInfNode& Other) const { return ID == Other.ID; }

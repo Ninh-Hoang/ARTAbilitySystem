@@ -74,5 +74,5 @@ private:
 private:
 	
 	void DrawDebugNodeGraph(bool bDrawConnectingNeighbor = false) const;
-	bool InDebugRange(FVector Location) const;
+	bool InDebugRange(const FVector& Location) const;
 };
