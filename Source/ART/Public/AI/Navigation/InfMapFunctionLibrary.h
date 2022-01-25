@@ -17,4 +17,5 @@ class ART_API UInfMapFunctionLibrary : public UBlueprintFunctionLibrary
 public:
 	static const class AInfNavMesh* GetInfNavMesh(const UObject* WorldContext);
 	static void DestroyAllButFirstSpawnActor(const UObject* WorldContextObject, TSubclassOf<AActor> ActorClass);
+	static FColor ConvertInfluenceValueToColor(float Value);
 };

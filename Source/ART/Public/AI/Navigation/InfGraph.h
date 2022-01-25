@@ -28,6 +28,9 @@ public:
 	bool bGenerateNodeGraph;
 
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Generator")
+	bool RuntimeGeneration;
+
+	UPROPERTY(EditAnywhere, Category = "NodeGraph | Generator")
 	bool bClearNodeGraph;
 
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Debug")
@@ -37,6 +40,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Debug")
 	bool bClearDrawDebug;
 
+
 private:
 	FInfMap NodeGraph;
 	UPROPERTY()
@@ -44,6 +48,7 @@ private:
 
 public:
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void BeginPlay() override;
 	
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;

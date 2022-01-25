@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "GenericTeamAgentInterface.h"
 #include "UObject/Interface.h"
 #include "InfPropagatorInterface.generated.h"
 
@@ -27,6 +28,6 @@ public:
 	virtual void UpdatePropagationMap() = 0;
 	virtual const TMap<FIntVector, float>& GetPropagationMap() const = 0;
 	virtual FGameplayTag GetTargetMapTag() const = 0;
-	virtual int32 GetTeam() const = 0;
+	virtual FGenericTeamId GetTeam() const = 0;
 	virtual const AActor* GetOwnerActor() const = 0;
 };

@@ -4,12 +4,12 @@
 
 DECLARE_CYCLE_STAT(TEXT("Custom Pathfinding"), STAT_Navigation_CustomPathfinding, STATGROUP_Navigation)
 
-AInfNavMesh::AInfNavMesh(const FObjectInitializer& ObjectInitializer)
+AInfNavMesh::AInfNavMesh(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	FindPathImplementation = FindPath;
+	//FindPathImplementation = FindPath;
 }
 
-FPathFindingResult AInfNavMesh::	FindPath(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
+/*FPathFindingResult AInfNavMesh::	FindPath(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
 {
 	//declare our own performance log
 	SCOPE_CYCLE_COUNTER(STAT_Navigation_CustomPathfinding);
@@ -65,5 +65,5 @@ FPathFindingResult AInfNavMesh::	FindPath(const FNavAgentProperties& AgentProper
 	}
  
 	return Result;
-}
+}*/
 	

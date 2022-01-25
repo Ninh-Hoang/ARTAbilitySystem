@@ -29,8 +29,8 @@ struct FPropagationMap
 	{}
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class ART_API UInfPropagator : public UActorComponent//, public IInfPropagatorInterface, public IGenericTeamAgentInterface
+UCLASS(meta=(BlueprintSpawnableComponent))
+class ART_API UInfPropagator : public UActorComponent, public IInfPropagatorInterface//, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -38,7 +38,7 @@ public:
 	// Sets default values for this component's properties
 	UInfPropagator();
 
-	/*UPROPERTY(EditAnywhere, Category = "Influence Map | Base")
+	UPROPERTY(EditAnywhere, Category = "Influence Map | Base")
 	FGameplayTag TargetMapTag;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Influence Map | Base", meta = (ClampMin = 1.00))
 	bool bTickEnabled;
@@ -75,6 +75,10 @@ protected:
 
 	FVector OwnerHeadOffset, OwnerFeetOffset;
 	
+protected:
+    // Called when the game starts
+    virtual void BeginPlay() override;
+	
 public:
 	virtual void Initialize(class IInfCollectionInterface* InfluenceMapCollection) override;
 	virtual void UpdatePropagationMap() override;
@@ -92,15 +96,17 @@ public:
 	virtual FGameplayTag GetTargetMapTag() const override { return TargetMapTag; }
 	
 	// Assigns Team Agent to given TeamID 
-	virtual void SetGenericTeamId(const FGenericTeamId& TeamID);
+	/*virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override;
 	
 	// Retrieve team identifier in form of FGenericTeamId 
-	virtual FGenericTeamId GetGenericTeamId() const;
+	virtual FGenericTeamId GetGenericTeamId() const override;
 
 	// Retrieved owner attitude toward given Other object
-	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;*/
 
 	virtual const AActor* GetOwnerActor() const override { return GetOwner(); }
+
+	virtual FGenericTeamId GetTeam() const override;
 
 protected:
 	TMap<FIntVector, float> CreateNewMap(const FInfNode* CenterNode, float MaxRange, PropagationValueCalculator PropagationValueFunc, ExcludeFromPropagationValueCalc ExcludeFunc) const;
@@ -118,18 +124,16 @@ public:
 	// GatherDistance
 	// Infinite Range : <= 0
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Influence Map")
-	TMap<FIntVector, float> GetEnemyMap(const FString& MapName, float GatherDistance) const;
+	TMap<FIntVector, float> GetEnemyMap(const FGameplayTag MapTag, float GatherDistance) const;
 	
 	// GatherDistance
 	// Infinite Range : <= 0
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Influence Map")
-	TMap<FIntVector, float> GetAllyMap(const FString& MapName, bool bIgnoreSelf = true, float GatherDistance = 0.f) const;
+	TMap<FIntVector, float> GetAllyMap(const FGameplayTag MapTag, bool bIgnoreSelf = true, float GatherDistance = 0.f) const;
 	UFUNCTION(BlueprintCallable, Category = "Influence Map | DEBUG")
-	void DrawDebugPropagationMap(const FString& MapName, float Duration) const;
+	void DrawDebugPropagationMap(const FGameplayTag MapTag, float Duration) const;
 	UFUNCTION(BlueprintCallable, Category = "Influence Map | DEBUG")
-	void DrawDebugWorkingMap(const TMap<FIntVector, float>& MapName, float Duration);
+	void DrawDebugWorkingMap(const TMap<FIntVector, float>& Map, float Duration);
 	
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;*/
+
 };

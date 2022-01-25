@@ -2,12 +2,11 @@
 
 
 #include "AI/Navigation/InfGraph.h"
-
 #include "chrono"
-
 #include "DrawDebugHelpers.h"
 #include "AI/Navigation/InfMapFunctionLibrary.h"
 #include "AI/Navigation/InfNavMesh.h"
+#include "Math/Box.h"
 
 namespace FNavMeshRenderingHelpers
 {
@@ -32,6 +31,7 @@ AInfGraph::AInfGraph()
 	PrimaryActorTick.bCanEverTick = false;
 
 	bGenerateNodeGraph = false;
+	RuntimeGeneration = true;
 	bClearNodeGraph = false;
 	DrawDebugType = EDebugMenu::NODES_NEIGHBOR;
 	bDrawNodeGraph = false;
@@ -41,6 +41,16 @@ AInfGraph::AInfGraph()
 void AInfGraph::OnConstruction(const FTransform& Transform)
 {
 	UInfMapFunctionLibrary::DestroyAllButFirstSpawnActor(this, StaticClass());
+}
+
+void AInfGraph::BeginPlay()
+{
+	Super::BeginPlay();
+	if(RuntimeGeneration)
+	{
+		ClearGraph();
+		GenerateGraph();
+	}
 }
 
 void AInfGraph::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -144,11 +154,7 @@ void AInfGraph::SpawnAndConnectingNodes()
 				FIntVector IntMiddle = FIntVector(Middle);
 
 				FInfNode* Node;
-				if(NodeGraph.NodeMap.Contains(IntMiddle))
-				{
-					Node = &NodeGraph.NodeMap[IntMiddle];
-				}
-				else
+				if(!NodeGraph.NodeMap.Contains(IntMiddle))
 				{
 					FInfNode TempNode = FInfNode();
 					Node = &TempNode;
@@ -209,7 +215,6 @@ const FVector AInfGraph::GetNodeLocation(const FIntVector& Key) const
 
 void AInfGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
 {
-	int Idx = 0;
 	FVector HeightOffset = FVector(0.f, 0.f, 40.f);
 	for (auto Pair : NodeGraph.NodeMap)
 	{
@@ -218,9 +223,6 @@ void AInfGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
 		if(!InDebugRange(Node.GetNodeLocation())) continue;
 			
 		DrawDebugPoint(GetWorld(), Node.GetNodeLocation() + HeightOffset, 20.f, FNavMeshRenderingHelpers::GetClusterColor(Node.GetRegionTileID()), true, -1.f);
-		
-		FIntVector GraphLocation = Node.GetGraphLocation();
-		DrawDebugString(GetWorld(), Node.GetNodeLocation() + HeightOffset + FVector(0.f,0.f, 20.f), *GraphLocation.ToString(), nullptr, FColor::Blue, -1.f);
 
 		if (bDrawConnectingNeighbor)
 		{
@@ -249,13 +251,11 @@ FInfNode* AInfGraph::FindNearestNode(const FVector& FeetLocation) const
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_AInfNodeGraph_FindNearestNode);
 
 	check(NodeGraph.NodeMap.Num() > 0)
-
-	// Step 1:FeetLocation‚ª‘®‚·‚éƒiƒrƒƒbƒVƒ…ƒ^ƒCƒ‹‚ðŒŸõ‚·‚é.
+	
 	int TargetTileIdx = FindNavmeshTilesContainsLocation(FeetLocation);
 	if (TargetTileIdx == INDEX_NONE)
 		return nullptr;
-
-	// Step 2:ŠY“–‚·‚éƒiƒrƒƒbƒVƒ…ƒ^ƒCƒ‹‚ÉŠÜ‚Ü‚ê‚éƒGƒbƒW‚Ì’†“_‚©‚çAÅ‚àFeetLocation‚É‹ß‚¢ƒGƒbƒW‚ð‹‚ßƒm[ƒhƒOƒ‰ƒt‚ÌƒL[‚ð‹‚ß‚é.
+	
 	FIntVector NearestNodeKey = FindNearestNodeKey(TargetTileIdx, FeetLocation);
 	if (NearestNodeKey == FIntVector::NoneValue)
 		return nullptr;
@@ -269,16 +269,15 @@ int AInfGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) con
 	const int ActiveNavMeshTileCount = NavMeshCache->GetNavMeshTilesCount();
 	for (int TileSetIdx = 0; TileSetIdx < ActiveNavMeshTileCount; TileSetIdx++)
 	{
-		// ƒiƒrƒƒbƒVƒ…ƒ^ƒCƒ‹‚ÌƒoƒEƒ“ƒY‚ðŽæ“¾
 		FBox TileBounds = NavMeshCache->GetNavMeshTileBounds(TileSetIdx);
 		if (!TileBounds.IsValid)
 			continue;
-
-		// AgentHeight‚Ì’l‚ð‚»‚Ì‚Ü‚ÜŽg‚¤‚ÆˆÙ‚È‚é‘w‚Ìƒ^ƒCƒ‹‚ðŽæ“¾‚µ‚Ä‚µ‚Ü‚¤‰Â”\«‚ª‚ ‚é‚Ì‚Å
-		// 0.5‚ðŠ|‚¯‚Ä”¼•ª‚Ì‚‚³‚É‚·‚é.
+		
 		FVector QueryExtent(0.f, 0.f, NavMeshCache->AgentHeight * 0.5f);
-		FBox QueryBounds(FeetLocation, FeetLocation + QueryExtent);
-		if (!TileBounds.Intersect(QueryBounds))
+		FBox QueryBounds(FeetLocation, FeetLocation - QueryExtent);
+
+		//TODO: Fix this bound bounding thing
+		if (!TileBounds.IsInsideXY(FeetLocation))
 			continue;
 
 		return TileSetIdx;
@@ -290,31 +289,26 @@ int AInfGraph::FindNavmeshTilesContainsLocation(const FVector& FeetLocation) con
 
 FIntVector AInfGraph::FindNearestNodeKey(int TargetTileIdx, const FVector& FeetLocation) const
 {
-	// ƒiƒrƒƒbƒVƒ…ƒ^ƒCƒ‹‚ÉŠÜ‚Ü‚ê‚éƒ|ƒŠƒSƒ“ƒf[ƒ^‚ðŽæ“¾.
 	TArray<FNavPoly> Polys;
 	if (!NavMeshCache->GetPolysInTile(TargetTileIdx, Polys))
 		return FIntVector::NoneValue;
-
-	// ƒ^ƒCƒ‹“à‚É‚ ‚éLocation‚ÉÅ‚à‹ß‚¢ƒm[ƒh‚ðŒŸõ‚·‚é
+	
 	FIntVector NearestNodeKey(0);
 	float MinDistSq = FLT_MAX;
 	for (const FNavPoly& Poly : Polys)
 	{
-		// ƒ|ƒŠƒSƒ“‚Ì’¸“_‚ðŽæ“¾/
 		TArray<FVector> PolyVerts;
 		if (!NavMeshCache->GetPolyVerts(Poly.Ref, PolyVerts))
 			continue;
 
 		for (int VertIdx = 0; VertIdx < PolyVerts.Num(); VertIdx++)
 		{
-			// ƒ|ƒŠƒSƒ“ƒGƒbƒW‚Ì’†“_‚ð‹‚ß‚é.
 			FVector Middle = (PolyVerts[VertIdx] + PolyVerts[(VertIdx + 1) % PolyVerts.Num()]) * 0.5f;
 
 			float DistSq = FVector::DistSquared(FeetLocation, Middle);
 			if (MinDistSq > DistSq)
 			{
 				MinDistSq = DistSq;
-				// ‚±‚ê‚Íƒm[ƒhƒOƒ‰ƒt‚ÌƒL[‚Æ‚µ‚Äˆµ‚¤.
 
 				NearestNodeKey = FIntVector(Middle);
 			}

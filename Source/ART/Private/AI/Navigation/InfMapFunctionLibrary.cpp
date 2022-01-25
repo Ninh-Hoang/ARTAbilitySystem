@@ -35,3 +35,13 @@ void UInfMapFunctionLibrary::DestroyAllButFirstSpawnActor(const UObject* WorldCo
 
 	UE_LOG(LogTemp, Warning, TEXT("%s : There is an actor marked Pending Kill. Please reopen the level."), *ActorClass.Get()->GetFName().ToString());
 }
+
+FColor UInfMapFunctionLibrary::ConvertInfluenceValueToColor(float Value)
+{
+	FColor Color = FColor::Black;
+	if (Value > 0.f)
+		Color = FLinearColor::LerpUsingHSV(FColor::Cyan, FColor::Blue, Value).ToFColor(false);
+	else if (Value < 0.f)
+		Color = FLinearColor::LerpUsingHSV(FColor::Yellow, FColor::Red, FMath::Abs(Value)).ToFColor(false);
+	return Color;
+}

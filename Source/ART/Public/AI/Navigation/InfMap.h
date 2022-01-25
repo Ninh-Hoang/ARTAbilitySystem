@@ -37,7 +37,7 @@ public:
 	virtual void Initialize(class IInfCollectionInterface* MapCollectionInterface) override;
 	virtual void AddPropagator(class IInfPropagatorInterface* NewPropagator) override { Propagators.Add(NewPropagator); }
 	virtual const TArray<class IInfPropagatorInterface*>& GetPropagators() const override { return Propagators; }
-	virtual TMap<FIntVector, float> GatherTeamMap(const TArray<int32>& Teams, const class IInfPropagatorInterface* Self, bool bIgnoreSelf = false, float GatherDistance = 0.f) const override;
+	virtual TMap<FIntVector, float> GatherTeamMap(const TArray<FGenericTeamId>& Teams, const class IInfPropagatorInterface* Self, bool bIgnoreSelf = false, float GatherDistance = 0.f) const override;
 
 private:
 	void UpdateInfluenceMap();

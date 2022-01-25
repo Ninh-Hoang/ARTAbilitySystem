@@ -15,5 +15,5 @@ class ART_API AInfNavMesh : public ARecastNavMesh
 {
 	GENERATED_BODY()
 	AInfNavMesh(const FObjectInitializer& ObjectInitializer);
-	static FPathFindingResult FindPath(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query);
+	//static FPathFindingResult FindPath(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query);
 };
