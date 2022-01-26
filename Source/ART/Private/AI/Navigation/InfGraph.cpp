@@ -104,7 +104,6 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 				break;
 			}
 		}
-		
 		if(!NodeIsAtEdge)
 		{
 			KeyToRemove.Add(NodeIndex);
@@ -117,22 +116,27 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 
 	//we have to keep node that have access to neighbors that do not belong to changed tile
 	//remove all other node, access their neighbour and remove
-	for (int32 i = 0; i < NodeInChangedTile.Num(); i++)
+	for (int32 i = 0; i < KeyAtEdge.Num(); i++)
 	{
-		FInfNode& Node = NodeGraph.NodeMap[NodeInChangedTile[i]];
+		FInfNode& Node = NodeGraph.NodeMap[KeyAtEdge[i]];
 		DrawDebugPoint(GetWorld(), Node.GetNodeLocation(), 50.f, FColor::Red, false, 5.f);
 		
 		//access all neighbor, get their neighbour list and remove this node graph location from it
 		const TArray<FIntVector>& Neighbors = Node.GetNeighbor();
-		
+
+		TArray<FIntVector> NeighborToRemove;
 		for(int32 a = 0; a < Neighbors.Num(); a++)
 		{
 			
-			if(!NodeInChangedTile.Contains(Neighbors[a]))
-				continue;
-			
-			FInfNode& NeighborNode = NodeGraph.NodeMap[Neighbors[a]];
-			NeighborNode.RemoveNeighbor(Node.GetGraphLocation());
+			if(NodeInChangedTile.Contains(Neighbors[a]))
+			{
+				NeighborToRemove.Add(Neighbors[a]);
+			}
+		}
+
+		for(auto& Neighbor : NeighborToRemove)
+		{
+			Node.RemoveNeighbor(Neighbor);
 		}
 	}
 	
@@ -143,7 +147,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 	}
 	
 	//add new node to map
-	/*int NewID = 0, SkipCount = 0;
+	int NewID = 0, SkipCount = 0;
 	for(int32 i = 0; i < ChangedTiles.Num(); i++)
 	{
 		uint32 CurrentTileIndex = ChangedTiles[i];
@@ -203,7 +207,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 		}
 	}
 
-	if (SkipCount == ChangeTileCount)
+	if (SkipCount == ChangedTiles.Num())
 	{
 		UE_LOG(LogTemp, Error,
 			   TEXT("Probably no navigation mesh was re-generated."));
@@ -222,7 +226,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 	UE_LOG(LogTemp, Display, TEXT("Re-generate time: %f miliseconds"), Duration);
 	UE_LOG(LogTemp, Display, TEXT("New total Node Count : %i"), NodeCount);
 	UE_LOG(LogTemp, Display, TEXT("Total Node Neighbor Link Count : %i"), NeighborLinkCount);
-#endif*/
+#endif
 }
 
 void AInfGraph::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -249,7 +253,8 @@ void AInfGraph::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEve
 	{
 		bDrawNodeGraph = false;
 		FlushPersistentDebugLines(GetWorld());
-		DrawDebugNodeGraph(DrawDebugType == EDebugMenu::NODES_NEIGHBOR);
+		FlushDebugStrings(GetWorld());
+		DrawDebugNodeGraph();
 	}
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(AInfGraph, bClearDrawDebug))
 	{
@@ -398,27 +403,48 @@ const FVector AInfGraph::GetNodeLocation(const FIntVector& Key) const
 	return NodeGraph.NodeMap.Contains(Key) ? NodeGraph.NodeMap[Key].GetNodeLocation() : FVector(0);
 }
 
-void AInfGraph::DrawDebugNodeGraph(bool bDrawConnectingNeighbor) const
+void AInfGraph::DrawDebugNodeGraph() const
 {
-	FVector HeightOffset = FVector(0.f, 0.f, 40.f);
-	for (auto& Pair : NodeGraph.NodeMap)
+	const FVector HeightOffset = FVector(0.f, 0.f, 40.f);
+	
+	if(DrawDebugType == EDebugMenu::SINGLE_NODE)
 	{
-		const FInfNode* Node = &Pair.Value;
-
-		if(!InDebugRange(Node->GetNodeLocation())) continue;
-			
-		DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + HeightOffset, 20.f, FColor::Green, true, -1.f);
-
-		if (bDrawConnectingNeighbor)
+		if(NodeGraph.NodeMap.Find(NodeToDraw))
 		{
-			for (const FIntVector Neighbor : Node->GetNeighbor())
+			const FInfNode* Node = &NodeGraph.NodeMap[NodeToDraw];
+			DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + HeightOffset, 20.f, FColor::Green, true, -1.f);
+			DrawDebugString(GetWorld(), Node->GetNodeLocation(), *Node->GetGraphLocation().ToString(), nullptr, FColor::White, 99.f);
+
+			for(auto& Neighbor : Node->GetNeighbor())
 			{
-				if (!NodeGraph.NodeMap.Contains(Neighbor))
-					continue;
-				FVector LineEnd = Node->GetNodeLocation() + (GetNodeLocation(Neighbor) - Node->GetNodeLocation()) *
-					0.4f;
-				DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation()+ HeightOffset, LineEnd+ HeightOffset, 50.f, FColor::Blue, true, -1.f,
-				                          0, 1.5f);
+				const FInfNode* NeighborNode = &NodeGraph.NodeMap[Neighbor];
+				DrawDebugPoint(GetWorld(), NeighborNode->GetNodeLocation() + HeightOffset, 20.f, FColor::Emerald, true, -1.f);
+				DrawDebugString(GetWorld(), NeighborNode->GetNodeLocation(), *NeighborNode->GetGraphLocation().ToString(), nullptr, FColor::White, 99.f);
+			}
+		}
+	}
+	else
+	{
+		for (auto& Pair : NodeGraph.NodeMap)
+		{
+			const FInfNode* Node = &Pair.Value;
+
+			if(!InDebugRange(Node->GetNodeLocation())) continue;
+			
+			DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + HeightOffset, 20.f, FColor::Green, true, -1.f);
+			DrawDebugString(GetWorld(), Node->GetNodeLocation(), *Node->GetGraphLocation().ToString(), nullptr, FColor::White, 99.f);
+
+			if (DrawDebugType == EDebugMenu::NODES_NEIGHBOR)
+			{
+				for (const FIntVector Neighbor : Node->GetNeighbor())
+				{
+					/*if (!NodeGraph.NodeMap.Contains(Neighbor))
+						continue;*/
+					FVector LineEnd = Node->GetNodeLocation() + (GetNodeLocation(Neighbor) - Node->GetNodeLocation()) *
+						0.4f;
+					DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation()+ HeightOffset, LineEnd+ HeightOffset, 50.f, FColor::Blue, true, -1.f,
+											  0, 1.5f);
+				}
 			}
 		}
 	}

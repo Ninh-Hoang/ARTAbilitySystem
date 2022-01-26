@@ -13,6 +13,7 @@ enum class EDebugMenu : uint8
 {
 	NODES,
 	NODES_NEIGHBOR,
+	SINGLE_NODE,
 };
 
 UCLASS()
@@ -35,11 +36,14 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Debug")
 	EDebugMenu DrawDebugType;
+	
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Debug")
 	bool bDrawNodeGraph;
 	UPROPERTY(EditAnywhere, Category = "NodeGraph | Debug")
 	bool bClearDrawDebug;
 
+	UPROPERTY(EditAnywhere, Category = "NodeGraph | Debug")
+	FIntVector NodeToDraw;
 
 private:
 	FInfMap NodeGraph;
@@ -76,6 +80,6 @@ private:
 
 private:
 	
-	void DrawDebugNodeGraph(bool bDrawConnectingNeighbor = false) const;
+	void DrawDebugNodeGraph() const;
 	bool InDebugRange(const FVector& Location) const;
 };
