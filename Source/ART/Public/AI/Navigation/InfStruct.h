@@ -5,47 +5,36 @@
 struct ART_API FInfNode
 {
 	FInfNode() :
-		ID(INDEX_NONE),
 		GraphLocation(FIntVector(0)),
-		RegionTileID(INDEX_NONE){}
+		NodeLocation(FVector(0)){}
 
 private:
-	uint_fast32_t ID;
 	FIntVector GraphLocation;
-	TArray<FIntVector> Neighbor;	
-	uint_fast32_t RegionTileID;
-	
-	FVector SpawnSegmentBegin;
-	FVector SpawnSegmentEnd;
-
-	//TODO: Debug only?
 	FVector NodeLocation;
+	
+	TArray<FIntVector> Neighbor;	
+	TArray<uint32> RegionTileID;
 
 public:
-	void SetID(int NewID) { ID = NewID; }
 	void SetGraphLocation(const FIntVector& NewGraphLocation) {GraphLocation = NewGraphLocation; }
 	void AddNeighbor(const FIntVector& NeighborNode) { Neighbor.Add(NeighborNode); }
-	void SetRegionTileID(uint_fast32_t NewRegionTileID) {RegionTileID = NewRegionTileID; };
+	void AddRegionTileID(uint32 NewRegionTileID) {RegionTileID.AddUnique(NewRegionTileID); }
+	void ResetRegionTileID() {RegionTileID.Reset(); }
 	void SetNodeLocation(const FVector& InLocation) {NodeLocation = InLocation; }; 
-	void SetSpawnSegment(const FVector& Begin, const FVector& End)
-	{
-		SpawnSegmentBegin = Begin;
-		SpawnSegmentEnd = End;
-	}
-
-	const uint_fast32_t GetID() const { return ID; }
+	
+	void RemoveNeighbor(const FIntVector& Value) {Neighbor.Remove(Value);}
+	void RemoveNeighbor(int32 Index) {Neighbor.RemoveAt(Index);}
+	
 	const FIntVector& GetGraphLocation() const { return GraphLocation; }
 	const TArray<FIntVector>& GetNeighbor() const { return Neighbor; }
-	const uint_fast32_t GetRegionTileID() const { return RegionTileID; }
+	const TArray<uint32>& GetRegionTileID() const { return RegionTileID; }
 	const FVector& GetNodeLocation() const {return NodeLocation; }
-	const FVector& GetSpawnSegmentBegin() const { return SpawnSegmentBegin; }
-	const FVector& GetSpawnSegmentEnd() const { return SpawnSegmentEnd; }
 	
-	bool operator==(const FInfNode* Other) const { return ID == Other->ID; }
-	bool operator==(const FInfNode& Other) const { return ID == Other.ID; }
+	bool operator==(const FInfNode* Other) const { return GraphLocation == Other->GraphLocation; }
+	bool operator==(const FInfNode& Other) const { return GraphLocation == Other.GraphLocation; }
 
-	bool operator!=(const FInfNode* Other) const { return !(ID == Other->ID); }
-	bool operator!=(const FInfNode& Other) const { return !(ID == Other.ID); }
+	bool operator!=(const FInfNode* Other) const { return !(GraphLocation == Other->GraphLocation); }
+	bool operator!=(const FInfNode& Other) const { return !(GraphLocation == Other.GraphLocation); }
 };
 
 struct ART_API FInfMap

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AIController.h"
+#include "AI/Navigation/InfMapAIController.h"
 #include "AI/Order/ARTOrderData.h"
 #include "AI/Order/ARTOrder.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
@@ -15,7 +15,7 @@
 class UARTOrder;
 
 UCLASS()
-class ART_API AARTAIController : public AAIController
+class ART_API AARTAIController : public AInfMapAIController
 {
 	GENERATED_BODY()
 public:

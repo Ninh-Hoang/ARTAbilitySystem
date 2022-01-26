@@ -116,9 +116,9 @@ void UInfPropagator::UpdatePropagationMap()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_UInfPropagator_UpdatePropagationMap);
 	
-#if WITH_EDITOR
+/*#if WITH_EDITOR
 	const auto StartTime = std::chrono::high_resolution_clock::now();
-#endif
+#endif*/
 	
 	//if not activated skip
 	if (!bTickEnabled)
@@ -135,14 +135,14 @@ void UInfPropagator::UpdatePropagationMap()
 	FVector FeetLocation = GetOwner()->GetActorLocation() + OwnerFeetOffset;
 	const FInfNode* FeetNode = InfluenceMapCollectionRef->GetNodeGraph()->FindNearestNode(FeetLocation);
 
-	if (FeetNode == nullptr || FeetNode->GetID() == INDEX_NONE)
+	if (FeetNode == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UpdatePropagationMap() : Failed to find nearest node. Need rebuild NodeGraph & Influence Map"));
 		return;
 	}
 
 	//add recent propagation map to history if required, else, create a new map and add it
-	if (PropagationMapHistory.Num() > 0 && (!ShouldUpdatePropagationMap() || FeetNode->GetID() == INDEX_NONE))
+	if (PropagationMapHistory.Num() > 0 && (!ShouldUpdatePropagationMap()))
 	{
 		PropagationMapHistory.Add(FPropagationMap(RecentPropagationMap, 1.f));
 	}
@@ -162,10 +162,10 @@ void UInfPropagator::UpdatePropagationMap()
 	//finish updating all map, merging map
 	MergePropagationMaps();
 	
-#if WITH_EDITOR
+/*#if WITH_EDITOR
     const float Duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - StartTime).count() / 1000.0f;
 	UE_LOG(LogTemp, Display, TEXT("Map update Time : %f microseconds"), Duration);
-#endif
+#endif*/
 }
 
 TMap<FIntVector, float> UInfPropagator::CreateNewPropagationMap(const FInfNode* CenterNode) const
@@ -244,7 +244,7 @@ void UInfPropagator::AttenuationPropagationMaps()
 			RemoveList.Add(RemoveTargetIndex);
 			continue;
 		}
-
+	
 		StampData.MaxValue -= ATTENUATION_RATIO;
 		for (auto& Pair : StampData.MapData)
 			Pair.Value = FMath::Max(Pair.Value * StampData.MaxValue, 0.f);
@@ -465,7 +465,7 @@ void UInfPropagator::DrawDebugPropagationMap(const FGameplayTag MapTag, float Du
 		for (const auto& Pair : PropStamp.MapData)
 		{
 			const FInfNode* Node = NodeGraph->GetNode(Pair.Key);
-			DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Pair.Value), true, Duration);
+			DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Pair.Value), false, Duration);
 			DrawDebugString(GetWorld(), Node->GetNodeLocation(), FString::SanitizeFloat(Pair.Value), nullptr, FColor::White, Duration);
 		}
 	}

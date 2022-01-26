@@ -26,6 +26,7 @@ public class ART : ModuleRules
 			new string[]
 			{
 				"Core",
+				"Navmesh",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

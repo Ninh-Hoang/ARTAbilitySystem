@@ -108,12 +108,15 @@ void AInfMap::DrawDebugIMap(const TMap<FIntVector, float>& CompleteStamp, bool b
 	const FInfMap* BaseMap = InfluenceMapCollectionRef->GetNodeGraph()->GetNodeGraphData();
 	const TMap<FIntVector, FInfNode>* NodeGraph = &BaseMap->NodeMap;
 	
-	float Duration = TickInterval * 0.5f;
+	float Duration = TickInterval;
 	FVector Offset(0,0, 100);
 	for (const auto& Data : CompleteStamp)
 	{
 		const FInfNode* Node = NodeGraph->Find(Data.Key);
-		DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Data.Value), true, Duration);
+
+		//TODO: this is need for when mesh to rebuild, might be able to remove when we get the regeneration done
+		if(!Node) continue;
+		DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Data.Value), false, Duration);
 		DrawDebugString(GetWorld(), Node->GetNodeLocation(), FString::SanitizeFloat(Data.Value), nullptr, FColor::White, Duration);
 		if (bDrawConnectingNeighbor)
 		{

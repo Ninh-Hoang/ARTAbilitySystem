@@ -44,7 +44,7 @@ public:
 private:
 	FInfMap NodeGraph;
 	UPROPERTY()
-	const class AInfNavMesh* NavMeshCache;
+	class AInfNavMesh* NavMeshCache;
 
 public:
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -59,6 +59,9 @@ private:
 	void SpawnAndConnectingNodes();
 	void ConnectingNodeIslands();
 	void ClearGraph();
+
+	UFUNCTION()
+	void OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles);
 
 	//inf node graph interface
 public:
