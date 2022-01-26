@@ -109,11 +109,11 @@ void AInfMap::DrawDebugIMap(const TMap<FIntVector, float>& CompleteStamp, bool b
 	const TMap<FIntVector, FInfNode>* NodeGraph = &BaseMap->NodeMap;
 	
 	float Duration = TickInterval * 0.5f;
-
+	FVector Offset(0,0, 100);
 	for (const auto& Data : CompleteStamp)
 	{
 		const FInfNode* Node = NodeGraph->Find(Data.Key);
-		DrawDebugPoint(GetWorld(), Node->GetNodeLocation(), 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Data.Value), true, Duration);
+		DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Data.Value), true, Duration);
 		DrawDebugString(GetWorld(), Node->GetNodeLocation(), FString::SanitizeFloat(Data.Value), nullptr, FColor::White, Duration);
 		if (bDrawConnectingNeighbor)
 		{
@@ -121,7 +121,7 @@ void AInfMap::DrawDebugIMap(const TMap<FIntVector, float>& CompleteStamp, bool b
 			{
 				const FInfNode* Neighbor = NodeGraph->Find(NeighborID);
 				FVector LineEnd = Node->GetNodeLocation() + (Neighbor->GetNodeLocation() - Node->GetNodeLocation()) * 0.4f;
-				DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation(), LineEnd, 50.f, FColor::Green, true, Duration, 0, 1.5f);
+				DrawDebugDirectionalArrow(GetWorld(), Node->GetNodeLocation() + Offset, LineEnd + Offset, 50.f, FColor::Green, true, Duration, 0, 1.5f);
 			}
 		}
 	}

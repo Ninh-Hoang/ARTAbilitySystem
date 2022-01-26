@@ -7,6 +7,7 @@
 #include "AI/Navigation/InfGraphInterface.h"
 #include "AI/Navigation/InfMapFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "chrono"
 
 // Sets default values for this component's properties
 UInfPropagator::UInfPropagator()
@@ -114,7 +115,11 @@ void UInfPropagator::Initialize(IInfCollectionInterface* InfluenceMapCollection)
 void UInfPropagator::UpdatePropagationMap()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_UInfPropagator_UpdatePropagationMap);
-
+	
+#if WITH_EDITOR
+	const auto StartTime = std::chrono::high_resolution_clock::now();
+#endif
+	
 	//if not activated skip
 	if (!bTickEnabled)
 	{
@@ -156,6 +161,11 @@ void UInfPropagator::UpdatePropagationMap()
 
 	//finish updating all map, merging map
 	MergePropagationMaps();
+	
+#if WITH_EDITOR
+    const float Duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - StartTime).count() / 1000.0f;
+	UE_LOG(LogTemp, Display, TEXT("Map update Time : %f microseconds"), Duration);
+#endif
 }
 
 TMap<FIntVector, float> UInfPropagator::CreateNewPropagationMap(const FInfNode* CenterNode) const
@@ -181,9 +191,10 @@ TMap<FIntVector, float> UInfPropagator::CreateNewPropagationMap(const FInfNode* 
 			Ratio = FVector::Dist(CenterNode->GetActorLocation(), NodeLocation) / PropagateRange;
 		else*/
 
+		//Ratio = FVector::Dist(CenterNode->GetNodeLocation(), NodeLocation) / PropagateRange;
 		//TODO: we are using step to simplify the value calculation,
 		//TODO: thanks to the uneven distribution of the navmesh, distance between step is not always the same
-		Ratio = (float)StepDistance / (float)MaxStepDistance;
+		Ratio = (float)StepDistance / MaxStepDistance;
 
 		//use curve if have
 		if (PropagationCurve) return PropagationCurve->GetFloatValue(Ratio);
@@ -191,7 +202,7 @@ TMap<FIntVector, float> UInfPropagator::CreateNewPropagationMap(const FInfNode* 
 		return FMath::Max(0.0f, 1.f - 1.f * Ratio);
 
 	};
-
+	//TODO: Don't think we need this
 	auto ExcludeFromPropagationCalc = [&](const AActor* TargetNodeActor)
 	{
 		return true;
@@ -270,16 +281,19 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 	PropagationValueCalculator PropagationValueFunc, ExcludeFromPropagationValueCalc ExcludeFunc) const
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_UInfPropagator_CreateNewMap);
-
+	
 	// get map and size
 	const auto& InfluenceGraph = InfluenceMapCollectionRef->GetNodeGraph()->GetNodeGraphData();
 	const TMap<FIntVector, FInfNode>* InfluenceMap = &InfluenceGraph->NodeMap;
 	const int INFLUENCEMAP_SIZE = InfluenceMap->Num();
 	
 	//pick only node that are needed for value
-	TArray<TPair<FIntVector, uint32>> WorkingBuffer, NeedPropagationCuration;
+	TArray<TPair<FIntVector, uint32>> WorkingBuffer, NeedPropagationCuration, CacheNeighbors;
+	TArray<FIntVector> MarkedForPropagation;
+	
 	WorkingBuffer.Reserve(INFLUENCEMAP_SIZE);
 	NeedPropagationCuration.Reserve(INFLUENCEMAP_SIZE);
+	MarkedForPropagation.Reserve(INFLUENCEMAP_SIZE);
 
 	//write centre node in to the array
 	WorkingBuffer.Emplace(CenterNode->GetGraphLocation(), 0);
@@ -305,7 +319,7 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 	{
 		// get a node and also remove it from working list
 		CurrentNode = WorkingBuffer.Pop(false);
-
+		
 		//TODO: what the fuck is this
 		// if this node is already visited, skip to next one
 		if (Visited.Find(CurrentNode.Key) /*|| !ExcludeFunc(Cast<AActor>(InfluenceMap[]))*/)
@@ -319,30 +333,29 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 		
 		for (const FIntVector Neighbor : Neighbors)
 		{
-			const FInfNode* NeighborNode = InfluenceMap->Find(Neighbor);
-			// skip if alredy visited
-			if (Visited.Find(Neighbor))
+			// skip if already visited
+			if (Visited.Find(Neighbor) || MarkedForPropagation.Contains(Neighbor))
 				continue;
 
+			const FInfNode* NeighborNode = InfluenceMap->Find(Neighbor);
+			
 			//check node in propagation range
 			float CenterNeighborDistSq = FVector::DistSquared(NeighborNode->GetNodeLocation(), CentreLocation);
 			if (CenterNeighborDistSq <= MaxRangeSquared)
 			{
-				//add node to work list, increase step value by one from current node step value
-				WorkingBuffer.Emplace(NeighborNode->GetGraphLocation(), CurrentNode.Value + 1);
-
-				//this node meet the range standard, add to curation list for assigning value later
+				CacheNeighbors.Emplace(NeighborNode->GetGraphLocation(), CurrentNode.Value + 1);
 				NeedPropagationCuration.Emplace(NeighborNode->GetGraphLocation(), CurrentNode.Value + 1);
-
-				//cache the highest number of step
+				MarkedForPropagation.Emplace(Neighbor);
 				MaxStep = FMath::Max(MaxStep, CurrentNode.Value + 1);
-
-				// TODO: Debug this maybe?
-				//DrawDebugString(GetWorld(), ((Neighbor->GetActorLocation() + InfluenceMap[CurrentNode.Key]->GetActorLocation()) * 0.5f) + FVector(0.f, 20.f, 0.f), FString::FromInt(MaxStep), nullptr, FColor::White, 5.f);
-
-				//DrawDebugDirectionalArrow(GetWorld(), Neighbor->GetActorLocation(), InfluenceMap[CurrentNode.Key]->GetActorLocation(), 30.f, FColor::White, false, 5.f);
 			}
 		}
+
+		if(WorkingBuffer.Num() <1)
+		{
+			WorkingBuffer.Append(CacheNeighbors);
+			CacheNeighbors.Reset();
+		}
+		//TODO: Debug this maybe?
 	}
 
 	//iterate through the curation list, assign their value base on distance/curve/falloff...etc
@@ -446,13 +459,13 @@ void UInfPropagator::DrawDebugPropagationMap(const FGameplayTag MapTag, float Du
 	const IInfGraphInterface* NodeGraph = InfluenceMapCollectionRef->GetNodeGraph();
 	if (NodeGraph == nullptr)
 		return;
-
+	FVector Offset(0,0, 100);
 	for (const FPropagationMap& PropStamp : PropagationMapHistory)
 	{
 		for (const auto& Pair : PropStamp.MapData)
 		{
 			const FInfNode* Node = NodeGraph->GetNode(Pair.Key);
-			DrawDebugPoint(GetWorld(), Node->GetNodeLocation(), 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Pair.Value), true, Duration);
+			DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Pair.Value), true, Duration);
 			DrawDebugString(GetWorld(), Node->GetNodeLocation(), FString::SanitizeFloat(Pair.Value), nullptr, FColor::White, Duration);
 		}
 	}
@@ -463,11 +476,12 @@ void UInfPropagator::DrawDebugWorkingMap(const TMap<FIntVector, float>& Map, flo
 	const IInfGraphInterface* NodeGraph = InfluenceMapCollectionRef->GetNodeGraph();
 	if (NodeGraph == nullptr)
 		return;
-
+	
+	FVector Offset(0,0, 100);
 	for (const auto& Pair : Map)
 	{
 		const FInfNode* Node = NodeGraph->GetNode(Pair.Key);
-		DrawDebugPoint(GetWorld(), Node->GetNodeLocation(), 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Pair.Value), false, Duration);
+		DrawDebugPoint(GetWorld(), Node->GetNodeLocation() + Offset, 16.f, UInfMapFunctionLibrary::ConvertInfluenceValueToColor(Pair.Value), false, Duration);
 		DrawDebugString(GetWorld(), Node->GetNodeLocation(), FString::SanitizeFloat(Pair.Value), nullptr, FColor::White, Duration);
 	}
 }
