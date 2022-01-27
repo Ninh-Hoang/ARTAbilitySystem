@@ -16,7 +16,7 @@ UInfPropagator::UInfPropagator()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
-	bTickEnabled = true;
+	bActivate = false;
 	PropagateRange = 500.f;
 	AttenuationRatio = 1.f;
 }
@@ -121,7 +121,7 @@ void UInfPropagator::UpdatePropagationMap()
 #endif*/
 	
 	//if not activated skip
-	if (!bTickEnabled)
+	if (!bActivate)
 	{
 		MergedPropagationMap.Reset();
 		return;
@@ -161,11 +161,16 @@ void UInfPropagator::UpdatePropagationMap()
 
 	//finish updating all map, merging map
 	MergePropagationMaps();
-	
+		
 /*#if WITH_EDITOR
     const float Duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - StartTime).count() / 1000.0f;
 	UE_LOG(LogTemp, Display, TEXT("Map update Time : %f microseconds"), Duration);
 #endif*/
+}
+
+void UInfPropagator::SetPropagationActivation(bool InActivate)
+{
+	bActivate = InActivate;
 }
 
 TMap<FIntVector, float> UInfPropagator::CreateNewPropagationMap(const FInfNode* CenterNode) const

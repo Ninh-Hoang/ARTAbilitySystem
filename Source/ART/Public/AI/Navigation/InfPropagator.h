@@ -40,8 +40,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Influence Map | Base")
 	FGameplayTag TargetMapTag;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Influence Map | Base", meta = (ClampMin = 1.00))
-	bool bTickEnabled;
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Influence Map | Base", meta = (ClampMin = 1.00))
+	bool bActivate;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Influence Map | Base", meta = (ClampMin = 1.00))
 	float PropagateRange;
 
@@ -112,6 +112,9 @@ protected:
 	TMap<FIntVector, float> CreateNewMap(const FInfNode* CenterNode, float MaxRange, PropagationValueCalculator PropagationValueFunc, ExcludeFromPropagationValueCalc ExcludeFunc) const;
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Influence Map")
+	void SetPropagationActivation(bool Activate);
+	
 	UFUNCTION(BlueprintCallable, Category = "Influence Map")
 	virtual const TMap<FIntVector, float>& GetPropagationMap() const override { return MergedPropagationMap; }
 
