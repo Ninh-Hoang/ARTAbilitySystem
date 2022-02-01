@@ -121,7 +121,7 @@ bool UARTOrderHelper::IsValidTarget(TSoftClassPtr<UARTOrder> OrderType, const AA
 		{
 			if (OutErrorTags != nullptr)
 			{
-				OutErrorTags->ErrorTags.AddTag(UARTGlobalTags::AbilityActivationFailure_NoTarget());
+				OutErrorTags->ErrorTags.AddTag(FARTGlobalTags::Get().AbilityActivationFailure_NoTarget);
 			}
 			return false;
 		}
@@ -855,7 +855,7 @@ bool UARTOrderHelper::IsEnemyInAcquisitionRadius(const AActor* OrderedActor, flo
 
 		// Check the target tags.
 		if (UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(OrderedActor, Actor)
-			.HasTag(UARTGlobalTags::Behaviour_Hostile()))
+			.HasTag(FARTGlobalTags::Get().Behaviour_Hostile))
 		{
 			return true;
 		}

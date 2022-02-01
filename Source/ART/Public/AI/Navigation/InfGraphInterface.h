@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InfStruct.h"
+#include "InfType.h"
 #include "UObject/Interface.h"
 #include "InfGraphInterface.generated.h"
 

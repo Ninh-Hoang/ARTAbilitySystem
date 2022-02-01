@@ -48,29 +48,6 @@ void UInfPropagator::BeginPlay()
 	Initialize(Cast<IInfCollectionInterface>(OutActors[0]));
 }
 
-/*void UInfPropagator::SetGenericTeamId(const FGenericTeamId& TeamID)
-{
-	IGenericTeamAgentInterface::SetGenericTeamId(TeamID);
-}
-
-FGenericTeamId UInfPropagator::GetGenericTeamId() const
-{
-	if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(GetOwner()))
-	{
-		return TeamInterface->GetGenericTeamId();
-	}
-	return FGenericTeamId();
-}
-
-ETeamAttitude::Type UInfPropagator::GetTeamAttitudeTowards(const AActor& Other) const
-{
-	if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(GetOwner()))
-	{
-		return TeamInterface->GetTeamAttitudeTowards(Other);
-	}
-	return ETeamAttitude::Neutral;
-}*/
-
 FGenericTeamId UInfPropagator::GetTeam() const
 {
 	if (const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(GetOwner()))
@@ -207,7 +184,7 @@ TMap<FIntVector, float> UInfPropagator::CreateNewPropagationMap(const FInfNode* 
 		return FMath::Max(0.0f, 1.f - 1.f * Ratio);
 
 	};
-	//TODO: Don't think we need this
+	//we do not need to exclude anything here
 	auto ExcludeFromPropagationCalc = [&](const AActor* TargetNodeActor)
 	{
 		return true;
@@ -282,8 +259,30 @@ void UInfPropagator::MergePropagationMaps()
 	}
 }
 
+const TArray<uint32> UInfPropagator::GetAffectedTile() const
+{
+	const auto& InfluenceGraph = InfluenceMapCollectionRef->GetNodeGraph()->GetNodeGraphData()->NodeMap;
+	
+	TArray<uint32> AffectedTile;
+	
+	AffectedTile.Reserve(InfluenceGraph.Num()/4);
+	
+	for(const auto& Pair : MergedPropagationMap)
+	{
+		if(const FInfNode* Node = InfluenceGraph.Find(Pair.Key))
+		{
+			for(uint32 TileID : Node->GetRegionTileID())
+			{
+				AffectedTile.AddUnique(TileID);
+			}
+		}
+	}
+
+	return AffectedTile;
+}
+
 TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode, float MaxRange,
-	PropagationValueCalculator PropagationValueFunc, ExcludeFromPropagationValueCalc ExcludeFunc) const
+                                                     PropagationValueCalculator PropagationValueFunc, ExcludeFromPropagationValueCalc ExcludeFunc) const
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_UInfPropagator_CreateNewMap);
 	
@@ -334,9 +333,9 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 		Visited.Emplace(CurrentNode.Key, true);
 
 		//for each neighbour of current node, check if they are in range
-		const TArray<FIntVector> Neighbors = InfluenceMap->Find(CurrentNode.Key)->GetNeighbor();
+		const TArray<FIntVector>& Neighbors = InfluenceMap->Find(CurrentNode.Key)->GetNeighbor();
 		
-		for (const FIntVector Neighbor : Neighbors)
+		for (const FIntVector& Neighbor : Neighbors)
 		{
 			// skip if already visited
 			if (Visited.Find(Neighbor) || MarkedForPropagation.Contains(Neighbor))
@@ -376,7 +375,7 @@ TMap<FIntVector, float> UInfPropagator::CreateNewMap(const FInfNode* CenterNode,
 const TMap<FIntVector, float>& UInfPropagator::CreateInterestMap(float InterestMapRadius, const FVector& Center,
 	UCurveFloat* InterestCurve, float InitializeValue)
 {
-	//if far away or already have interest map, skip
+	//if far away and already have interest map, skip
 	if (!ShouldUpdatePropagationMap() && RecentInterestMap.Num() != 0)
 	{
 		return RecentInterestMap;
@@ -406,6 +405,7 @@ const TMap<FIntVector, float>& UInfPropagator::CreateInterestMap(float InterestM
 
 	auto ExcludeFromPropagationCalc = [&](const AActor* TargetNodeActor)
 	{
+		// we do not need to exclude anything here
 		return true;
 	};
 
@@ -433,32 +433,21 @@ FVector UInfPropagator::GetGraphLocationToWorld(const FIntVector& GraphLocation)
 	return Node->GetNodeLocation();
 }
 
-TMap<FIntVector, float> UInfPropagator::GetEnemyMap(const FGameplayTag MapTag, float GatherDistance) const
+TMap<FIntVector, float> UInfPropagator::GetMap(const FGameplayTag MapTag, const float GatherDistance, const bool IgnoreSelf,
+	const FGameplayTagContainer BehaviourTag, const FGameplayTagContainer RequireTags,
+	const FGameplayTagContainer BlockTags) const
 {
+	TMap<FIntVector, float> EmptyMap;
 	const auto* TargetMap = InfluenceMapCollectionRef->GetMapSafe(MapTag);
 	if (TargetMap == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UInfluencePropagator::GetEnemyMap : Invalid map name. %s"), *MapTag.ToString());
-		return TMap<FIntVector, float>();
+		UE_LOG(LogTemp, Error, TEXT("UInfluencePropagator: Invalid map. %s"), *MapTag.ToString());
+		return EmptyMap;
 	}
-		
-	
-	return TargetMap->GatherTeamMap(EnemyTeam, this, false, GatherDistance);
+	TargetMap->GatherMap(BehaviourTag, RequireTags, BlockTags, this, IgnoreSelf, GatherDistance, EmptyMap);
+	return EmptyMap;
 }
 
-TMap<FIntVector, float> UInfPropagator::GetAllyMap(const FGameplayTag MapTag, bool bIgnoreSelf, float GatherDistance) const
-{
-	const auto* TargetMap = InfluenceMapCollectionRef->GetMapSafe(MapTag);
-	if (TargetMap == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UInfluencePropagator::GetEnemyMap : Invalid map name. %s"), *MapTag.ToString());
-		return TMap<FIntVector, float>();
-	}
-
-	return TargetMap->GatherTeamMap(AllyTeam, this, bIgnoreSelf, GatherDistance);
-}
-
-//TODO: this method just draw every map right now
 void UInfPropagator::DrawDebugPropagationMap(const FGameplayTag MapTag, float Duration) const
 {
 	const IInfGraphInterface* NodeGraph = InfluenceMapCollectionRef->GetNodeGraph();

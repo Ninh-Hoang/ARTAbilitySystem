@@ -37,12 +37,11 @@ public:
 	virtual void Initialize(class IInfCollectionInterface* MapCollectionInterface) override;
 	virtual void AddPropagator(class IInfPropagatorInterface* NewPropagator) override { Propagators.Add(NewPropagator); }
 	virtual const TArray<class IInfPropagatorInterface*>& GetPropagators() const override { return Propagators; }
-	virtual TMap<FIntVector, float> GatherTeamMap(const TArray<FGenericTeamId>& Teams, const class IInfPropagatorInterface* Self, bool bIgnoreSelf = false, float GatherDistance = 0.f) const override;
-
+	virtual void GatherMap(const FGameplayTagContainer& BehaviourTags, const FGameplayTagContainer& RequiredTags, const FGameplayTagContainer& BlockTags, const IInfPropagatorInterface* Self, bool bIgnoreSelf, float GatherDistance, TMap<FIntVector, float>& Result) const override;
+	virtual const TArray<uint32> GetAffectedTile() const override;
 private:
 	void UpdateInfluenceMap();
-
-	// ƒfƒoƒbƒO
+	
 	void MergePropgationStamp(const TArray<TMap<FIntVector, float>>& PropagationStamps, TMap<FIntVector, float>& CompleteStamp);
 	void DrawDebugIMap(const TMap<FIntVector, float>& CompleteStamp, bool bDrawConnectingNeighbor) const;
 	

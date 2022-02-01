@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InfMapFunctionLibrary.h"
 #include "Navigation/RecastGraphAStar.h"
 #include "NavMesh/RecastNavMesh.h"
 #include "NavMesh/RecastQueryFilter.h"
@@ -11,16 +12,14 @@
 /**
  * 
  */
-
 class ART_API FInfQueryFilter : public FRecastQueryFilter
 {
 private:
-	const TMap<FIntVector, float>* InfluenceMap;
+	TMap<FIntVector, float> InfluenceMap;
 
 	const float FIXED_ADDITIONAL_COST;
 	float CostMultiplier;
-
-	// �f�o�b�O�p.
+	
 	class UWorld* World;
 	bool bDrawDebugFindPath;
 
@@ -29,7 +28,7 @@ public:
 	virtual ~FInfQueryFilter() {}
 
 	void SetDataUsedForDebugging(class UWorld* NewWorld, bool bDrawDebugEnabled);
-	void SetAdditionalNavigationData(const TMap<FIntVector, float>& InInfluenceMapData, float InCostMultiplier);
+	void SetAdditionalNavigationData(const FInfQueryData& InInfluenceQueryData, float InCostMultiplier);
 
 	virtual void Reset() override;
 	virtual bool IsEqual(const INavigationQueryFilterInterface* Other) const override;
@@ -56,10 +55,17 @@ public:
 	bool bDrawDebugFindPath;
 
 	FOnNeedToUpdateGraph OnNeedToUpdateGraph;
+
+protected:
+	UPROPERTY()
+	TScriptInterface<class IInfCollectionInterface> InfluenceMapCollectionInterfaceRef;
+
+	class IInfCollectionInterface* InfluenceMapCollectionRef;
 	
 private:
 	FInfQueryFilter* DetourFilter;
-	
+
+	float NavigationTickTime = 1.f;
 public:
 	
 #if WITH_EDITOR
@@ -68,7 +74,11 @@ public:
 
 	virtual void RecreateDefaultFilter() override;
 
-	void SetInfluenceMapData(const struct FAIInfMapMoveRequest& InfluenceMapData);
+	void SetInfluenceQueryData(const struct FAIInfMapMoveRequest& InfluenceMapData);
 
 	virtual void OnNavMeshTilesUpdated(const TArray<uint32>& ChangedTiles) override;
+
+	virtual void BeginPlay() override;
+	
+	virtual void Tick(float DeltaSeconds) override;
 };

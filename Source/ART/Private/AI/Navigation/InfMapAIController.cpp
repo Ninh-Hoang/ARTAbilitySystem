@@ -122,7 +122,7 @@ FPathFollowingRequestResult AInfMapAIController::MoveToUseInfluenceMap(const FAI
 	return ResultData;
 }
 
-void AInfMapAIController::FindPathForInfluenceMapMoveRequest(const FAIInfMapMoveRequest& MoveRequest,
+void AInfMapAIController::	FindPathForInfluenceMapMoveRequest(const FAIInfMapMoveRequest& MoveRequest,
 	FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const
 {
 	SCOPE_CYCLE_COUNTER(STAT_AI_Overall);
@@ -135,7 +135,7 @@ void AInfMapAIController::FindPathForInfluenceMapMoveRequest(const FAIInfMapMove
 		
 		if (AInfNavMesh* NavMesh = UInfMapFunctionLibrary::GetInfNavMesh(GetWorld()))
 		{
-			NavMesh->SetInfluenceMapData(MoveRequest);
+			NavMesh->SetInfluenceQueryData(MoveRequest);
 			
 			Query.NavData = NavMesh;
 			Query.QueryFilter = NavMesh->GetDefaultQueryFilter();

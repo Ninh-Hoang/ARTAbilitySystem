@@ -6,6 +6,7 @@
 #include "UObject/ObjectMacros.h"
 #include "Engine/EngineTypes.h"
 #include "AITypes.h"
+#include "InfMapFunctionLibrary.h"
 #include "Tasks/AITask.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "AITask_InfMapMoveTo.generated.h"
@@ -22,9 +23,9 @@ struct ART_API FAIInfMapMoveRequest : public FAIMoveRequest
 	FAIInfMapMoveRequest(const FVector& InGoalLocation);
 	FAIInfMapMoveRequest(FAIMoveRequest& BaseMoveRequest);
 
-	FAIMoveRequest& SetTargetInfluenceMapData(const TMap<FIntVector, float>& TargetMapData)
+	FAIMoveRequest& SetInfluenceQueryData(const FInfQueryData& MapQueryData)
 	{
-		TargetInfluenceMapData = &TargetMapData;
+		InfluenceQueryData = &MapQueryData;
 		return *this;
 	}
 	FAIMoveRequest& SetCostMultiplier(float Multiplier)
@@ -33,11 +34,11 @@ struct ART_API FAIInfMapMoveRequest : public FAIMoveRequest
 		return *this;
 	}
 
-	const TMap<FIntVector, float>* GetTargetInfluenceMapData() const { return TargetInfluenceMapData; }
+	const FInfQueryData* GetInfluenceQueryData() const { return InfluenceQueryData; }
 	float GetCostMultiplier() const { return CostMultiplier; }
 
 protected:
-	const TMap<FIntVector, float>* TargetInfluenceMapData;
+	const FInfQueryData* InfluenceQueryData;
 	float CostMultiplier;
 };
 
@@ -73,7 +74,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "AI|Tasks", meta = (AdvancedDisplay = "AcceptanceRadius,StopOnOverlap,AcceptPartialPath,bUsePathfinding,bUseContinuosGoalTracking,ProjectGoalOnNavigation", DefaultToSelf = "Controller", BlueprintInternalUseOnly = "TRUE", DisplayName = "Move To Location or Actor Use Influence Map Data"))
 	static UAITask_InfMapMoveTo* AIMoveToUseInfluenceMapData(class AAIController* Controller,
-																	   const TMap<FIntVector, float>& TargetMapData,
+																	   const FInfQueryData& InfluenceQueryData,
 																	   float CostMultiplier = 1.0f,
 																	   FVector GoalLocation = FVector(0.f),
 																	   AActor* GoalActor = nullptr,

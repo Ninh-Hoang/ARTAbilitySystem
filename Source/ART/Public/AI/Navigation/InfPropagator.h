@@ -6,7 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "GenericTeamAgentInterface.h"
 #include "InfPropagatorInterface.h"
-#include "InfStruct.h"
+#include "InfType.h"
 #include "Components/ActorComponent.h"
 #include "InfPropagator.generated.h"
 
@@ -82,6 +82,7 @@ protected:
 public:
 	virtual void Initialize(class IInfCollectionInterface* InfluenceMapCollection) override;
 	virtual void UpdatePropagationMap() override;
+	virtual const TArray<uint32> GetAffectedTile() const override;
 	
 protected:
 	virtual TMap<FIntVector, float> CreateNewPropagationMap(const FInfNode* CenterNode) const;
@@ -122,17 +123,18 @@ public:
 	const TMap<FIntVector, float>& CreateInterestMap(float InterestMapRadius, const FVector& Center, class UCurveFloat* InterestCurve = nullptr, float InitializeValue = 0.f);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Influence Map")
-		FVector GetGraphLocationToWorld(const FIntVector& GraphLocation);
+	FVector GetGraphLocationToWorld(const FIntVector& GraphLocation);
 
 	// GatherDistance
 	// Infinite Range : <= 0
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Influence Map")
-	TMap<FIntVector, float> GetEnemyMap(const FGameplayTag MapTag, float GatherDistance) const;
-	
-	// GatherDistance
-	// Infinite Range : <= 0
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Influence Map")
-	TMap<FIntVector, float> GetAllyMap(const FGameplayTag MapTag, bool bIgnoreSelf = true, float GatherDistance = 0.f) const;
+	TMap<FIntVector, float> GetMap(const FGameplayTag MapTag,
+		const float GatherDistance,
+		const bool IgnoreSelf,
+		const FGameplayTagContainer BehaviourTag,
+		const FGameplayTagContainer RequireTags,
+		const FGameplayTagContainer BlockTags) const;
+
 	UFUNCTION(BlueprintCallable, Category = "Influence Map | DEBUG")
 	void DrawDebugPropagationMap(const FGameplayTag MapTag, float Duration) const;
 	UFUNCTION(BlueprintCallable, Category = "Influence Map | DEBUG")

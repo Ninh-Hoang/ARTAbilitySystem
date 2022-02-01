@@ -36,7 +36,7 @@ private:
 public:
 	virtual class IInfMapInterface* GetMapSafe(const FGameplayTag& MapTag) const override;
 	virtual const class IInfGraphInterface* GetNodeGraph() const override { check(NodeGraphRef); return NodeGraphRef; }
-	
+	virtual const TArray<uint32> GetAffectedTile() const override;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

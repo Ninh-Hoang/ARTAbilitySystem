@@ -2,10 +2,10 @@
 
 
 #include "AI/Navigation/InfMapFunctionLibrary.h"
-
 #include "AISystem.h"
 #include "AI/Navigation/InfNavMesh.h"
 #include "NavigationSystem.h"
+#include "AI/Navigation/InfPropagator.h"
 #include "Kismet/GameplayStatics.h"
 
 AInfNavMesh* UInfMapFunctionLibrary::GetInfNavMesh(const UObject* WorldContext)
@@ -56,74 +56,139 @@ FMapOperationResult UInfMapFunctionLibrary::InitializeWorkingMap(const TMap<FInt
 	return Result;
 }
 
-FMapOperationResult UInfMapFunctionLibrary::AddTargetMap(const FMapOperationResult& MapA,
-	const TMap<FIntVector, float>& MapB, float Weight)
+FMapOperationResult& UInfMapFunctionLibrary::AddTargetMap(const FMapOperationResult& MapA,
+	const TMap<FIntVector, float>& MapB, float Weight, bool Inclusive)
 {
-	FMapOperationResult Result = MapA;
-	Result.HighestPair = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	//evil const_cast to save from memory, probably fine as this map not gonna be used by multiple processes
+	FMapOperationResult& Result = const_cast<FMapOperationResult&>(MapA);
+	
+	TPair<FIntVector, float>& HighestPairRef = Result.HighestPair;
+	TPair<FIntVector, float>& LowestPairRef = Result.LowestPair;
+	
+	HighestPairRef  = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	LowestPairRef  = TPair<FIntVector, float>(FIntVector(), FLT_MAX);
 
-	for (auto& Pair : Result.ResultMap)
+	//TODO: What the fuck is this Yan dev nested if
+	for (auto& Pair : MapB)
 	{
-		if (const float* Value = MapB.Find(Pair.Key))
+		bool PairAdded = false;
+		
+		if (Result.ResultMap.Find(Pair.Key))
 		{
-			Pair.Value += (*Value) * Weight;
+			Result.ResultMap[Pair.Key] += Pair.Value * Weight;
+			PairAdded = true;
 		}
-		if (Result.HighestPair.Value < Pair.Value)
+		else if(Inclusive)
 		{
-			Result.HighestPair = Pair;
+			Result.ResultMap.Add(Pair.Key, Pair.Value * Weight);
+			PairAdded = true;
+		}
+
+		if(PairAdded)
+		{
+			if (HighestPairRef.Value < Pair.Value * Weight)
+			{
+				HighestPairRef.Key = Pair.Key;
+				HighestPairRef.Value = Pair.Value * Weight;
+			}
+			if (Result.LowestPair.Value > Pair.Value * Weight)
+			{
+				LowestPairRef.Key = Pair.Key;
+				LowestPairRef.Value = Pair.Value * Weight;
+			}
 		}
 	}
 
 	return Result;
 }
 
-FMapOperationResult UInfMapFunctionLibrary::MultTargetMap(const FMapOperationResult& MapA,
-	const TMap<FIntVector, float>& MapB, float Weight)
+FMapOperationResult& UInfMapFunctionLibrary::MultTargetMap(const FMapOperationResult& MapA,
+	const TMap<FIntVector, float>& MapB, float Weight, bool Inclusive)
 {
-	FMapOperationResult Result = MapA;
-	Result.HighestPair = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	//evil const_cast to save from memory, probably fine as this map not gonna be used by multiple processes
+	FMapOperationResult& Result = const_cast<FMapOperationResult&>(MapA);
 
+	TPair<FIntVector, float>& HighestPairRef = Result.HighestPair;
+	TPair<FIntVector, float>& LowestPairRef = Result.LowestPair;
+	
+	HighestPairRef  = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	LowestPairRef  = TPair<FIntVector, float>(FIntVector(), FLT_MAX);
+	
 	for (auto& Pair : Result.ResultMap)
 	{
-		if (const float* Value = MapB.Find(Pair.Key))
-			Pair.Value *= (*Value) * Weight;
-		else
-			Pair.Value = 0.f;
-
-		if (Result.HighestPair.Value < Pair.Value)
+		bool PairAdded = false;
+		
+		if (const float* Value = MapB.Find(Pair.Key)) Pair.Value *= (*Value) * Weight;
+		else Pair.Value = 0.f;
+		
+		if (HighestPairRef.Value < Pair.Value * Weight)
 		{
-			Result.HighestPair = Pair;
+			HighestPairRef = Pair;
+		}
+		if (LowestPairRef.Value > Pair.Value * Weight)
+		{
+			LowestPairRef = Pair;
 		}
 	}
 
 	return Result;
 }
 
-FMapOperationResult UInfMapFunctionLibrary::InvertTargetMap(const FMapOperationResult& TargetMap)
+FMapOperationResult& UInfMapFunctionLibrary::InvertTargetMap(const FMapOperationResult& TargetMap)
 {
-	FMapOperationResult Result = TargetMap;
-	Result.HighestPair = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	FMapOperationResult& Result = const_cast<FMapOperationResult&>(TargetMap);
+	
+	TPair<FIntVector, float>& HighestPairRef = Result.HighestPair;
+	TPair<FIntVector, float>& LowestPairRef = Result.LowestPair;
 
+	const float Max = HighestPairRef.Value;
+
+	HighestPairRef  = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	LowestPairRef  = TPair<FIntVector, float>(FIntVector(), FLT_MAX);
+	
 	for (auto& Pair : Result.ResultMap)
 	{
-		Pair.Value = TargetMap.HighestPair.Value - Pair.Value;
-		if (Result.HighestPair.Value < Pair.Value)
-			Result.HighestPair = Pair;
+		Pair.Value = Max - Pair.Value;
+		
+		if (HighestPairRef.Value < Pair.Value)
+		{
+			HighestPairRef = Pair;
+		}
+		if (LowestPairRef.Value > Pair.Value)
+		{
+			LowestPairRef = Pair;
+		}
 	}
 
 	return Result;
 }
 
-FMapOperationResult UInfMapFunctionLibrary::NormalizeTargetMap(const FMapOperationResult& TargetMap)
+FMapOperationResult& UInfMapFunctionLibrary::NormalizeTargetMap(const FMapOperationResult& TargetMap)
 {
-	FMapOperationResult Result = TargetMap;
-	Result.HighestPair = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	FMapOperationResult& Result = const_cast<FMapOperationResult&>(TargetMap);
+	
+	TPair<FIntVector, float>& HighestPairRef = Result.HighestPair;
+	TPair<FIntVector, float>& LowestPairRef = Result.LowestPair;
 
+	const float Max = HighestPairRef.Value;
+	const float Min = LowestPairRef.Value;
+	const float Range = Max - Min;
+
+	HighestPairRef  = TPair<FIntVector, float>(FIntVector(), -FLT_MAX);
+	LowestPairRef  = TPair<FIntVector, float>(FIntVector(), FLT_MAX);
+	
 	for (auto& Pair : Result.ResultMap)
 	{
-		Pair.Value /= TargetMap.HighestPair.Value;
-		if (Result.HighestPair.Value < Pair.Value)
-			Result.HighestPair = Pair;
+		Pair.Value = (Pair.Value - Min) / Range;
+		
+		if (HighestPairRef.Value < Pair.Value)
+		{
+			HighestPairRef = Pair;
+		}
+		if (LowestPairRef.Value > Pair.Value)
+		{
+			LowestPairRef = Pair;
+		}
 	}
 
 	return Result;
@@ -133,9 +198,14 @@ FIntVector UInfMapFunctionLibrary::GetHighestLocation(const FMapOperationResult&
 {
 	return TargetMap.HighestPair.Key;
 }
+	
+FIntVector UInfMapFunctionLibrary::GetLowestLocation(const FMapOperationResult& TargetMap)
+{
+	return TargetMap.LowestPair.Key;
+}
 
 FIntVector UInfMapFunctionLibrary::SelectNearbyHighestLocation(const FMapOperationResult& TargetMap,
-	const FVector& CurrentLocation)
+                                                               const FVector& CurrentLocation)
 {
 	TMap<FIntVector, float> Temp = TargetMap.ResultMap;
 	// Value���傫�����Ƀ\�[�g
@@ -187,5 +257,47 @@ FIntVector UInfMapFunctionLibrary::SelectLocationOfLeastInfluenceValue(const FMa
 	}
 
 	return TargetKey;
+}
 
+FMapOperationResult UInfMapFunctionLibrary::GetInfluenceMapFromQuery(const FInfQueryData& QueryData)
+{
+	TMap<FIntVector, float> TempInfluenceMap;
+	FMapOperationResult ResultData = InitializeWorkingMap(TempInfluenceMap);
+	UInfPropagator* Propagator = QueryData.Propagator;
+	if(Propagator)
+	{
+		TMap<FIntVector, float> TargetMap = TMap<FIntVector, float>();
+		for (const auto& OpData : QueryData.OperationConstructData)
+		{
+			if(OpData.OperationType == EOperationType::Add || OpData.OperationType == EOperationType::Mult)
+			{
+				TargetMap = Propagator->GetMap(OpData.MapTag, OpData.GatherDistance, OpData.bIgnoreSelf, OpData.BehaviourTags, OpData.RequiredTag, OpData.BlockedTag);
+			}
+		
+			switch (OpData.OperationType)
+			{
+			case EOperationType::Add:
+				AddTargetMap(ResultData, TargetMap, OpData.Weight, OpData.Inclusive);
+				break;
+			case EOperationType::Mult:
+				MultTargetMap(ResultData, TargetMap, OpData.Weight, OpData.Inclusive);
+				break;
+			case EOperationType::Invert:
+				InvertTargetMap(ResultData);
+				break;
+			case EOperationType::Normalize:
+				NormalizeTargetMap(ResultData);
+				break;
+			}
+		}
+	}
+	return ResultData;
+}
+
+FInfQueryData UInfMapFunctionLibrary::MakeInfluenceQueryData(const TArray<FOperationData>& InfluenceOperation, UInfPropagator* InPropagator)
+{
+	FInfQueryData Result = FInfQueryData();
+	Result.OperationConstructData = InfluenceOperation;
+	Result.Propagator = InPropagator;
+	return Result;
 }

@@ -4,12 +4,16 @@
 #include "NavMesh/RecastHelpers.h"
 #include "DrawDebugHelpers.h"
 #include "AI/Navigation/AITask_InfMapMoveTo.h"
+#include "AI/Navigation/InfCollectionInterface.h"
+#include "AI/Navigation/InfPropagator.h"
+#include "Kismet/GameplayStatics.h"
+#include "VisualLogger/VisualLogger.h"
 
 DECLARE_CYCLE_STAT(TEXT("Custom Pathfinding"), STAT_Navigation_CustomPathfinding, STATGROUP_Navigation)
 
 FInfQueryFilter::FInfQueryFilter(bool inIsVirtual)
 : FRecastQueryFilter(inIsVirtual)
-	, InfluenceMap(nullptr)
+	, InfluenceMap()
 	, FIXED_ADDITIONAL_COST(1000.f)
 	, CostMultiplier(1.f)
 	, World(nullptr)
@@ -24,12 +28,13 @@ void FInfQueryFilter::SetDataUsedForDebugging(UWorld* NewWorld, bool bDrawDebugE
 	UE_LOG(LogTemp, Warning, TEXT("FInfQueryFilter SetAdditionalData"));
 }
 
-void FInfQueryFilter::SetAdditionalNavigationData(const TMap<FIntVector, float>& InInfluenceMapData,
+void FInfQueryFilter::SetAdditionalNavigationData(const FInfQueryData& QueryData,
 	float InCostMultiplier)
 {
-	InfluenceMap = &InInfluenceMapData;
+	const FMapOperationResult ResultData = UInfMapFunctionLibrary::GetInfluenceMapFromQuery(QueryData);
+	InfluenceMap = ResultData.ResultMap;	
+	
 	CostMultiplier = InCostMultiplier;
-	// �����̓f�o�b�O�p�r�̗]�v�ȏ���.
 	if (bDrawDebugFindPath)
 	{
 		FlushPersistentDebugLines(World);
@@ -62,13 +67,13 @@ float FInfQueryFilter::getVirtualCost(const float* pa, const float* pb, const dt
 		areaChangeCost = data.m_areaFixedCost[nextPoly->getArea()];
 
 	float AdditionalCost = 0.f;
-	if (InfluenceMap && InfluenceMap->Num() != 0)
+	if (InfluenceMap.Num() != 0)
 	{
 		FIntVector NodeALoc = FIntVector(Recast2UnrealPoint(pa));
 		FIntVector NodeBLoc = FIntVector(Recast2UnrealPoint(pb));
 		
-		if (InfluenceMap->Contains(NodeALoc)) { AdditionalCost = (*InfluenceMap)[NodeALoc] * CostMultiplier * FIXED_ADDITIONAL_COST; }
-		if (InfluenceMap->Contains(NodeBLoc)) { AdditionalCost = (*InfluenceMap)[NodeBLoc] * CostMultiplier * FIXED_ADDITIONAL_COST; }
+		if (InfluenceMap.Contains(NodeALoc)) { AdditionalCost = InfluenceMap[NodeALoc] * CostMultiplier * FIXED_ADDITIONAL_COST; }
+		if (InfluenceMap.Contains(NodeBLoc)) { AdditionalCost = InfluenceMap[NodeBLoc] * CostMultiplier * FIXED_ADDITIONAL_COST; }
 	}
 
 	float TraversalCost = dtVdist(pa, pb) * data.m_areaCost[curPoly->getArea()] + areaChangeCost + AdditionalCost;
@@ -133,11 +138,11 @@ void AInfNavMesh::RecreateDefaultFilter()
 	}
 }
 
-void AInfNavMesh::SetInfluenceMapData(const FAIInfMapMoveRequest& InfluenceMapData)
+void AInfNavMesh::SetInfluenceQueryData(const FAIInfMapMoveRequest& InfluenceMapData)
 {
-	if ((*InfluenceMapData.GetTargetInfluenceMapData()).Num() > 0)
+	if ((InfluenceMapData.GetInfluenceQueryData()->OperationConstructData).Num() > 0)
 	{
-		DetourFilter->SetAdditionalNavigationData((*InfluenceMapData.GetTargetInfluenceMapData()), InfluenceMapData.GetCostMultiplier());
+		DetourFilter->SetAdditionalNavigationData((*InfluenceMapData.GetInfluenceQueryData()), InfluenceMapData.GetCostMultiplier());
 	}
 }
 
@@ -147,4 +152,82 @@ void AInfNavMesh::OnNavMeshTilesUpdated(const TArray<uint32>& ChangedTiles)
 
 	//send this array to the influence graph
 	OnNeedToUpdateGraph.Broadcast(ChangedTiles);
+}
+
+void AInfNavMesh::BeginPlay()
+{
+	Super::BeginPlay();
+
+	//try to get InfCollectionActor from world
+	TArray<AActor*> OutActors;
+	UGameplayStatics::GetAllActorsWithInterface(this, UInfCollectionInterface::StaticClass(), OutActors);
+
+	if (OutActors.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT(" UInfluencePropagator::BeginPlay(): Influence Map Collection does not exist"));
+		return;
+	}
+
+	IInfCollectionInterface* MapCollectionInterface = Cast<IInfCollectionInterface>(OutActors[0]);
+	InfluenceMapCollectionRef = MapCollectionInterface ;
+	InfluenceMapCollectionInterfaceRef = MapCollectionInterface->_getUObject();
+}
+
+void AInfNavMesh::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	NavigationTickTime -= DeltaSeconds;
+	if(NavigationTickTime < 0 || !InfluenceMapCollectionRef)
+	{
+		NavigationTickTime = 1.f;
+
+		const int32 PathsCount = ActivePaths.Num();
+		FScopeLock PathLock(&ActivePathsLock);
+
+		FNavPathWeakPtr* WeakPathPtr = (ActivePaths.GetData() + PathsCount - 1);
+		for (int32 PathIndex = PathsCount - 1; PathIndex >= 0; --PathIndex, --WeakPathPtr)
+		{
+			FNavPathSharedPtr SharedPath = WeakPathPtr->Pin();
+			if (WeakPathPtr->IsValid() == false)
+			{
+				ActivePaths.RemoveAtSwap(PathIndex, 1, /*bAllowShrinking=*/false);
+			}
+			else
+			{
+				// iterate through all tile refs in FreshTilesCopy and 
+				FNavMeshPath* Path = (FNavMeshPath*)(SharedPath.Get());
+				if (Path->IsReady() == false ||
+					Path->GetIgnoreInvalidation() == true)
+				{
+					// path not filled yet or doesn't care about invalidation
+					continue;
+				}
+
+				//make sure it is influence movement query filter
+				//TODO: this is some evil taboo stuffs, can this be improved?
+				FNavigationQueryFilter* Query = const_cast<FNavigationQueryFilter*>(Path->GetQueryData().QueryFilter.Get());
+				const FInfQueryFilter* InfluenceFilter = static_cast<FInfQueryFilter*>(Query->GetImplementation());
+
+				if(!InfluenceFilter) continue;;
+
+				const TArray<uint32>& AffectedTiles = InfluenceMapCollectionRef->GetAffectedTile();
+				const int32 PathLenght = Path->PathCorridor.Num();
+				const NavNodeRef* PathPoly = Path->PathCorridor.GetData();
+
+				for (int32 NodeIndex = 0; NodeIndex < PathLenght; ++NodeIndex, ++PathPoly)
+				{
+					uint32 PolyIndex = NodeIndex;
+					uint32 NodeTileIdx; 
+					GetPolyTileIndex(*PathPoly, PolyIndex, NodeTileIdx);
+					if (AffectedTiles.Contains(NodeTileIdx))
+					{
+						SharedPath->Invalidate();
+						ActivePaths.RemoveAtSwap(PathIndex, 1, false);
+						break;
+					}
+				}
+			}
+		}
+	}
 }

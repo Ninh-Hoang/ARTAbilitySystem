@@ -67,7 +67,7 @@ public:
 	
 	FGenericTeamId GetGenericTeamId() const override;
 
-	ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 	//hit direction
 	UFUNCTION(BlueprintCallable, Category = "ART|Character")

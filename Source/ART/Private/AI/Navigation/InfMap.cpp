@@ -8,6 +8,7 @@
 #include "AI/Navigation/InfGraphInterface.h"
 #include "AI/Navigation/InfMapFunctionLibrary.h"
 #include "AI/Navigation/InfPropagatorInterface.h"
+#include "Blueprint/ARTBlueprintFunctionLibrary.h"
 
 
 // Sets default values
@@ -61,7 +62,7 @@ void AInfMap::UpdateInfluenceMap()
 
 	// update map by calling all propagation interface
 	ParallelFor(Propagators.Num(), [&](int32 PropIdx) { Propagators[PropIdx]->UpdatePropagationMap(); });
-
+	
 	if (bDrawDebugInfluenceMap)
 	{
 		TArray<TMap<FIntVector, float>> PropagationStamps;
@@ -130,28 +131,45 @@ void AInfMap::DrawDebugIMap(const TMap<FIntVector, float>& CompleteStamp, bool b
 	}
 }
 
-TMap<FIntVector, float> AInfMap::GatherTeamMap(const TArray<FGenericTeamId>& Teams, const IInfPropagatorInterface* Self,
-	bool bIgnoreSelf, float GatherDistance) const
+void AInfMap::GatherMap(const FGameplayTagContainer& BehaviourTags,
+	const FGameplayTagContainer& RequiredTags,
+	const FGameplayTagContainer& BlockTags,
+	const IInfPropagatorInterface* Self,
+	bool bIgnoreSelf,
+	float GatherDistance,
+	TMap<FIntVector, float>& Result) const
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_AInfMapCollection_GatherTeamMap);
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_AInfMapCollection_GatherMap);
 
-	if (Teams.Num() == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AInfluenceMapCollection::GatherTeamMap() : Teams is empty! Be sure to specify an enemy or ally team."));
-		return TMap<FIntVector, float>();
-	}
-
-	TMap<FIntVector, float> Result;
+	bool NeedToCheckBehaviourTags = !BehaviourTags.IsEmpty();
+	bool NeedToCheckRequiredTags = !RequiredTags.IsEmpty();
+	bool NeedToCheckBlockedTags = !BlockTags.IsEmpty();
+	
 	Result.Reserve(InfluenceMapCollectionRef->GetNodeGraph()->GetNodeGraphData()->NodeMap.Num());
 
 	const FVector& SelfLocation = Self->GetOwnerActor()->GetActorLocation();
 	bool bInfiniteGatherDistance = (GatherDistance <= 0.f);
 	float ThresholdSq = (bInfiniteGatherDistance) ? FLT_MAX : FMath::Square(GatherDistance);
+	
 	for (const IInfPropagatorInterface* Propagator : GetPropagators())
 	{
 		if (bIgnoreSelf && Propagator == Self)	continue;
-		if (!Teams.Contains(Propagator->GetTeam()))	continue;
+
 		if (!bInfiniteGatherDistance && FVector::DistSquared(SelfLocation, Propagator->GetOwnerActor()->GetActorLocation()) > ThresholdSq) continue;
+		
+		if (NeedToCheckBehaviourTags)
+		{
+			if(!UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(Self->GetOwnerActor(), Propagator->GetOwnerActor()).HasAll(BehaviourTags)) continue;
+		}
+
+		if(NeedToCheckBlockedTags || NeedToCheckRequiredTags)
+		{
+			auto ASC = Cast<IAbilitySystemInterface>(Propagator->GetOwnerActor())->GetAbilitySystemComponent();
+			
+			FGameplayTagContainer PropagatorTags;
+			UARTBlueprintFunctionLibrary::GetTags(Propagator->GetOwnerActor(), PropagatorTags);
+			if(!UARTBlueprintFunctionLibrary::DoesSatisfyTagRequirements(PropagatorTags, RequiredTags, BlockTags)) continue;
+		}
 
 		for (const auto& Pair : Propagator->GetPropagationMap())
 		{
@@ -161,5 +179,19 @@ TMap<FIntVector, float> AInfMap::GatherTeamMap(const TArray<FGenericTeamId>& Tea
 				Result[Pair.Key] += Pair.Value;
 		}
 	}
-	return Result;
+}
+
+const TArray<uint32> AInfMap::GetAffectedTile() const
+{
+	TArray<uint32> AffectedTiles;
+	
+	for(auto& Propagator : Propagators)
+	{
+		const TArray<uint32>& PropagatorAffectedTile = Propagator->GetAffectedTile();
+		for(uint32 TileIndex : PropagatorAffectedTile)
+		{
+			AffectedTiles.AddUnique(TileIndex);
+		}
+	}
+	return AffectedTiles;
 }

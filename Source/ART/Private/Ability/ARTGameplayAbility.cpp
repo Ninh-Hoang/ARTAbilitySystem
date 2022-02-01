@@ -857,24 +857,24 @@ bool UARTGameplayAbility::DoesSatisfyTargetTagRequirement(AActor* TargetActor)
 
 	if (GetAvatarActorFromActorInfo() == TargetActor)
 	{
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Friendly());
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Self());
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Visible());
+		RelationshipTags.AddTag(FARTGlobalTags::Get().Behaviour_Friendly);
+		RelationshipTags.AddTag(FARTGlobalTags::Get().Behaviour_Self);
+		RelationshipTags.AddTag(FARTGlobalTags::Get().Behaviour_Visible);
 	}
 	
-	const AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(GetAvatarActorFromActorInfo());
-	ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*TargetActor);
+	const IGenericTeamAgentInterface* SourceCharacter = Cast<IGenericTeamAgentInterface>(GetAvatarActorFromActorInfo());
+	const ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*TargetActor);
 
 	switch (TeamAttitude)
 	{
 	case ETeamAttitude::Friendly:
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Friendly());
+		RelationshipTags.AddTag(FARTGlobalTags::Get().Behaviour_Friendly);
 		break;
 	case ETeamAttitude::Neutral:
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Neutral());
+		RelationshipTags.AddTag(FARTGlobalTags::Get().Behaviour_Neutral);
 		break;
 	case ETeamAttitude::Hostile:
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Hostile());
+		RelationshipTags.AddTag(FARTGlobalTags::Get().Behaviour_Hostile);
 		break;
 	default:
 		break;

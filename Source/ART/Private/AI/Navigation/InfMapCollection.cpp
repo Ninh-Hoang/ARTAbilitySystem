@@ -65,6 +65,21 @@ IInfMapInterface* AInfMapCollection::GetMapSafe(const FGameplayTag& MapTag) cons
 	return Collection[MapTag];
 }
 
+const TArray<uint32> AInfMapCollection::GetAffectedTile() const
+{
+	TArray<uint32> AffectedTiles;
+	for(auto& Map : Collection)
+	{
+		const TArray<uint32>& MapAffectedTile = Map.Value->GetAffectedTile();
+		
+		for(uint32 TileIndex : MapAffectedTile)
+		{
+			AffectedTiles.AddUnique(TileIndex);
+		}
+	}
+	return AffectedTiles;
+}
+
 void AInfMapCollection::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	FName PropertyName = (PropertyChangedEvent.Property != NULL) ? PropertyChangedEvent.Property->GetFName() : NAME_None;

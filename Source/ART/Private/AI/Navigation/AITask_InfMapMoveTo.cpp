@@ -7,28 +7,30 @@
 #include "AIResources.h"
 #include "AISystem.h"
 #include "AI/Navigation/InfMapAIController.h"
+#include "AI/Navigation/InfMapFunctionLibrary.h"
+#include "AI/Navigation/InfNavMesh.h"
 
 FAIInfMapMoveRequest::FAIInfMapMoveRequest()
 	: Super()
-	, TargetInfluenceMapData()
+	, InfluenceQueryData()
 {
 }
 
 FAIInfMapMoveRequest::FAIInfMapMoveRequest(const AActor* InGoalActor)
 	: Super(InGoalActor)
-	, TargetInfluenceMapData()
+	, InfluenceQueryData()
 {
 }
 
 FAIInfMapMoveRequest::FAIInfMapMoveRequest(const FVector& InGoalLocation)
 	: Super(InGoalLocation)
-	, TargetInfluenceMapData()
+	, InfluenceQueryData()
 {
 }
 
 FAIInfMapMoveRequest::FAIInfMapMoveRequest(FAIMoveRequest& BaseMoveRequest)
 	: Super()
-	, TargetInfluenceMapData()
+	, InfluenceQueryData()
 {
 }
 
@@ -55,7 +57,7 @@ void UAITask_InfMapMoveTo::SetInfluenceMapMoveRequest(const FAIInfMapMoveRequest
 }
 
 UAITask_InfMapMoveTo* UAITask_InfMapMoveTo::AIMoveToUseInfluenceMapData(AAIController* Controller,
-	const TMap<FIntVector, float>& TargetMapData, float CostMultiplier, FVector InGoalLocation, AActor* InGoalActor,
+	const struct FInfQueryData& InfluenceQueryData, float CostMultiplier, FVector InGoalLocation, AActor* InGoalActor,
 	float AcceptanceRadius, EAIOptionFlag::Type StopOnOverlap, EAIOptionFlag::Type AcceptPartialPath,
 	bool bUsePathfinding, bool bLockAILogic, bool bUseContinuosGoalTracking,
 	EAIOptionFlag::Type ProjectGoalOnNavigation)
@@ -73,7 +75,7 @@ UAITask_InfMapMoveTo* UAITask_InfMapMoveTo::AIMoveToUseInfluenceMapData(AAIContr
 			MoveReq.SetGoalLocation(InGoalLocation);
 		}
 	
-		MoveReq.SetTargetInfluenceMapData(TargetMapData);	//influence base
+		MoveReq.SetInfluenceQueryData(InfluenceQueryData);	//influence base
 		MoveReq.SetCostMultiplier(CostMultiplier);	//influence base
 		
 		MoveReq.SetAcceptanceRadius(AcceptanceRadius);
@@ -164,7 +166,7 @@ void UAITask_InfMapMoveTo::PerformMove()
 {
 	if (OwnerInfluenceMapAIController == nullptr)
 	{
-		OwnerInfluenceMapAIController = StaticCast<AInfMapAIController*>(OwnerController);
+		OwnerInfluenceMapAIController = Cast<AInfMapAIController>(OwnerController);
 		if (OwnerInfluenceMapAIController == nullptr)
 		{
 			FinishMoveTask(EPathFollowingResult::Invalid);
@@ -401,6 +403,11 @@ void UAITask_InfMapMoveTo::ConditionalUpdatePath()
 		ANavigationData* NavData = Path.IsValid() ? Path->GetNavigationDataUsed() : nullptr;
 		if (NavData)
 		{
+			//if(AInfNavMesh* NavMesh = UInfMapFunctionLibrary::GetInfNavMesh(GetWorld()))
+			if(AInfNavMesh* NavMesh = Cast<AInfNavMesh>(NavData))
+			{
+				NavMesh->SetInfluenceQueryData(InfluenceMapMoveRequest);
+			}
 			NavData->RequestRePath(Path, ENavPathUpdateType::NavigationChanged);
 		}
 		else

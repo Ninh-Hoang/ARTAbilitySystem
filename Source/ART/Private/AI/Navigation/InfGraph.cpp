@@ -83,6 +83,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 		}
 	}
 
+	//get key to actually remove and get edge node
 	TArray<FIntVector> KeyToRemove;
 	TArray<FIntVector> KeyAtEdge;
 	KeyToRemove.Reserve(NodeInChangedTile.Num());
@@ -116,6 +117,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 
 	//we have to keep node that have access to neighbors that do not belong to changed tile
 	//remove all other node, access their neighbour and remove
+	TArray<FIntVector> NeighborToRemove;
 	for (int32 i = 0; i < KeyAtEdge.Num(); i++)
 	{
 		FInfNode& Node = NodeGraph.NodeMap[KeyAtEdge[i]];
@@ -123,8 +125,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 		
 		//access all neighbor, get their neighbour list and remove this node graph location from it
 		const TArray<FIntVector>& Neighbors = Node.GetNeighbor();
-
-		TArray<FIntVector> NeighborToRemove;
+		
 		for(int32 a = 0; a < Neighbors.Num(); a++)
 		{
 			
@@ -138,6 +139,9 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 		{
 			Node.RemoveNeighbor(Neighbor);
 		}
+
+		//we do this so we don't have to make a new array all the time
+		NeighborToRemove.Reset();
 	}
 	
 	//finally remove node if not edge node
@@ -148,9 +152,11 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 	
 	//add new node to map
 	int NewID = 0, SkipCount = 0;
+
+	TArray<FIntVector> SpawnNodes;
 	for(int32 i = 0; i < ChangedTiles.Num(); i++)
 	{
-		uint32 CurrentTileIndex = ChangedTiles[i];
+		const uint32 CurrentTileIndex = ChangedTiles[i];
 		
 		TArray<FNavPoly> Polys;
 		if (!NavMeshCache->GetPolysInTile(CurrentTileIndex, Polys))
@@ -168,8 +174,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 				SkipCount++;
 				continue;
 			}
-
-			TArray<FIntVector> SpawnNodes;
+			
 			// iterate verts
 			for (int VertIdx = 0; VertIdx < PolyVerts.Num(); VertIdx++)
 			{
@@ -205,6 +210,7 @@ void AInfGraph::OnNeedUpdateGraph(const TArray<uint32>& ChangedTiles)
 					}
 			}
 		}
+		SpawnNodes.Reset();
 	}
 
 	if (SkipCount == ChangedTiles.Num())

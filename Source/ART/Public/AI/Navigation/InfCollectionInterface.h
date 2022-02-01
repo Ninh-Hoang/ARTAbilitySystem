@@ -25,4 +25,5 @@ class ART_API IInfCollectionInterface
 public:
 	virtual class IInfMapInterface* GetMapSafe(const FGameplayTag& MapTag) const = 0;
 	virtual const class IInfGraphInterface* GetNodeGraph() const = 0;
+	virtual const TArray<uint32> GetAffectedTile() const = 0;
 };

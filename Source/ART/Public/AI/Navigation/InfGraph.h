@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "InfGraphInterface.h"
-#include "InfStruct.h"
+#include "InfType.h"
 #include "InfGraph.generated.h"
 
 UENUM()

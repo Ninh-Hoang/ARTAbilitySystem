@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GenericTeamAgentInterface.h"
 #include "UObject/Interface.h"
 #include "InfMapInterface.generated.h"
@@ -26,5 +27,12 @@ public:
 	virtual void Initialize(class IInfCollectionInterface* MapCollectionInterface) = 0;
 	virtual void AddPropagator(class IInfPropagatorInterface* NewPropagator) = 0;
 	virtual const TArray<class IInfPropagatorInterface*>& GetPropagators() const = 0;
-	virtual TMap<FIntVector, float> GatherTeamMap(const TArray<FGenericTeamId>& Teams, const class IInfPropagatorInterface* Self, bool bIgnoreSelf = false, float GatherDistance = 0.f) const = 0;
+	virtual void GatherMap(const FGameplayTagContainer& BehaviourTags,
+		const FGameplayTagContainer& RequiredTags,
+		const FGameplayTagContainer& BlockTags,
+		const class IInfPropagatorInterface* Self,
+		bool bIgnoreSelf,
+		float GatherDistance,
+		TMap<FIntVector, float>& Result) const = 0;
+	virtual const TArray<uint32> GetAffectedTile() const = 0;
 };

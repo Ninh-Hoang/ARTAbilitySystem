@@ -261,13 +261,13 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 }
 
 TArray<FGameplayAbilityTargetDataHandle> UARTBlueprintFunctionLibrary::FilterTargetDataArray(
-	TArray<FGameplayAbilityTargetDataHandle> TargetDataArray, FGameplayTargetDataFilterHandle Filterhandle)
+	TArray<FGameplayAbilityTargetDataHandle> TargetDataArray, FGameplayTargetDataFilterHandle FilterHandle)
 {
 	TArray<FGameplayAbilityTargetDataHandle> OutTargetDataArray;
 
 	for (int i = 0; i < TargetDataArray.Num(); i++)
 	{
-		OutTargetDataArray.Add(UAbilitySystemBlueprintLibrary::FilterTargetData(TargetDataArray[i], Filterhandle));
+		OutTargetDataArray.Add(UAbilitySystemBlueprintLibrary::FilterTargetData(TargetDataArray[i], FilterHandle));
 	}
 
 	return OutTargetDataArray;
@@ -278,7 +278,7 @@ FGameplayAbilityTargetDataHandle UARTBlueprintFunctionLibrary::MakeTargetDataFro
 {
 	FGameplayAbilityTargetDataHandle ReturnDataHandle;
 
-	for (FHitResult& Hit : HitResults)
+	for (const FHitResult& Hit : HitResults)
 	{
 		FGameplayAbilityTargetData_SingleTargetHit* TargetData = new FGameplayAbilityTargetData_SingleTargetHit(Hit);
 		ReturnDataHandle.Data.Add(TSharedPtr<FGameplayAbilityTargetData>(TargetData));
@@ -446,7 +446,7 @@ bool UARTBlueprintFunctionLibrary::DoesSatisfyTagRequirementsWithResult(const FG
 		if (Tags.HasTag(Tag))
 		{
 			bSuccess = false;
-			OutBlockingTags.AddTag(Tag);
+			OutBlockingTags.AddTagFast(Tag);
 		}
 	}
 
@@ -455,7 +455,7 @@ bool UARTBlueprintFunctionLibrary::DoesSatisfyTagRequirementsWithResult(const FG
 		if (!Tags.HasTag(Tag))
 		{
 			bSuccess = false;
-			OutMissingTags.AddTag(Tag);
+			OutMissingTags.AddTagFast(Tag);
 		}
 	}
 
@@ -470,11 +470,13 @@ void UARTBlueprintFunctionLibrary::GetTags(const AActor* Actor, FGameplayTagCont
 		return;
 	}
 
-	const UAbilitySystemComponent* AbilitySystem = Actor->FindComponentByClass<UAbilitySystemComponent>();
-	if (AbilitySystem == nullptr)
-	{
-		return;
-	}
+	const IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(Actor);
+	
+	if (!ASCInterface) return;
+	
+	const UAbilitySystemComponent* AbilitySystem = ASCInterface->GetAbilitySystemComponent();
+	
+	if (!AbilitySystem) return;
 
 	AbilitySystem->GetOwnedGameplayTags(OutGameplayTags);
 }
@@ -496,31 +498,30 @@ FGameplayTagContainer UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(const AA
 {
 	FGameplayTagContainer RelationshipTags;
 	
-	const AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(Actor);
-	const AARTCharacterBase* OtherCharacter = Cast<AARTCharacterBase>(Other);
+	if(!Actor || !Other) return RelationshipTags;
 	
-	if(!SourceCharacter || !OtherCharacter) return RelationshipTags;
-	
-	if (SourceCharacter == OtherCharacter)
+	if (Actor == Other)
 	{
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Friendly());
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Self());
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Visible());
+		RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Friendly);
+		RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Self);
+		RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Visible);
 		return RelationshipTags;
 	}
+
+	const IGenericTeamAgentInterface* SourceCharacter = Cast<IGenericTeamAgentInterface>(Actor);
 	
-	ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*OtherCharacter);
+	const ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*Other);
 
 	switch (TeamAttitude)
 	{
 	case ETeamAttitude::Friendly:
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Friendly());
+		RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Friendly);
 		break;
 	case ETeamAttitude::Neutral:
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Neutral());
+		RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Neutral);
 		break;
 	case ETeamAttitude::Hostile:
-		RelationshipTags.AddTag(UARTGlobalTags::Behaviour_Hostile());
+		RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Hostile);
 		break;
 	default:
 		break;

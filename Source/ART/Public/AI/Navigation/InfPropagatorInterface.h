@@ -26,6 +26,7 @@ class ART_API IInfPropagatorInterface
 public:
 	virtual void Initialize(class IInfCollectionInterface* LayerMapCollection) = 0;
 	virtual void UpdatePropagationMap() = 0;
+	virtual const TArray<uint32> GetAffectedTile() const = 0;
 	virtual const TMap<FIntVector, float>& GetPropagationMap() const = 0;
 	virtual FGameplayTag GetTargetMapTag() const = 0;
 	virtual FGenericTeamId GetTeam() const = 0;
