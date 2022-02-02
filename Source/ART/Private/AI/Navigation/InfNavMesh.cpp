@@ -5,7 +5,6 @@
 #include "DrawDebugHelpers.h"
 #include "AI/Navigation/AITask_InfMapMoveTo.h"
 #include "AI/Navigation/InfCollectionInterface.h"
-#include "AI/Navigation/InfPropagator.h"
 #include "Kismet/GameplayStatics.h"
 #include "VisualLogger/VisualLogger.h"
 
