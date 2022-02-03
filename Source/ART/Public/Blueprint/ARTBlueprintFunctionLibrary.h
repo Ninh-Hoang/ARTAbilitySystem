@@ -76,7 +76,7 @@ public:
 	
 	// Adds target to a copy of the passed in effect container spec and returns it
 	UFUNCTION(BlueprintCallable, Category = "Ability|Container", Meta = (AutoCreateRefTerm =
-		"TargetData, HitResults, TargetActors"))
+		"TargetData, HitResult"))
 	static void AddTargetToEffectContainerSpec(UPARAM(ref) FARTGameplayEffectContainerSpec& ContainerSpec,
 												const FGameplayAbilityTargetDataHandle& TargetData,
 												const FHitResult& HitResult,
