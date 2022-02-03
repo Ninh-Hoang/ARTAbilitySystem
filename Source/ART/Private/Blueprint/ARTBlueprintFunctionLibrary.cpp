@@ -167,6 +167,32 @@ TArray<FActiveGameplayEffectHandle> UARTBlueprintFunctionLibrary::ApplyExternalE
 	return AllEffects;
 }
 
+FGameplayEffectSpecHandle UARTBlueprintFunctionLibrary::AssignTagMagnitudeInEffectContainerSpec(
+	const FARTGameplayEffectContainerSpec& ContainerSpec, FGameplayTag DataTag, float Magnitude, bool IsTargetSpec,
+	int32 Index)
+{
+	//check if index is valid
+	if(IsTargetSpec && Index > (ContainerSpec.TargetGameplayEffectSpecs.Num() -1)) return FGameplayEffectSpecHandle();
+	if(!IsTargetSpec && Index > (ContainerSpec.SourceGameplayEffectSpecs.Num() -1)) return FGameplayEffectSpecHandle();
+	
+	const FGameplayEffectSpecHandle* SpecHandle;
+	if(IsTargetSpec) SpecHandle = &ContainerSpec.TargetGameplayEffectSpecs[Index];
+	else SpecHandle = &ContainerSpec.SourceGameplayEffectSpecs[Index];
+
+	FGameplayEffectSpec* Spec = SpecHandle->Data.Get();
+	
+	if (Spec)
+	{
+		Spec->SetSetByCallerMagnitude(DataTag, Magnitude);
+	}
+	else
+	{
+		ABILITY_LOG(Warning, TEXT("UAbilitySystemBlueprintLibrary::AssignSetByCallerTagMagnitude called with invalid SpecHandle"));
+	}
+
+	return *SpecHandle;
+}
+
 FGameplayAbilityTargetDataHandle UARTBlueprintFunctionLibrary::EffectContextGetTargetData(
 	FGameplayEffectContextHandle EffectContextHandle)
 {

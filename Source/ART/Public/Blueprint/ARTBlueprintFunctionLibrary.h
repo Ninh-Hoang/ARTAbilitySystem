@@ -85,7 +85,15 @@ public:
 	// Applies container spec that was made from an ability
 	UFUNCTION(BlueprintCallable, Category = "Ability|Container")
 	static TArray<FActiveGameplayEffectHandle> ApplyExternalEffectContainerSpec(
-		const FARTGameplayEffectContainerSpec& ContainerSpec);
+												const FARTGameplayEffectContainerSpec& ContainerSpec);
+
+	//assign tag magnitude to GameplayEffectContainer in index
+	UFUNCTION(BlueprintCallable, Category = "Ability|Container")
+	static FGameplayEffectSpecHandle AssignTagMagnitudeInEffectContainerSpec(const FARTGameplayEffectContainerSpec& ContainerSpec,
+												FGameplayTag DataTag,
+												float Magnitude,
+												bool IsTargetSpec = true,
+												int32 Index = 0);
 
 	/**
 	* FARTGameplayEffectContext
