@@ -129,6 +129,7 @@ TArray<FActiveGameplayEffectHandle> UARTBlueprintFunctionLibrary::ApplyExternalE
 	for (const FGameplayEffectSpecHandle& SpecHandle : ContainerSpec.TargetGameplayEffectSpecs)
 	{
 			// If effect is valid, iterate list of targets and apply to all
+			if(!SpecHandle.IsValid()) continue;
 			for (TSharedPtr<FGameplayAbilityTargetData> Data : ContainerSpec.TargetData.Data)
 			{
 				//if instigator ASC still alive
@@ -154,13 +155,11 @@ TArray<FActiveGameplayEffectHandle> UARTBlueprintFunctionLibrary::ApplyExternalE
 	for(const FGameplayEffectSpecHandle& SpecHandle :ContainerSpec.SourceGameplayEffectSpecs)
 	{
 		// If effect is valid, iterate list of targets and apply to all
-		if(SpecHandle.IsValid())
-		{
+		if(!SpecHandle.IsValid()) continue;
 			//if instigator ASC still alive
-			if (UAbilitySystemComponent* ASC = SpecHandle.Data.Get()->GetContext().GetInstigatorAbilitySystemComponent())
-			{
-				AllEffects.Add(ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get()));
-			}
+		if (UAbilitySystemComponent* ASC = SpecHandle.Data.Get()->GetContext().GetInstigatorAbilitySystemComponent())
+		{
+			AllEffects.Add(ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get()));
 		}
 	}
 	
