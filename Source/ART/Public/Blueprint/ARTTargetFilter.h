@@ -124,7 +124,10 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 	TEnumAsByte<ETeamAttitude::Type> TeamAttitude;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
-	FGameplayTagContainer FilterTagContainer;
+	FGameplayTagContainer RequiredTags;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
+	FGameplayTagContainer BlockedTags;
 	
 	virtual bool FilterPassesForActor(const AActor* ActorToBeFiltered) const override
 	{
@@ -148,18 +151,26 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 		else
 		{
 			AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(SelfActor);
-			if(FilterTagContainer.IsValid())
-			{
-				UAbilitySystemComponent* ASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();;
-				if(ASC && ASC->HasAllMatchingGameplayTags(FilterTagContainer))
-				{
-					bPassFilter = false;
-				}
-				
-			}
+
 			if (TeamAttitude != (SourceCharacter->GetTeamAttitudeTowards(*TargetActor)))
 			{
 				bPassFilter = false;
+			}
+
+			if(RequiredTags.IsValid() || BlockedTags.IsValid())
+			{
+				UAbilitySystemComponent* ASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();;
+				if(ASC)
+				{
+					if(!ASC->HasAllMatchingGameplayTags(RequiredTags))
+					{
+						bPassFilter = false;
+					}
+					if(ASC->HasAnyMatchingGameplayTags(BlockedTags))
+					{
+						bPassFilter = false;
+					}
+				}
 			}
 		}
 

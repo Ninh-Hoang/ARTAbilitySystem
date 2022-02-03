@@ -73,6 +73,14 @@ public:
 	                                            const TArray<FGameplayAbilityTargetDataHandle>& TargetData,
 	                                            const TArray<FHitResult>& HitResults,
 	                                            const TArray<AActor*>& TargetActors);
+	
+	// Adds target to a copy of the passed in effect container spec and returns it
+	UFUNCTION(BlueprintCallable, Category = "Ability|Container", Meta = (AutoCreateRefTerm =
+		"TargetData, HitResults, TargetActors"))
+	static void AddTargetToEffectContainerSpec(UPARAM(ref) FARTGameplayEffectContainerSpec& ContainerSpec,
+												const FGameplayAbilityTargetDataHandle& TargetData,
+												const FHitResult& HitResult,
+												AActor* TargetActor);
 
 	// Applies container spec that was made from an ability
 	UFUNCTION(BlueprintCallable, Category = "Ability|Container")
@@ -126,10 +134,12 @@ public:
 	* FARTTargetFilterHandle filter by TeamAttitude
 	*/
 	UFUNCTION(BlueprintPure, Category = "Ability|TargetData", Meta = (DisplayName =
-		"Make Target Data Filter by Team Attitude"))
+	"Make Target Data Filter by Team Attitude", AutoCreateRefTerm =
+	"RequiredTags, BlockedTags"))
 	static FGameplayTargetDataFilterHandle MakeTargetDataFilterByTeamAttitude(
 		AActor* FilterActor,
-		FGameplayTagContainer InFilterTagContainer,
+		const FGameplayTagContainer& RequiredTags,
+		const FGameplayTagContainer& BlockedTags,
 		TEnumAsByte<ETeamAttitude::Type> InTeamAttitude,
 		TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
 		bool InReverseFilter);

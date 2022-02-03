@@ -134,6 +134,25 @@ void FARTGameplayEffectContainerSpec::AddTargets(const TArray<FGameplayAbilityTa
 	}
 }
 
+void FARTGameplayEffectContainerSpec::AddTarget(const FGameplayAbilityTargetDataHandle& InTargetData,
+	const FHitResult& HitResult, AActor* TargetActor)
+{
+	if(InTargetData.Num() != 0) TargetData.Append(InTargetData);
+
+	if(HitResult.GetActor())
+	{
+		FGameplayAbilityTargetData_SingleTargetHit* NewData = new FGameplayAbilityTargetData_SingleTargetHit(HitResult);
+		TargetData.Add(NewData);
+	}
+
+	if (TargetActor)
+	{
+		FGameplayAbilityTargetData_ActorArray* NewData = new FGameplayAbilityTargetData_ActorArray();
+		NewData->TargetActorArray.Add(TargetActor);
+		TargetData.Add(NewData);
+	}
+}
+
 void FARTGameplayEffectContainerSpec::ClearTargets()
 {
 	TargetData.Clear();

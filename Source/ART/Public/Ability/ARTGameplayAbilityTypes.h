@@ -143,6 +143,10 @@ public:
 	void AddTargets(const TArray<FGameplayAbilityTargetDataHandle>& TargetData, const TArray<FHitResult>& HitResults,
                     const TArray<AActor*>& TargetActors);
 
+	/** Adds new target to target data */
+	void AddTarget(const FGameplayAbilityTargetDataHandle& TargetData, const FHitResult& HitResult,
+					AActor* TargetActor);
+
 	/** Clears target data */
 	void ClearTargets();
 };

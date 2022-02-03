@@ -114,6 +114,12 @@ void UARTBlueprintFunctionLibrary::AddTargetsToEffectContainerSpec(FARTGameplayE
 	ContainerSpec.AddTargets(TargetData, HitResults, TargetActors);
 }
 
+void UARTBlueprintFunctionLibrary::AddTargetToEffectContainerSpec(FARTGameplayEffectContainerSpec& ContainerSpec,
+	const FGameplayAbilityTargetDataHandle& TargetData, const FHitResult& HitResult, AActor* TargetActor)
+{
+	ContainerSpec.AddTarget(TargetData, HitResult, TargetActor);
+}
+
 TArray<FActiveGameplayEffectHandle> UARTBlueprintFunctionLibrary::ApplyExternalEffectContainerSpec(
 	const FARTGameplayEffectContainerSpec& ContainerSpec)
 {
@@ -239,14 +245,17 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 	return FilterHandle;
 }
 
-FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByTeamAttitude(AActor* FilterActor,
-	FGameplayTagContainer InFilterTagContainer,
+FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByTeamAttitude(
+	AActor* FilterActor,
+	const FGameplayTagContainer& RequiredTags,
+	const FGameplayTagContainer& BlockedTags,
 	TEnumAsByte<ETeamAttitude::Type> InTeamAttitude,
-	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter,
-	TSubclassOf<AActor> InRequiredActorClass, bool InReverseFilter)
+	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
+	bool InReverseFilter)
 {
 	FARTTargetFilterTeamID Filter;
-	Filter.FilterTagContainer = InFilterTagContainer;
+	Filter.RequiredTags = RequiredTags;
+	Filter.BlockedTags = BlockedTags;
 	Filter.TeamAttitude = InTeamAttitude;
 	Filter.SelfFilter = InSelfFilter;
 	Filter.RequiredActorClass = InRequiredActorClass;
