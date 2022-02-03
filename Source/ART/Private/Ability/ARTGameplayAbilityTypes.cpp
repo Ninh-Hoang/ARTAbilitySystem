@@ -3,6 +3,7 @@
 #include "ARTCharacter/ARTSurvivor.h"
 #include "ARTCharacter/AI/ARTCharacterAI.h"
 #include "ARTCharacter/ARTPlayerController.h"
+#include "ARTCharacter/AI/ARTAIController.h"
 #include "ARTCharacter/ARTPlayerState.h"
 #include "ARTCharacter/ARTCharacterMovementComponent.h"
 

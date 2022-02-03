@@ -2,13 +2,14 @@
 
 
 #include "AI/Navigation/AITask_InfMapMoveTo.h"
-#include "VisualLogger/VisualLogger.h"
 #include "TimerManager.h"
 #include "AIResources.h"
 #include "AISystem.h"
 #include "AI/Navigation/InfMapAIController.h"
 #include "AI/Navigation/InfMapFunctionLibrary.h"
 #include "AI/Navigation/InfNavMesh.h"
+#include "GameplayTasksComponent.h"
+#include "VisualLogger/VisualLogger.h"
 
 FAIInfMapMoveRequest::FAIInfMapMoveRequest()
 	: Super()

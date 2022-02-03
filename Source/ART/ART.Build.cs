@@ -7,7 +7,9 @@ public class ART : ModuleRules
 	public ART(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		MinFilesUsingPrecompiledHeaderOverride = 1;
+		
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...

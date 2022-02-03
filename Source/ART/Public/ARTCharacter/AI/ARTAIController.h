@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AI/Navigation/InfMapAIController.h"
 #include "AI/Order/ARTOrderData.h"
 #include "AI/Order/ARTOrder.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
+#include "AI/Navigation/InfMapAIController.h"
 #include "ARTAIController.generated.h"
 
 /**

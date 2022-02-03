@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "ARTCharacter/ARTCharacterBase.h"
-#include <GenericTeamAgentInterface.h>
+#include "GenericTeamAgentInterface.h"
+#include "GameplayTagContainer.h"
 #include "ARTPlayerController.generated.h"
 
 /**
@@ -13,6 +13,7 @@
  */
 
 class UPaperSprite;
+class UARTHUDReticle;
 
 UCLASS()
 class ART_API AARTPlayerController : public APlayerController, public IGenericTeamAgentInterface

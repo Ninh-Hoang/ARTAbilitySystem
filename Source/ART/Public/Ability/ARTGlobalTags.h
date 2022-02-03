@@ -67,7 +67,7 @@ protected:
 		AbilityActivationFailure_BlockedTag = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.BlockedTag"));
 		AbilityActivationFailure_MissingTag = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.MissingTag"));
 		AbilityActivationFailure_Cooldown = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.Cooldown"));
-		AbilityActivationFailure_Cost = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure_Cost"));
+		AbilityActivationFailure_Cost = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.Cost"));
 		AbilityActivationFailure_NoTarget = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.NoTarget"));
 	}
 

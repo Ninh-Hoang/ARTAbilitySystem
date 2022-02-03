@@ -2,15 +2,15 @@
 
 
 #include "ARTCharacter/CameraPawn.h"
-
+#include "Framework/ARTGameState.h"
 #include "ARTCharacter/AI/ARTCharacterAI.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "AI/Order/ARTSelectComponent.h"
+#include "AI/ARTAIConductor.h"
 #include "ARTCharacter/AI/ARTAIController.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
-#include "Framework/ARTGameState.h"
 
 // Sets default values
 ACameraPawn::ACameraPawn()
@@ -76,8 +76,13 @@ void ACameraPawn::InitSpawnPlayerTeam()
 	Params.bNoFail = true;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	PlayerPawn = GetWorld()->SpawnActor<AARTCharacterAI>(PlayerPawnClass, GetActorLocation() + FVector(0, 0, 0), FRotator(0), Params);
-	FVector OffsetPosition = PlayerPawn->GetActorLocation();
+	FVector OffsetPosition(0);
+	if(PlayerPawnClass)
+	{
+		PlayerPawn = GetWorld()->SpawnActor<AARTCharacterAI>(PlayerPawnClass, GetActorLocation() + FVector(0, 0, 0), FRotator(0), Params);
+		OffsetPosition = PlayerPawn->GetActorLocation();
+	}
+
 	for( auto& PawnClass : AlliesPawnClassList)
 	{
 		OffsetPosition += FVector(0, -100, 0);
