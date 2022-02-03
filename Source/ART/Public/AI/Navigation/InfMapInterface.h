@@ -26,6 +26,7 @@ class ART_API IInfMapInterface
 public:
 	virtual void Initialize(class IInfCollectionInterface* MapCollectionInterface) = 0;
 	virtual void AddPropagator(class IInfPropagatorInterface* NewPropagator) = 0;
+	virtual void RemovePropagator(class IInfPropagatorInterface* NewPropagator) = 0;
 	virtual const TArray<class IInfPropagatorInterface*>& GetPropagators() const = 0;
 	virtual void GatherMap(const FGameplayTagContainer& BehaviourTags,
 		const FGameplayTagContainer& RequiredTags,

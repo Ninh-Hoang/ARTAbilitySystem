@@ -28,6 +28,8 @@ void UInfPropagator::BeginPlay()
 
 	//try to get InfCollectionActor from world
 	TArray<AActor*> OutActors;
+
+	//TODO: Very costly?
 	UGameplayStatics::GetAllActorsWithInterface(this, UInfCollectionInterface::StaticClass(), OutActors);
 
 	if (OutActors.Num() == 0)
@@ -46,6 +48,24 @@ void UInfPropagator::BeginPlay()
 
 	//initialize propagator
 	Initialize(Cast<IInfCollectionInterface>(OutActors[0]));
+}
+
+void UInfPropagator::BeginDestroy()
+{
+	Super::BeginDestroy();
+
+	if(InfluenceMapCollectionRef)
+	{
+		//try to get the target map from the collection
+		auto* TargetMap = InfluenceMapCollectionRef->GetMapSafe(TargetMapTag);
+		if (TargetMap == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UInfluencePropagator::BeginDestroy: %s does not exist"), *TargetMapTag.ToString());
+			return;
+		}
+
+		TargetMap->RemovePropagator(this);
+	}
 }
 
 FGenericTeamId UInfPropagator::GetTeam() const

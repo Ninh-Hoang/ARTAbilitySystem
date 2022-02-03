@@ -81,6 +81,7 @@ protected:
 	
 public:
 	virtual void Initialize(class IInfCollectionInterface* InfluenceMapCollection) override;
+	virtual void BeginDestroy() override;
 	virtual void UpdatePropagationMap() override;
 	virtual const TArray<uint32> GetAffectedTile() const override;
 	

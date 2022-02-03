@@ -36,6 +36,7 @@ private:
 public:
 	virtual void Initialize(class IInfCollectionInterface* MapCollectionInterface) override;
 	virtual void AddPropagator(class IInfPropagatorInterface* NewPropagator) override { Propagators.Add(NewPropagator); }
+	virtual void RemovePropagator(IInfPropagatorInterface* NewPropagator) override {Propagators.RemoveSingleSwap(NewPropagator); }
 	virtual const TArray<class IInfPropagatorInterface*>& GetPropagators() const override { return Propagators; }
 	virtual void GatherMap(const FGameplayTagContainer& BehaviourTags, const FGameplayTagContainer& RequiredTags, const FGameplayTagContainer& BlockTags, const IInfPropagatorInterface* Self, bool bIgnoreSelf, float GatherDistance, TMap<FIntVector, float>& Result) const override;
 	virtual const TArray<uint32> GetAffectedTile() const override;
