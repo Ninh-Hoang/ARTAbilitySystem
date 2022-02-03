@@ -165,10 +165,8 @@ void AARTAIController::SetBlackboardValues(const FARTOrderData& Order, const FVe
     Blackboard->SetValueAsClass(UARTBlackboardHelper::BLACKBOARD_KEY_ORDER_TYPE, Order.OrderType.Get());
     if (Order.bUseLocation)
     {
-        /*Blackboard->SetValueAsVector(UARTBlackboardHelper::BLACKBOARD_KEY_LOCATION,
-                                     UARTBlueprintFunctionLibrary::GetGroundLocation2D(this, Order.Location));*/
         Blackboard->SetValueAsVector(UARTBlackboardHelper::BLACKBOARD_KEY_LOCATION,
-            FVector(Order.Location.X, Order.Location.Y, 0.0f));
+                                     UARTBlueprintFunctionLibrary::GetGroundLocation2D(this, Order.Location));
     }
     else
     {

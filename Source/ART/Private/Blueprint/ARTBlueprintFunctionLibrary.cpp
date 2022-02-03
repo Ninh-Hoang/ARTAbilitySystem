@@ -575,11 +575,28 @@ bool UARTBlueprintFunctionLibrary::IsVisibleForActor(const AActor* Actor, const 
 	return true;
 }
 
-FVector UARTBlueprintFunctionLibrary::GetGroundLocation2D(AARTAIController* Controller, const FVector2D Location2D)
+FVector UARTBlueprintFunctionLibrary::GetGroundLocation2D(const AActor* WorldObject, const FVector2D Location2D)
 {
-	FVector ViewLocation;
-	FRotator ViewRot;
-	Controller->GetPlayerViewPoint(ViewLocation, ViewRot);
+	FVector StartLocation(Location2D.X, Location2D.Y, 10000);
+	FVector EndLocation(Location2D.X, Location2D.Y, -10000);
+	
+	FCollisionQueryParams TraceParams;
+	FCollisionObjectQueryParams ObjectParams(ECollisionChannel::ECC_WorldStatic);
 
+	TraceParams.bTraceComplex = false;
+	TraceParams.bReturnPhysicalMaterial = false;
+	TraceParams.bReturnFaceIndex = false;
+
+
+	//Re-initialize hit info
+	FHitResult OutHit(ForceInit);
+
+	//call GetWorld() from within an actor extending class
+	if(WorldObject->GetWorld()->LineTraceSingleByChannel(OutHit, StartLocation, EndLocation, ECollisionChannel::ECC_WorldStatic, TraceParams))
+	{
+		return OutHit.Location;
+	}
+
+	
 	return FVector(0);
 }

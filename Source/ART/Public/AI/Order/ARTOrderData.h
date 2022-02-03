@@ -35,7 +35,6 @@ struct ART_API FARTOrderData
     TSoftClassPtr<UARTOrder> OrderType;
 
     /** Indicates that 'Location' is valid and should be used by this order. */
-    UPROPERTY(Category = Order, EditAnywhere, BlueprintReadWrite, meta = (InlineEditConditionToggle = true))
     uint8 bUseLocation : 1;
 
     /**

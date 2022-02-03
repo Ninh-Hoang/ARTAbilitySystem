@@ -233,7 +233,7 @@ public:
 	static bool IsVisibleForActor(const AActor* Actor, const AActor* Other);
 
 	UFUNCTION(Category = "Order|Data", BlueprintPure)
-	static FVector GetGroundLocation2D(AARTAIController* Controller, const FVector2D Location2D);
+	static FVector GetGroundLocation2D(const AActor* WorldObject, const FVector2D Location2D);
 
 	
 };
