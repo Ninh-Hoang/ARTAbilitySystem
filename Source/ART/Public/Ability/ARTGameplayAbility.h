@@ -584,4 +584,11 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Ability|Targeting")
 	bool DoesSatisfyTargetTagRequirement(AActor* Target);
+
+	/*
+	 *DataCurve utility
+	 */
+	
+	UFUNCTION(BlueprintPure, Category="Ability|Targeting")
+	float GetFloatDataFromCurve(const FGameplayTag CurveTag) const;
 };

@@ -94,7 +94,7 @@ public:
 												float Magnitude,
 												bool IsTargetSpec = true,
 												int32 Index = 0);
-
+	
 	/**
 	* FARTGameplayEffectContext
 	*/

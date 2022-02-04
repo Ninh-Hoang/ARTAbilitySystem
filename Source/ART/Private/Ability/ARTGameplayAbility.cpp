@@ -897,3 +897,18 @@ bool UARTGameplayAbility::DoesSatisfyTargetTagRequirement(AActor* TargetActor)
 
 	return true;
 }
+
+float UARTGameplayAbility::GetFloatDataFromCurve(const FGameplayTag CurveTag) const
+{
+	if(!AbilityData.IsValid())
+	{
+		AbilityData.LoadSynchronous();
+	}
+	UARTCurve* Curve = AbilityData.Get();
+	if(Curve)
+	{
+		return Curve->GetCurveValueByTag(CooldownDuration.CurveTag, GetAbilityLevel());
+	}
+
+	return 0.f;
+}
