@@ -41,9 +41,6 @@ struct ART_API FARTTargetFilter : public FGameplayTargetDataFilter
 	}
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
-	AActor* SourceActor;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
 	TEnumAsByte<EARTTargetSelectionFilter::Type> ActorTypeFilter;
 
 	virtual bool FilterPassesForActor(const AActor* ActorToBeFiltered) const override
@@ -80,7 +77,7 @@ struct ART_API FARTTargetFilter : public FGameplayTargetDataFilter
 			bPassFilter = bPassFilter && TargetActor->IsA<AARTCharacterAI>();
 			break;
 		case EARTTargetSelectionFilter::Instigator:
-			bPassFilter = bPassFilter && TargetActor == SourceActor;
+			bPassFilter = bPassFilter && TargetActor == SelfActor;
 			break;
 		default:
 			break;
@@ -89,13 +86,13 @@ struct ART_API FARTTargetFilter : public FGameplayTargetDataFilter
 		switch (SelfFilter.GetValue())
 		{
 		case ETargetDataFilterSelf::Type::TDFS_NoOthers:
-			if (TargetActor != SourceActor)
+			if (TargetActor != SelfActor)
 			{
 				bPassFilter = false;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_NoSelf:
-			if (TargetActor == SourceActor)
+			if (TargetActor == SelfActor)
 			{
 				bPassFilter = false;
 			}
@@ -122,6 +119,9 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
 	TEnumAsByte<ETeamAttitude::Type> TeamAttitude;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
+	bool IgnoreTeamAttitude;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
 	FGameplayTagContainer RequiredTags;
@@ -152,7 +152,7 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 		{
 			AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(SelfActor);
 
-			if (TeamAttitude != (SourceCharacter->GetTeamAttitudeTowards(*TargetActor)))
+			if (!IgnoreTeamAttitude && TeamAttitude != (SourceCharacter->GetTeamAttitudeTowards(*TargetActor)))
 			{
 				bPassFilter = false;
 			}

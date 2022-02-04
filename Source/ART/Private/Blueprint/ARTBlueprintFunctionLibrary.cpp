@@ -256,7 +256,6 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 	bool InReverseFilter)
 {
 	FARTTargetFilter Filter;
-	Filter.SourceActor = InSourceActor;
 	Filter.ActorTypeFilter = InTargetTypeFilter;
 	Filter.SelfFilter = InSelfFilter;
 	Filter.RequiredActorClass = InRequiredActorClass;
