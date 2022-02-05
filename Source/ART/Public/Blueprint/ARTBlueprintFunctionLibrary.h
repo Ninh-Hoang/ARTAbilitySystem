@@ -149,6 +149,7 @@ public:
 		const FGameplayTagContainer& RequiredTags,
 		const FGameplayTagContainer& BlockedTags,
 		TEnumAsByte<ETeamAttitude::Type> InTeamAttitude,
+		bool IgnoreTeamAttitude,
 		TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
 		bool InReverseFilter);
 	/*
