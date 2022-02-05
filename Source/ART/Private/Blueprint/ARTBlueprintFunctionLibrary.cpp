@@ -273,16 +273,15 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 	AActor* FilterActor,
 	const FGameplayTagContainer& RequiredTags,
 	const FGameplayTagContainer& BlockedTags,
-	TEnumAsByte<ETeamAttitude::Type> InTeamAttitude,
-	bool IgnoreTeamAttitude,
-	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
+	const FGameplayTagContainer& BehaviourTags,
+	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter,
+	TSubclassOf<AActor> InRequiredActorClass,
 	bool InReverseFilter)
 {
 	FARTTargetFilterTeamID Filter;
 	Filter.RequiredTags = RequiredTags;
 	Filter.BlockedTags = BlockedTags;
-	Filter.TeamAttitude = InTeamAttitude;
-	Filter.IgnoreTeamAttitude = IgnoreTeamAttitude;
+	Filter.BehaviourTags = BehaviourTags;
 	Filter.SelfFilter = InSelfFilter;
 	Filter.RequiredActorClass = InRequiredActorClass;
 	Filter.bReverseFilter = InReverseFilter;

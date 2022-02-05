@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include <Abilities/GameplayAbilityTargetDataFilter.h>
-#include <ARTCharacter/ARTSurvivor.h>
-#include <ARTCharacter/AI/ARTCharacterAI.h>
-#include <ARTCharacter/ARTCharacterBase.h>
-
+#include "Abilities/GameplayAbilityTargetDataFilter.h"
+#include "Ability/ARTGlobalTags.h"
+#include "ARTCharacter/ARTSurvivor.h"
+#include "ARTCharacter/AI/ARTCharacterAI.h"
+#include "ARTCharacter/ARTCharacterBase.h"
 #include "ARTTargetFilter.generated.h"
 
 /**
@@ -36,7 +36,7 @@ struct ART_API FARTTargetFilter : public FGameplayTargetDataFilter
 {
 	GENERATED_USTRUCT_BODY()
 
-	virtual ~FARTTargetFilter()
+	virtual ~FARTTargetFilter() override
 	{
 	}
 
@@ -113,21 +113,18 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 {
 	GENERATED_USTRUCT_BODY()
 
-	virtual ~FARTTargetFilterTeamID()
+	virtual ~FARTTargetFilterTeamID() override
 	{
 	}
-	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
-	TEnumAsByte<ETeamAttitude::Type> TeamAttitude;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
-	bool IgnoreTeamAttitude;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
 	FGameplayTagContainer RequiredTags;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true), Category = Filter)
 	FGameplayTagContainer BlockedTags;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true, Categories = "Behaviour"), Category = Filter)
+	FGameplayTagContainer BehaviourTags;
 	
 	virtual bool FilterPassesForActor(const AActor* ActorToBeFiltered) const override
 	{
@@ -144,20 +141,23 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 			bPassFilter = RequiredActorClass == TargetActor->GetClass();
 		}
 
-		if (SelfActor == nullptr || !TargetActor)
+		if (!TargetActor)
 		{
 			bPassFilter = false;
+			return bReverseFilter ^ bPassFilter;
 		}
 		else
 		{
-			AARTCharacterBase* SourceCharacter = Cast<AARTCharacterBase>(SelfActor);
-
-			if (!IgnoreTeamAttitude && TeamAttitude != (SourceCharacter->GetTeamAttitudeTowards(*TargetActor)))
+			if (!BehaviourTags.IsEmpty())
 			{
-				bPassFilter = false;
+				if(!GetTeamAttitudeTags(SelfActor, TargetActor).HasAll(BehaviourTags))
+				{
+					bPassFilter = false;
+					return bReverseFilter ^ bPassFilter;
+				}
 			}
 
-			if(RequiredTags.IsValid() || BlockedTags.IsValid())
+			if(!RequiredTags.IsEmpty() || !BlockedTags.IsEmpty())
 			{
 				UAbilitySystemComponent* ASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();;
 				if(ASC)
@@ -165,10 +165,12 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 					if(!ASC->HasAllMatchingGameplayTags(RequiredTags))
 					{
 						bPassFilter = false;
+						return bReverseFilter ^ bPassFilter;
 					}
 					if(ASC->HasAnyMatchingGameplayTags(BlockedTags))
 					{
 						bPassFilter = false;
+						return bReverseFilter ^ bPassFilter;
 					}
 				}
 			}
@@ -180,12 +182,14 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 			if (TargetActor != SelfActor)
 			{
 				bPassFilter = false;
+				return bReverseFilter ^ bPassFilter;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_NoSelf:
 			if (TargetActor == SelfActor)
 			{
 				bPassFilter = false;
+				return bReverseFilter ^ bPassFilter;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_Any:
@@ -194,5 +198,40 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 		}
 
 		return bReverseFilter ^ bPassFilter;
+	}
+
+	FGameplayTagContainer GetTeamAttitudeTags(const AActor* Actor, const AActor* Other) const
+	{
+		FGameplayTagContainer RelationshipTags;
+	
+		if(!Actor || !Other) return RelationshipTags;
+	
+		if (Actor == Other)
+		{
+			RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Friendly);
+			RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Self);
+			RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Visible);
+			return RelationshipTags;
+		}
+
+		const IGenericTeamAgentInterface* SourceCharacter = Cast<IGenericTeamAgentInterface>(Actor);
+	
+		const ETeamAttitude::Type TeamAttitude = SourceCharacter->GetTeamAttitudeTowards(*Other);
+
+		switch (TeamAttitude)
+		{
+		case ETeamAttitude::Friendly:
+			RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Friendly);
+			break;
+		case ETeamAttitude::Neutral:
+			RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Neutral);
+			break;
+		case ETeamAttitude::Hostile:
+			RelationshipTags.AddTagFast(FARTGlobalTags::Get().Behaviour_Hostile);
+			break;
+		default:
+			break;
+		}
+		return RelationshipTags;
 	}
 };

@@ -185,23 +185,53 @@ FARTGameplayEffectContainerSpec UARTGameplayAbility::MakeEffectContainerSpecFrom
 			ReturnSpec.AddTargets(TargetData, HitResults, TargetActors);
 		}
 
-		// If we don't have an override level, use the ability level
-		if (OverrideGameplayLevel == INDEX_NONE)
-		{
-			//OverrideGameplayLevel = OwningASC->GetDefaultAbilityLevel();
-			OverrideGameplayLevel = GetAbilityLevel();
-		}
-
 		// Build GameplayEffectSpecs for each applied effect
-		for (const TSubclassOf<UGameplayEffect>& EffectClass : Container.TargetGameplayEffectClasses)
+		for (const FGameplayEffectInitData& EffectData : Container.TargetGameplayEffect)
 		{
-			ReturnSpec.TargetGameplayEffectSpecs.
-			           Add(MakeOutgoingGameplayEffectSpec(EffectClass, OverrideGameplayLevel));
+			float Level = GetAbilityLevel();
+
+			//master level override has more priority than GameplayEffectInitData
+			if (EffectData.LevelOverride != INDEX_NONE) Level = EffectData.LevelOverride;
+			if (OverrideGameplayLevel != INDEX_NONE) Level = OverrideGameplayLevel;
+
+			FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(EffectData.GameplayEffectClass, OverrideGameplayLevel);
+			FGameplayEffectSpec* Spec = SpecHandle.Data.Get();
+			
+			if (!Spec)
+			{
+				ABILITY_LOG(Warning, TEXT("UARTGameplayAbility::MakeEffectContainerSpecFromContainer called with invalid SpecHandle"));
+				continue;
+			}
+			
+			for(const FGameplayEffectTagMagData& TagData : EffectData.TagMagnitudeData)
+			{
+				Spec->SetSetByCallerMagnitude(TagData.DataTag, TagData.Magnitude);
+			}
+			ReturnSpec.TargetGameplayEffectSpecs.Add(SpecHandle);
 		}
-		for (const TSubclassOf<UGameplayEffect>& EffectClass : Container.SourceGameplayEffectClasses)
+		
+		for (const FGameplayEffectInitData& EffectData : Container.SourceGameplayEffect)
 		{
-			ReturnSpec.SourceGameplayEffectSpecs.
-						Add(MakeOutgoingGameplayEffectSpec(EffectClass, OverrideGameplayLevel));
+			float Level = GetAbilityLevel();
+
+			//master level override has more priority than GameplayEffectInitData
+			if (EffectData.LevelOverride != INDEX_NONE) Level = EffectData.LevelOverride;
+			if (OverrideGameplayLevel != INDEX_NONE) Level = OverrideGameplayLevel;
+
+			FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(EffectData.GameplayEffectClass, OverrideGameplayLevel);
+			FGameplayEffectSpec* Spec = SpecHandle.Data.Get();
+			
+			if (!Spec)
+			{
+				ABILITY_LOG(Warning, TEXT("UARTGameplayAbility::MakeEffectContainerSpecFromContainer called with invalid SpecHandle"));
+				continue;
+			}
+			
+			for(const FGameplayEffectTagMagData& TagData : EffectData.TagMagnitudeData)
+			{
+				Spec->SetSetByCallerMagnitude(TagData.DataTag, TagData.Magnitude);
+			}
+			ReturnSpec.SourceGameplayEffectSpecs.Add(SpecHandle);
 		}
 	}
 	return ReturnSpec;

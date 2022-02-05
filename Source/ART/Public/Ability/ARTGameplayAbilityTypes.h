@@ -88,6 +88,39 @@ class UARTTargetType;
 */
 
 USTRUCT(BlueprintType)
+struct FGameplayEffectTagMagData
+{
+	GENERATED_BODY()
+
+public:
+	FGameplayEffectTagMagData(){};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectTagMagData")
+	FGameplayTag DataTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectTagMagData")
+	float Magnitude = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FGameplayEffectInitData
+{
+	GENERATED_BODY()
+	
+public:
+	FGameplayEffectInitData(){};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectInitData")
+	TSubclassOf<UGameplayEffect> GameplayEffectClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectInitData")
+	int32 LevelOverride = INDEX_NONE;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectInitData")
+	TArray<FGameplayEffectTagMagData> TagMagnitudeData;
+};
+
+USTRUCT(BlueprintType)
 struct FARTGameplayEffectContainer
 {
 	GENERATED_BODY()
@@ -103,11 +136,11 @@ public:
 
 	/** List of gameplay effects to apply to the targets */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectContainer")
-	TArray<TSubclassOf<UGameplayEffect>> TargetGameplayEffectClasses;
+	TArray<FGameplayEffectInitData> TargetGameplayEffect;
 
 	/** List of gameplay effects to apply to the source */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameplayEffectContainer")
-	TArray<TSubclassOf<UGameplayEffect>> SourceGameplayEffectClasses;
+	TArray<FGameplayEffectInitData> SourceGameplayEffect;
 };
 
 /** A "processed" version of GSGameplayEffectContainer that can be passed around and eventually applied */
