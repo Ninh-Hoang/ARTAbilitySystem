@@ -2,8 +2,8 @@
 
 
 #include "Ability/ARTGameplayEffect.h"
-#include <GameplayEffectTypes.h>
-#include <AbilitySystemComponent.h>
+#include "GameplayEffectTypes.h"
+#include "AbilitySystemComponent.h"
 
 #if WITH_EDITOR
 #define GETCURVE_REPORTERROR_WITHPOSTLOAD(Handle) \

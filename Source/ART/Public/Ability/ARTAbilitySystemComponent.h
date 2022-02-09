@@ -233,15 +233,23 @@ public:
 	virtual FGameplayEffectSpecHandle MakeOutgoingSpec(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level,
 	                                                   FGameplayEffectContextHandle Context) const override;
 
-	//FOR AI
-	/** Returns a list of currently active ability instances that match the tags */
-	UFUNCTION(BlueprintCallable)
-	void GetActiveAbilitiesWithTags(const FGameplayTagContainer& GameplayTagContainer,
+	//FOR AI and UI
+	/** Returns a list of currently active ability primary instances that match the tags */
+	UFUNCTION(BlueprintPure, Meta =( AutoCreateRefTerm = "GameplayTagContainer"))
+	void GetActivePrimaryAbilityInstancesWithTags(const FGameplayTagContainer& GameplayTagContainer,
 	                                TArray<UARTGameplayAbility*>& ActiveAbilities);
 
-	UFUNCTION(BlueprintCallable)
+	//** return a list of currently active ability class default that match the tags */
+	UFUNCTION(BlueprintPure, Meta =( AutoCreateRefTerm = "GameplayTagContainer"))
+	void GetActiveAbilityClassDefaultWithTags(const FGameplayTagContainer& GameplayTagContainer,
+									TArray<UARTGameplayAbility*>& ActiveAbilities);
+
+	UFUNCTION(BlueprintPure)
 	void GetActiveEffectHandlesByClass(TSubclassOf<UGameplayEffect> SourceGameplayEffect,
 	                                   TArray<FActiveGameplayEffectHandle>& OutActiveEffectHandles);
+	
+	UFUNCTION(BlueprintPure)
+	void GetAllActiveAbilityClassDefaults(TArray<UARTGameplayAbility*>& ActiveAbilityCDO);
 	// ----------------------------------------------------------------------------------------------------------------
 	//	AnimMontage Support for multiple USkeletalMeshComponents on the AvatarActor.
 	//  Only one ability can be animating at a time though?

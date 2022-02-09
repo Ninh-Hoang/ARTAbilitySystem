@@ -159,7 +159,9 @@ void AInfMap::GatherMap(const FGameplayTagContainer& BehaviourTags,
 		
 		if (NeedToCheckBehaviourTags)
 		{
-			if(!UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(Self->GetOwnerActor(), Propagator->GetOwnerActor()).HasAll(BehaviourTags)) continue;
+			FGameplayTagContainer AttitudeTag;
+			UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(Self->GetOwnerActor(), Propagator->GetOwnerActor(), AttitudeTag);
+			if(!AttitudeTag.HasAll(BehaviourTags)) continue;
 		}
 
 		if(NeedToCheckBlockedTags || NeedToCheckRequiredTags)

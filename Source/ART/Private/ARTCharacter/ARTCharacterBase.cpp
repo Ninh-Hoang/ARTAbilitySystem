@@ -362,7 +362,7 @@ void AARTCharacterBase::GetActiveAbilitiesWithTags(FGameplayTagContainer Ability
 {
 	if (ASC)
 	{
-		ASC->GetActiveAbilitiesWithTags(AbilityTags, ActiveAbilities);
+		ASC->GetActivePrimaryAbilityInstancesWithTags(AbilityTags, ActiveAbilities);
 	}
 }
 

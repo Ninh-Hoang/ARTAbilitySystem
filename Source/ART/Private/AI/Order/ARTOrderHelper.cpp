@@ -854,8 +854,10 @@ bool UARTOrderHelper::IsEnemyInAcquisitionRadius(const AActor* OrderedActor, flo
 		}
 
 		// Check the target tags.
-		if (UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(OrderedActor, Actor)
-			.HasTag(FARTGlobalTags::Get().Behaviour_Hostile))
+		FGameplayTagContainer BehaviourTags;
+		UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(OrderedActor, Actor, BehaviourTags);
+		
+		if (BehaviourTags.HasTag(FARTGlobalTags::Get().Behaviour_Hostile))
 		{
 			return true;
 		}
@@ -1008,7 +1010,12 @@ AActor* UARTOrderHelper::FindBestScoredTargetForOrder(TSoftClassPtr<UARTOrder> O
 		// Check the target tags.
 		FGameplayTagContainer TargetTags;
 		UARTBlueprintFunctionLibrary::GetTags(Actor, TargetTags);
-		TargetTags.AppendTags(UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(OrderedActor, Actor));
+
+		FGameplayTagContainer BehaviourTag;
+		UARTBlueprintFunctionLibrary::GetTeamAttitudeTags(OrderedActor, Actor, BehaviourTag);
+		
+		TargetTags.AppendTags(BehaviourTag);
+		
 		if (!UARTBlueprintFunctionLibrary::DoesSatisfyTagRequirements(TargetTags, TagRequirements.TargetRequiredTags,
 		                                                              TagRequirements.TargetBlockedTags))
 		{

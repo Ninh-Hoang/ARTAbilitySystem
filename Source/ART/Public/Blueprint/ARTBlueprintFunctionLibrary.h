@@ -41,8 +41,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Ability")
 	static bool IsPrimaryAbilityInstanceActive(UAbilitySystemComponent* AbilitySystemComponent,
 	                                           FGameplayAbilitySpecHandle Handle);
-
-
+	
 	/*
 	*FGameplayEffectSpecHandle
 	*/
@@ -167,7 +166,7 @@ public:
 	static FGameplayAbilityTargetDataHandle MakeTargetDataFromHitArray(TArray<FHitResult>& HitResults);
 
 	UFUNCTION(BlueprintPure, Category = "Ability|TargetData",  Meta = (DisplayName = "Ability Target Data Array from Hit Result Array"))
-	static TArray<FGameplayAbilityTargetDataHandle> MakeArrayTargetDataFromHitArray(TArray<FHitResult>& HitResults);
+	static void MakeArrayTargetDataFromHitArray(const TArray<FHitResult>& HitResults, TArray<FGameplayAbilityTargetDataHandle>& TargetData);
 
 	/*
 	* GameplayTagBlueprintPropertyMap ultilities
@@ -183,7 +182,7 @@ public:
 	                             FGameplayTag CallerTag);
 
 	UFUNCTION(BlueprintPure, Category = "Ability|GameplayEffect")
-	static FGameplayTagContainer GetAssetTagFromSpec(FGameplayEffectSpecHandle SpecHandle);
+	static const FGameplayTagContainer& GetAssetTagFromSpec(FGameplayEffectSpecHandle SpecHandle);
 	/*
 	* Get UI information from GameplayEffect Handle, or Spec?
 	*/
@@ -227,7 +226,7 @@ public:
 	static void GetSourceAndTargetTags(const AActor* SourceActor, const AActor* TargetActor, FGameplayTagContainer& OutSourceTags, FGameplayTagContainer& OutTargetTags);
 
 	UFUNCTION(Category = "Order|Tags", BlueprintPure)
-	static FGameplayTagContainer GetTeamAttitudeTags(const AActor* Actor, const AActor* Other);
+	static void GetTeamAttitudeTags(const AActor* Actor, const AActor* Other, FGameplayTagContainer& AttitudeTags);
 
 	/** Whether 'Other' is visible for 'Actor'. */
 	UFUNCTION(Category = "Order|Tags", BlueprintPure)

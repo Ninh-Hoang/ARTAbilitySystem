@@ -2,7 +2,7 @@
 
 
 #include "Ability/ARTProjectile.h"
-#include <GameFramework/ProjectileMovementComponent.h>
+#include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
 AARTProjectile::AARTProjectile()

@@ -565,22 +565,37 @@ FGameplayEffectSpecHandle UARTAbilitySystemComponent::MakeOutgoingSpec(TSubclass
 
 //FOR AI OR UI
 /* Returns a list of currently active ability instances that match the tags */
-void UARTAbilitySystemComponent::GetActiveAbilitiesWithTags(const FGameplayTagContainer& GameplayTagContainer,
+void UARTAbilitySystemComponent::GetActivePrimaryAbilityInstancesWithTags(const FGameplayTagContainer& GameplayTagContainer,
                                                             TArray<UARTGameplayAbility*>& ActiveAbilities)
 {
+	ActiveAbilities.Reset();
 	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
 	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
 
 	// Iterate the list of all ability specs
-	for (FGameplayAbilitySpec* Spec : AbilitiesToActivate)
+	for (const FGameplayAbilitySpec* Spec : AbilitiesToActivate)
 	{
 		// Iterate all instances on this ability spec
-		TArray<UGameplayAbility*> AbilityInstances = Spec->GetAbilityInstances();
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
 
-		for (UGameplayAbility* ActiveAbility : AbilityInstances)
-		{
-			ActiveAbilities.Add(Cast<UARTGameplayAbility>(ActiveAbility));
-		}
+		ActiveAbilities.Add(Cast<UARTGameplayAbility>(AbilitySource));
+	}
+}
+
+void UARTAbilitySystemComponent::GetActiveAbilityClassDefaultWithTags(const FGameplayTagContainer& GameplayTagContainer,
+	TArray<UARTGameplayAbility*>& ActiveAbilities)
+{
+	ActiveAbilities.Reset();
+	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
+	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
+
+	// Iterate the list of all ability specs
+	for (const FGameplayAbilitySpec* Spec : AbilitiesToActivate)
+	{
+		ActiveAbilities.Add(Cast<UARTGameplayAbility>(Spec->Ability));
 	}
 }
 
@@ -599,6 +614,15 @@ void UARTAbilitySystemComponent::GetActiveEffectHandlesByClass(TSubclassOf<UGame
 		});
 
 		OutActiveEffectHandles = ActiveGameplayEffects.GetActiveEffects(Query);
+	}
+}
+
+void UARTAbilitySystemComponent::GetAllActiveAbilityClassDefaults(TArray<UARTGameplayAbility*>& ActiveAbilityCDO)
+{
+	ActiveAbilityCDO.Reset();
+	for(const auto& Spec : ActivatableAbilities.Items)
+	{
+		ActiveAbilityCDO.Add(Cast<UARTGameplayAbility>(Spec.Ability));
 	}
 }
 

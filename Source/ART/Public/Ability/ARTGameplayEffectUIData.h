@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/ObjectMacros.h"
 #include "GameplayEffectUIData.h"
 #include "ARTGameplayEffectUIData.generated.h"
 

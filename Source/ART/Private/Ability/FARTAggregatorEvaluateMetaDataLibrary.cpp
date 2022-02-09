@@ -1,5 +1,6 @@
 ﻿#include "Ability/FARTAggregatorEvaluateMetaDataLibrary.h"
 #include "AbilitySystemComponent.h"
+
 /** Custom functions. The idea here is that we may want to mix and match these (if FAggregatorEvaluateMetaData starts to hold more than just the qualifier functions) */
 void QualifierFunc_MostNegativeMod_AllPositiveMods(const FAggregatorEvaluateParameters& EvalParameters,
                                                    const FAggregator* Aggregator)
@@ -79,6 +80,7 @@ void QualifierFunc_MostNegativeMod_MostPositiveModPerClass(const FAggregatorEval
 			return;
 
 		FActiveGameplayEffectHandle Handle = ModInfo.Mod->ActiveHandle;
+
 		UClass* EffectClass = Handle.GetOwningAbilitySystemComponent()->GetActiveGameplayEffect(Handle)->Spec.Def->
 		                             GetClass();
 

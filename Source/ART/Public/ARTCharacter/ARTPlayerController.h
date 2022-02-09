@@ -14,6 +14,7 @@
 
 class UPaperSprite;
 class UARTHUDReticle;
+class AARTCharacterBase;
 
 UCLASS()
 class ART_API AARTPlayerController : public APlayerController, public IGenericTeamAgentInterface

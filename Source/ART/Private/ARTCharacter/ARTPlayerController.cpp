@@ -168,6 +168,11 @@ void AARTPlayerController::OnPossess(APawn* InPawn)
 		// Init ASC with PS (Owner) and our new Pawn (AvatarActor)
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, InPawn);
 	}
+
+	if(HasAuthority())
+	{
+		OnRep_PlayerState();
+	}
 }
 
 void AARTPlayerController::OnRep_PlayerState()
