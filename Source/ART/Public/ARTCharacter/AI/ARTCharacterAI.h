@@ -4,9 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "ARTCharacter/ARTCharacterBase.h"
-#include "GenericTeamAgentInterface.h"
-#include "ARTCharacter/ARTCharacterAttributeSet.h"
-
 #include "ARTCharacterAI.generated.h"
 
 

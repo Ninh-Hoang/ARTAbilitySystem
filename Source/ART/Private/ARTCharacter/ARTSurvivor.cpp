@@ -56,17 +56,12 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		// AI won't have PlayerControllers so we can init again here just to be sure. No harm in initing twice for heroes that have PlayerControllers.
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
-		// Set the AttributeSetBase for convenience attribute functions
-		Attribute = PS->GetAttributeSet();
-
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
 
 		InitializeAttributes();
-
-		AddStartupEffects();
-
-		AddCharacterAbilities();
+		
+		AddCharacterAbilitiesAndEffects();
 
 		InitializeTagPropertyMap();
 
@@ -132,9 +127,6 @@ void AARTSurvivor::OnRep_PlayerState()
 
 		// Bind player input to the AbilitySystemComponent. Also called in SetupPlayerInputComponent because of a potential race condition.
 		BindASCInput();
-
-		// Set the AttributeSetBase for convenience attribute functions
-		Attribute = PS->GetAttributeSet();
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that posession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.

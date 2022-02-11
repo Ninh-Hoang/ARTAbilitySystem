@@ -3,12 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-//#include "VoxelCharacter.h"
 #include "AbilitySystemInterface.h"
-#include "ART/ART.h"
 #include "GameplayEffectTypes.h"
-#include <GenericTeamAgentInterface.h>
-#include "ARTAttributeSetBase.h"
+#include "GenericTeamAgentInterface.h"
+#include "ARTGameplayAbilitySet.h"
+#include "GameFramework/Character.h"
 #include "ARTCharacterBase.generated.h"
 
 class AWeapon;
@@ -33,7 +32,7 @@ struct ART_API FARTDamageNumber
 	}
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, AARTCharacterBase*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, class AARTCharacterBase*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterTeamChanged, FGenericTeamId, NewTeamID, FGenericTeamId, OldteamID);
 
 UCLASS()
@@ -68,11 +67,7 @@ public:
 	FGenericTeamId GetGenericTeamId() const override;
 
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
-
-	//hit direction
-	UFUNCTION(BlueprintCallable, Category = "ART|Character")
-	EARTHitReactDirection GetHitReactDirectionVector(const FVector& ImpactPoint, const AActor* AttackingActor);
-
+	
 	// Implement IAbilitySystemInterface
 	class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
@@ -124,18 +119,18 @@ protected:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UARTAbilitySystemComponent* ASC;
-
-	UPROPERTY()
-	class UARTAttributeSetBase* Attribute;
-
 	
-	
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
-	class UARTGameplayAbilitySet* AbilitySet;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
+	TArray<class UARTAbilitySet*> AbilitySets;
+
+	TArray<FARTAbilitySetHandle> AbilitySetHandles;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
+	TArray<TSubclassOf<class UARTAttributeSetBase>> AttributeSets;
 	
 	// Default attributes for a character for initializing on spawn/respawn.
 	// This is an instant GE that overrides the values for attributes that get reset on spawn/respawn.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
 	TSubclassOf<class UGameplayEffect> DefaultAttributes;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "ART|UI")
@@ -151,14 +146,12 @@ protected:
 	TSubclassOf<class UARTStatusTextWidgetComponent> DamageNumberClass;
 
 	// Grant abilities on the Server. The Ability Specs will be replicated to the owning client.
-	virtual void AddCharacterAbilities();
+	virtual void AddCharacterAbilitiesAndEffects();
 
 	// Initialize the Character's attributes. Must run on Server but we run it on Client too
 	// so that we don't have to wait. The Server's replication to the Client won't matter since
 	// the values should be the same.
 	virtual void InitializeAttributes();
-
-	virtual void AddStartupEffects();
 
 	virtual void InitializeTagPropertyMap();
 
@@ -200,11 +193,7 @@ public:
     /** Returns a list of active abilities matching the specified tags. This only returns if the ability is currently running */
     UFUNCTION(BlueprintCallable, Category = "Abilities")
     void GetActiveAbilitiesWithTags(FGameplayTagContainer AbilityTags, TArray<class UARTGameplayAbility*>& ActiveAbilities);
-
-	// Switch on AbilityID to return individual ability levels. Hardcoded to 1 for every ability in this project.
-	UFUNCTION(BlueprintCallable, Category = "ART|Character")
-	virtual int32 GetAbilityLevel(EARTAbilityInputID AbilityID) const;
-
+	
 	UFUNCTION(BlueprintCallable, Category = "ART|Character")
 	virtual int32 GetCharacterLevel() const;
 

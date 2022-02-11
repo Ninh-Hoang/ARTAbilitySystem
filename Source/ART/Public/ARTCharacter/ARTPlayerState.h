@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
-#include "ARTAttributeSetBase.h"
 #include "GameplayEffectTypes.h"
 #include "ARTPlayerState.generated.h"
 
@@ -62,6 +61,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ART|ARTCharacter|Attributes")
 	float GetHealth() const;
 
+	void SetHealth(float Health);
+	
 protected:
 	UPROPERTY()
 	class UARTAbilitySystemComponent* AbilitySystemComponent;
@@ -81,7 +82,7 @@ protected:
 	// Attribute changed delegate handles
 	FDelegateHandle HealthChangedDelegateHandle;
 
-	class AARTSurvivor* Survivor;
+	class AARTCharacterBase* PlayerPawn;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

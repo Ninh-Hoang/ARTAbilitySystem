@@ -8,8 +8,8 @@
 #include "ARTCharacter/ARTSurvivor.h"
 #include "GameplayTagContainer.h"
 #include "Ability/ARTAbilitySystemGlobals.h"
-#include <ARTCharacter/ARTPlayerController.h>
-#include <Weapon/Weapon.h>
+#include "ARTCharacter/ARTPlayerController.h"
+#include "Weapon/Weapon.h"
 
 #include "Ability/ARTGlobalTags.h"
 #include "BehaviorTree/BlackboardComponent.h"

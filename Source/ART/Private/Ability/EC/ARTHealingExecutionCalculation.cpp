@@ -5,7 +5,6 @@
  */
 
 #include "Ability/EC/ARTHealingExecutionCalculation.h"
-#include "ARTCharacter/ARTCharacterAttributeSet.h"
 #include "Ability/ARTAbilitySystemComponent.h"
 
 // Declare the attributes to capture and define how we want to capture them from the Source and Target.
@@ -24,10 +23,10 @@ struct ARTHealingStatics
 		// here could be like HealingPower attributes that you might want.
 
 		//capture Target's Health. Don't snapshot (false arg).
-		DEFINE_ATTRIBUTE_CAPTUREDEF(UARTCharacterAttributeSet, Health, Target, false);
+		//DEFINE_ATTRIBUTE_CAPTUREDEF(UARTCharacterAttributeSet, Health, Target, false);
 
 		//the target's receive Healing. This is the value of health that will apply on target. We are not capturing this
-		DEFINE_ATTRIBUTE_CAPTUREDEF(UARTCharacterAttributeSet, Healing, Target, false);
+		//DEFINE_ATTRIBUTE_CAPTUREDEF(UARTCharacterAttributeSet, Healing, Target, false);
 	}
 };
 

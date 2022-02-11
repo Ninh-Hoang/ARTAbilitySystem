@@ -2,13 +2,11 @@
 
 
 #include "ARTCharacter/ARTPlayerController.h"
-#include "ARTCharacter/ARTCharacterAttributeSet.h"
 #include "Ability/ARTAbilitySystemComponent.h"
-#include <ARTCharacter/ARTPlayerState.h>
-#include <GameFramework/Actor.h>
-#include <Widget/ARTHUDWidget.h>
-#include <Weapon/Weapon.h>
-#include <ARTCharacter/ARTSurvivor.h>
+#include "ARTCharacter/ARTPlayerState.h"
+
+#include "Widget/ARTHUDWidget.h"
+#include "ARTCharacter/ARTSurvivor.h"
 
 AARTPlayerController::AARTPlayerController()
 {
@@ -193,7 +191,7 @@ void AARTPlayerController::ServerKill_Implementation()
 	AARTPlayerState* PS = GetPlayerState<AARTPlayerState>();
 	if (PS)
 	{
-		PS->GetAttributeSet()->SetHealth(0.0f);
+		PS->SetHealth(0.0f);
 	}
 }
 

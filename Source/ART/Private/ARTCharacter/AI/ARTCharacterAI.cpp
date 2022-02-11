@@ -2,19 +2,18 @@
 
 
 #include "ARTCharacter/AI/ARTCharacterAI.h"
-#include <Ability/ARTAbilitySystemComponent.h>
-#include <ARTCharacter/ARTCharacterAttributeSet.h>
-#include <Components/CapsuleComponent.h>
-#include <Components/WidgetComponent.h>
-#include <Widget/ARTFloatingStatusBarWidget.h>
+#include "Ability/ARTAbilitySystemComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Widget/ARTFloatingStatusBarWidget.h"
 
 #include "AI/ARTAIConductor.h"
 #include "AI/Order/ARTAutoOrderComponent.h"
 #include "AI/Order/ARTOrderComponent.h"
 #include "AI/Order/ARTSelectComponent.h"
 #include "ARTCharacter/AI/ARTNavigationInvokerComponent.h"
+#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
 #include "Framework/ARTGameState.h"
-#include "Perception/AIPerceptionComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -35,18 +34,13 @@ AARTCharacterAI::AARTCharacterAI(const class FObjectInitializer& ObjectInitializ
 	// Create the attribute set, this replicates by default
 	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
-
-	Attribute = CreateDefaultSubobject<UARTAttributeSetBase>(AttributeComponentName);
-
+	
 	//selectcomp
 	SelectComponent = CreateDefaultSubobject<UARTSelectComponent>(TEXT("SelectComponent"));
 	
 	//create order comps
 	OrderComponent = CreateDefaultSubobject<UARTOrderComponent>(TEXT("OrderComponent"));
 	AutoOrderComponent = CreateDefaultSubobject<UARTAutoOrderComponent>(TEXT("AutoOrderComponent"));
-	
-	//set collision
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	//affact navigation
 	SetCanAffectNavigationGeneration(false);
@@ -72,14 +66,13 @@ void AARTCharacterAI::BeginPlay()
 	{
 		ASC->InitAbilityActorInfo(this, this);
 		InitializeAttributes();
-		AddStartupEffects();
-		AddCharacterAbilities();
+		AddCharacterAbilitiesAndEffects();
 		InitializeTagPropertyMap();
 		InitializeTagResponseTable();
 
 		// Attribute change callbacks
 		HealthChangedDelegateHandle = ASC->
-									  GetGameplayAttributeValueChangeDelegate(Attribute->GetHealthAttribute()).
+									  GetGameplayAttributeValueChangeDelegate(UARTAttributeSet_Health::GetHealthAttribute()).
 									  AddUObject(this, &AARTCharacterAI::HealthChanged);
 	}
 

@@ -25,7 +25,7 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	static FString GetPlayerEditorWindowRole(UWorld* World);
-
+	
 	/**
 	 * Gameplay Ability Stuffs
 	 */

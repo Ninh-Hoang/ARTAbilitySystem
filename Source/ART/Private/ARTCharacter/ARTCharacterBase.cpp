@@ -3,30 +3,13 @@
 
 #include "ARTCharacter/ARTCharacterBase.h"
 #include "ARTCharacter/ARTCharacterMovementComponent.h"
-#include <Components/SceneComponent.h>
-#include <GameFramework/SpringArmComponent.h>
-#include <Camera/CameraComponent.h>
-#include "Item/InventoryComponent.h"
-#include <Components/CapsuleComponent.h>
-#include "ART/ART.h"
-#include <Kismet/KismetMathLibrary.h>
 #include "Ability/ARTAbilitySystemComponent.h"
-#include "ARTCharacter/ARTPlayerState.h"
-#include <GameFramework/PlayerState.h>
-#include "ARTCharacter/ARTCharacterAttributeSet.h"
-#include "ARTCharacter/ARTPlayerController.h"
-#include <DrawDebugHelpers.h>
-#include <Engine/World.h>
-#include <TimerManager.h>
-#include "Net/UnrealNetwork.h"
-#include "Weapon/Weapon.h"
-#include <Ability/ARTAbilitySystemGlobals.h>
-#include <Kismet/GameplayStatics.h>
-#include "Widget/ARTStatusTextWidgetComponent.h"
-#include <Ability/ARTGameplayAbility.h>
-#include <ARTCharacter/Voxel/ARTSimpleInvokerComponent.h>
-#include <ARTCharacter/ARTGameplayAbilitySet.h>
-#include <GameplayTagResponseTable.h>
+#include "TimerManager.h"
+#include "Widget/ARTStatusTextWidgetComponent.h" 
+#include "ARTCharacter/ARTGameplayAbilitySet.h"
+#include "GameplayTagResponseTable.h"
+#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
+#include "ARTCharacter/AttributeSet/ARTAttributeSet_Movement.h"
 
 FName AARTCharacterBase::AbilitySystemComponentName(TEXT("AbilitySystemComp"));
 FName AARTCharacterBase::AttributeComponentName(TEXT("Attribute"));
@@ -37,13 +20,11 @@ AARTCharacterBase::AARTCharacterBase(const class FObjectInitializer& ObjectIniti
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
+	
 	SetReplicateMovement(true);
 
 	bUseControllerRotationYaw = false;
-
-	//VoxelInvokerComponent = CreateDefaultSubobject<UARTSimpleInvokerComponent>(TEXT("VoxelInvoker"));
-	//VoxelInvokerComponent->SetupAttachment(RootComponent);
-
+	
 	// Cache tags
 	DeadTag = FGameplayTag::RequestGameplayTag("State.Dead");
 	EffectRemoveOnDeathTag = FGameplayTag::RequestGameplayTag("Effect.RemoveOnDeath");
@@ -92,48 +73,6 @@ ETeamAttitude::Type AARTCharacterBase::GetTeamAttitudeTowards(const AActor& Othe
 	return Attitude;
 }
 
-EARTHitReactDirection AARTCharacterBase::GetHitReactDirectionVector(const FVector& ImpactPoint,
-                                                                    const AActor* AttackingActor)
-{
-	const FVector& ActorLocation = GetActorLocation();
-	FVector ImpactVector;
-
-	if (ImpactPoint.IsZero() && AttackingActor)
-	{
-		ImpactVector = AttackingActor->GetActorLocation();
-	}
-	else
-	{
-		ImpactVector = ImpactPoint;
-	}
-
-	// PointPlaneDist is super cheap - 1 vector subtraction, 1 dot product.
-	float DistanceToFrontBackPlane = FVector::PointPlaneDist(ImpactVector, ActorLocation, GetActorRightVector());
-	float DistanceToRightLeftPlane = FVector::PointPlaneDist(ImpactVector, ActorLocation, GetActorForwardVector());
-
-
-	if (FMath::Abs(DistanceToFrontBackPlane) <= FMath::Abs(DistanceToRightLeftPlane))
-	{
-		// Determine if Front or Back
-
-		// Can see if it's left or right of Left/Right plane which would determine Front or Back
-		if (DistanceToRightLeftPlane >= 0)
-		{
-			return EARTHitReactDirection::Front;
-		}
-		return EARTHitReactDirection::Back;
-	}
-	// Determine if Right or Left
-
-	if (DistanceToFrontBackPlane >= 0)
-	{
-		return EARTHitReactDirection::Right;
-	}
-	return EARTHitReactDirection::Left;
-
-	return EARTHitReactDirection::Front;
-}
-
 UAbilitySystemComponent* AARTCharacterBase::GetAbilitySystemComponent() const
 {
 	return ASC;
@@ -147,28 +86,11 @@ void AARTCharacterBase::RemoveCharacterAbilities()
 		return;
 	}
 
-	// Remove any abilities added from a previous call. This checks to make sure the ability is in the startup 'CharacterAbilities' array.
-	TArray<FGameplayAbilitySpecHandle> AbilitiesToRemove;
-	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+	for(auto& AbilitySetHandle : AbilitySetHandles)
 	{
-		if (Spec.SourceObject == this && AbilitySet)
-		{
-			for (const FARTGameplayAbilityApplicationInfo& GameplayAbility : AbilitySet->StartupGameplayAbilities)
-			{
-				if (GameplayAbility.GameplayAbilityClass == Spec.Ability->GetClass())
-				{
-					AbilitiesToRemove.Add(Spec.Handle);
-				}
-			}
-		}
+		UARTAbilitySet::TakeAbilitySet(AbilitySetHandle);
 	}
-
-	// Do in two passes so the removal happens after we have the full list
-	for (int32 i = 0; i < AbilitiesToRemove.Num(); i++)
-	{
-		ASC->ClearAbility(AbilitiesToRemove[i]);
-		UE_LOG(LogTemp, Warning, TEXT("Remove"));
-	}
+	
 	ASC->CharacterAbilitiesGiven = false;
 }
 
@@ -250,28 +172,25 @@ void AARTCharacterBase::AddDamageNumber(float Damage, FGameplayTagContainer Dama
 	}
 }
 
-int32 AARTCharacterBase::GetAbilityLevel(EARTAbilityInputID AbilityID) const
-{
-	return 1;
-}
-
 int32 AARTCharacterBase::GetCharacterLevel() const
 {
 	return 1;
 }
 
-void AARTCharacterBase::AddCharacterAbilities()
+void AARTCharacterBase::AddCharacterAbilitiesAndEffects()
 {
 	// Grant abilities, but only on the server	
 	if (GetLocalRole() != ROLE_Authority || !ASC || ASC->CharacterAbilitiesGiven)
 	{
 		return;
 	}
-
-	if (AbilitySet)
+	
+	for(const auto& AbilitySet : AbilitySets)
 	{
-		AbilitySet->GiveAbilities(ASC);
+		AbilitySetHandles.Add(AbilitySet->GiveAbilitySetTo(ASC, this));
 	}
+
+	ASC->CharacterAbilitiesGiven = true;
 }
 
 void AARTCharacterBase::InitializeAttributes()
@@ -288,29 +207,20 @@ void AARTCharacterBase::InitializeAttributes()
 		return;
 	}
 
+	for (TSubclassOf<UARTAttributeSetBase> Set : AttributeSets)
+	{
+		if(Set) ASC->AddAttributeSetSubobject(NewObject<UARTAttributeSetBase>(this, Set));
+	}
+
 	// Can run on Server and Client
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
 
-	FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(
+	const FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(
 		DefaultAttributes, GetCharacterLevel(), EffectContext);
 	if (NewHandle.IsValid())
 	{
-		FActiveGameplayEffectHandle ActiveGEHandle = ASC->ApplyGameplayEffectSpecToTarget(
-			*NewHandle.Data.Get(), ASC);
-	}
-}
-
-void AARTCharacterBase::AddStartupEffects()
-{
-	if (GetLocalRole() != ROLE_Authority || !ASC || ASC->StartupEffectsApplied)
-	{
-		return;
-	}
-
-	if (AbilitySet)
-	{
-		AbilitySet->AddStartupEffects(ASC);
+		ASC->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), ASC);
 	}
 }
 
@@ -446,10 +356,11 @@ void AARTCharacterBase::EndCrouch()
 }
 
 float AARTCharacterBase::GetHealth() const
+
 {
 	if (ASC)
 	{
-		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetHealthAttribute());
+		return ASC->GetNumericAttribute(UARTAttributeSet_Health::GetHealthAttribute());
 	}
 
 	return -1.f;
@@ -459,7 +370,7 @@ float AARTCharacterBase::GetMaxHealth() const
 {
 	if (ASC)
 	{
-		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetMaxHealthAttribute());
+		return ASC->GetNumericAttribute(UARTAttributeSet_Health::GetMaxHealthAttribute());
 	}
 
 	return -1.f;
@@ -469,7 +380,7 @@ float AARTCharacterBase::GetMoveSpeed() const
 {
 	if (ASC)
 	{
-		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetMoveSpeedAttribute());
+		return ASC->GetNumericAttribute(UARTAttributeSet_Movement::GetMoveSpeedAttribute());
 	}
 
 	return -1.f;
@@ -479,7 +390,7 @@ float AARTCharacterBase::GetRotateRate() const
 {
 	if (ASC)
 	{
-		return ASC->GetNumericAttribute(UARTAttributeSetBase::GetRotateRateAttribute());
+		return ASC->GetNumericAttribute(UARTAttributeSet_Movement::GetRotateRateAttribute());
 	}
 
 	return -1.f;
@@ -489,7 +400,7 @@ void AARTCharacterBase::SetHealth(float Health)
 {
 	if (ASC)
 	{
-		ASC->SetNumericAttributeBase(UARTAttributeSetBase::GetHealthAttribute(), Health);
+		ASC->SetNumericAttributeBase(UARTAttributeSet_Health::GetHealthAttribute(), Health);
 	}
 }
 
@@ -503,25 +414,27 @@ void AARTCharacterBase::BindASCInput()
 {
 	if (!ASCInputBound && ASC && IsValid(InputComponent))
 	{
-		ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(
+		//TODO: find a better way of binding input
+		/*ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(,
 			                                                              FString("ConfirmTarget"),
 			                                                              FString("CancelTarget"),
 			                                                              FString("EARTAbilityInputID"),
 			                                                              static_cast<int32>(EARTAbilityInputID::Confirm
 			                                                              ), static_cast<int32>(
 				                                                              EARTAbilityInputID::Cancel)));
-
-		ASCInputBound = true;
+		
+		ASCInputBound = true;*/
 	}
 }
 
 void AARTCharacterBase::Restart()
 {
 	Super::Restart();
-	if (AARTPlayerController* PC = Cast<AARTPlayerController>(GetController()))
+	//TODO: something about UI when restart
+	/*if (AARTPlayerController* PC = Cast<AARTPlayerController>(GetController()))
 	{
 		//PC->ShowIngameUI();
-	}
+	}*/
 }
 
 bool AARTCharacterBase::IsAlive() const

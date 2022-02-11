@@ -3,13 +3,15 @@
 
 #include "ARTCharacter/ARTPlayerState.h"
 #include "Ability/ARTAbilitySystemComponent.h"
-#include "ARTCharacter/ARTCharacterAttributeSet.h"
-#include <ARTCharacter/ARTSurvivor.h>
-#include <Ability/ARTAbilitySystemGlobals.h>
-#include <ARTCharacter/ARTPlayerController.h>
-#include <Widget/ARTHUDWidget.h>
-#include <Item/InventoryComponent.h>
-#include <Item/InventorySet.h>
+
+#include "ARTCharacter/ARTPlayerController.h"
+#include "Widget/ARTHUDWidget.h"
+
+#include "Item/InventoryComponent.h"
+#include "Item/InventorySet.h"
+
+#include "ARTCharacter/ARTCharacterBase.h"
+#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
 
 AARTPlayerState::AARTPlayerState()
 {
@@ -162,7 +164,20 @@ int32 AARTPlayerState::GetCharacterLevel() const
 
 float AARTPlayerState::GetHealth() const
 {
-	return AttributeSet->GetHealth();
+	if (AbilitySystemComponent)
+	{
+		return AbilitySystemComponent->GetNumericAttribute(UARTAttributeSet_Health::GetHealthAttribute());
+	}
+
+	return -1.f;
+}
+
+void AARTPlayerState::SetHealth(float Health)
+{
+	if (AbilitySystemComponent)
+	{
+		return AbilitySystemComponent->SetNumericAttributeBase(UARTAttributeSet_Health::GetHealthAttribute(), Health);
+	}
 }
 
 void AARTPlayerState::BeginPlay()
@@ -173,7 +188,7 @@ void AARTPlayerState::BeginPlay()
 	{
 		// Attribute change callbacks
 		HealthChangedDelegateHandle = AbilitySystemComponent->
-		                              GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).
+		                              GetGameplayAttributeValueChangeDelegate(UARTAttributeSet_Health::GetHealthAttribute()).
 		                              AddUObject(this, &AARTPlayerState::HealthChanged);
 	}
 
@@ -185,15 +200,15 @@ void AARTPlayerState::BeginPlay()
 
 void AARTPlayerState::HealthChanged(const FOnAttributeChangeData& Data)
 {
-	if (!Survivor)
+	if (!PlayerPawn)
 	{
-		Survivor = Cast<AARTSurvivor>(GetPawn());
+		PlayerPawn = Cast<AARTCharacterBase>(GetPawn());
 	}
 
 	// Check for and handle knockdown and death
-	if (IsValid(Survivor) && !IsAlive() && !AbilitySystemComponent->HasMatchingGameplayTag(DeadTag))
+	if (IsValid(PlayerPawn) && !IsAlive() && !AbilitySystemComponent->HasMatchingGameplayTag(DeadTag))
 	{
-		//Survivor->Die();
+		//PlayerPawn->Die();
 	}
 }
 

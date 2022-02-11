@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
+#include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetDataFilter.h"
 #include "Ability/ARTGlobalTags.h"
 #include "ARTCharacter/ARTSurvivor.h"
