@@ -18,7 +18,7 @@ struct ART_API FARTOrderData
 
     FARTOrderData();
     FARTOrderData(TSoftClassPtr<UARTOrder> InOrderType);
-    FARTOrderData(TSoftClassPtr<UARTOrder> InOrderType, AActor* InTarget);
+    FARTOrderData(TSoftClassPtr<UARTOrder> InOrdevvvvrType, AActor* InTarget);
     FARTOrderData(TSoftClassPtr<UARTOrder> InOrderType, FVector2D InLocation);
     FARTOrderData(TSoftClassPtr<UARTOrder> InOrderType, AActor* InTarget, FVector2D InLocation);
     FARTOrderData(TSoftClassPtr<UARTOrder> InOrderType, int32 InIndex);

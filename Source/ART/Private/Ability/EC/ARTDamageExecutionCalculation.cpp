@@ -78,15 +78,15 @@ void UARTDamageExecutionCalculation::Execute_Implementation(
 	float AttackPower = 1.f;
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().AttackPowerDef, EvaluationParameters,
 	                                                           AttackPower);
-	AttackPower = FMath::Max<float>(AttackPower, 0.0f);
+	AttackPower = FMath::Max(AttackPower, 0.0f);
 
 	float Armor = 0.0f;
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().ArmorDef, EvaluationParameters, Armor);
-	Armor = FMath::Max<float>(Armor, 0.0f);
+	Armor = FMath::Max(Armor, 0.0f);
 	
 	float Shield = 0.0f;
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().ShieldDef, EvaluationParameters, Shield);
-	Shield = FMath::Max<float>(Shield, 0.0f);
+	Shield = FMath::Max(Shield, 0.0f);
 	
 	// get temporal data
 	float Damage = 0.f;
