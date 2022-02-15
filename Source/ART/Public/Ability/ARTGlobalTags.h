@@ -50,6 +50,13 @@ public:
 	/** The ability cannot be activated because no target has been specified. */
 	FGameplayTag AbilityActivationFailure_NoTarget;
 
+	// ---------------------------------------------------------------------------------------------------
+	// Data tags
+	// ---------------------------------------------------------------------------------------------------
+	
+	FGameplayTag Data_Damage;
+	FGameplayTag Data_Healing;
+
 	FORCEINLINE static const FARTGlobalTags& Get() { return ARTTags; }
 
 protected:
@@ -69,6 +76,8 @@ protected:
 		AbilityActivationFailure_Cooldown = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.Cooldown"));
 		AbilityActivationFailure_Cost = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.Cost"));
 		AbilityActivationFailure_NoTarget = Manager.AddNativeGameplayTag(TEXT("AbilityActivationFailure.NoTarget"));
+		Data_Damage = Manager.AddNativeGameplayTag(TEXT("Data.Damage"));
+		Data_Healing = Manager.AddNativeGameplayTag(TEXT("Data.Healing"));
 	}
 
 private:

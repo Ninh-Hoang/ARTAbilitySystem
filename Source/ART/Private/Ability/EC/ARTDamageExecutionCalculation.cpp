@@ -5,7 +5,7 @@
  */
 
 #include "Ability/EC/ARTDamageExecutionCalculation.h"
-#include "Ability/ARTAbilitySystemComponent.h"
+#include "Ability/ARTGlobalTags.h"
 #include "ARTCharacter/AttributeSet/ARTAttributeSet_Damage.h"
 #include "ARTCharacter/AttributeSet/ARTAttributeSet_Defense.h"
 #include "ARTCharacter/AttributeSet/ARTAttributeSet_Offense.h"
@@ -52,13 +52,12 @@ static const ARTDamageStatics& DamageStatics()
 
 UARTDamageExecutionCalculation::UARTDamageExecutionCalculation()
 {
-	CritMultiplier = 1.5f;
-
 	ValidTransientAggregatorIdentifiers.AddTag(FGameplayTag::RequestGameplayTag("Data.Damage"));
 	
 	RelevantAttributesToCapture.Add(DamageStatics().AttackPowerDef);
 	RelevantAttributesToCapture.Add(DamageStatics().ArmorDef);
 	RelevantAttributesToCapture.Add(DamageStatics().ShieldDef);
+	RelevantAttributesToCapture.Add(DamageStatics().DamageDef);
 }
 
 void UARTDamageExecutionCalculation::Execute_Implementation(
@@ -90,7 +89,7 @@ void UARTDamageExecutionCalculation::Execute_Implementation(
 	
 	// get temporal data
 	float Damage = 0.f;
-	ExecutionParams.AttemptCalculateTransientAggregatorMagnitude(FGameplayTag::RequestGameplayTag("Data.Damage"), EvaluationParameters, Damage);
+	ExecutionParams.AttemptCalculateTransientAggregatorMagnitude(FARTGlobalTags::Get().Data_Damage, EvaluationParameters, Damage);
 	Damage = FMath::Max(Damage, 0.f);
 
 	const float UnmitigatedDamage = Damage * AttackPower; // Can multiply any damage boosters here

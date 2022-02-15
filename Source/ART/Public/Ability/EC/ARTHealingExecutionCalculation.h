@@ -21,5 +21,4 @@ public:
 	                                    OUT FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 
 protected:
-	float CritMultiplier;
 };
