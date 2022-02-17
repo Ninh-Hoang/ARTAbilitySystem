@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Item/InventoryComponent.h"
 #include "InventoryItemWidget.generated.h"
 
 /**
@@ -19,5 +20,5 @@ class ART_API UInventoryItemWidget : public UUserWidget
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory Item Widget", meta = (ExposeOnSpawn = true))
-	UItem* Item;
+	FItemData ItemData;
 };

@@ -2,14 +2,16 @@
 
 
 #include "ARTCharacter/ARTCharacterBase.h"
+
+#include "ARTAssetManager.h"
 #include "ARTCharacter/ARTCharacterMovementComponent.h"
 #include "Ability/ARTAbilitySystemComponent.h"
 #include "TimerManager.h"
 #include "Widget/ARTStatusTextWidgetComponent.h" 
 #include "ARTCharacter/ARTGameplayAbilitySet.h"
 #include "GameplayTagResponseTable.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Movement.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Movement.h"
 
 FName AARTCharacterBase::AbilitySystemComponentName(TEXT("AbilitySystemComp"));
 FName AARTCharacterBase::AttributeComponentName(TEXT("Attribute"));
@@ -177,7 +179,7 @@ int32 AARTCharacterBase::GetCharacterLevel() const
 	return 1;
 }
 
-void AARTCharacterBase::AddCharacterAbilitiesAndEffects()
+void AARTCharacterBase::InitializeAbilitySet()
 {
 	// Grant abilities, but only on the server	
 	if (GetLocalRole() != ROLE_Authority || !ASC || ASC->CharacterAbilitiesGiven)
@@ -185,12 +187,15 @@ void AARTCharacterBase::AddCharacterAbilitiesAndEffects()
 		return;
 	}
 	
-	for(const auto& AbilitySet : AbilitySets)
+	for(TSoftObjectPtr<UARTAbilitySet> Set : AbilitySets)
 	{
-		AbilitySetHandles.Add(AbilitySet->GiveAbilitySetTo(ASC, this));
+		UARTAbilitySet* LoadedSet = Set.IsValid() ? Set.Get() : Set.LoadSynchronous();
+		if (LoadedSet)
+		{
+			AbilitySetHandles.Add(LoadedSet->GiveAbilitySetTo(ASC, this));
+			ASC->CharacterAbilitiesGiven = true;
+		}
 	}
-
-	ASC->CharacterAbilitiesGiven = true;
 }
 
 void AARTCharacterBase::InitializeAttributes()
@@ -206,12 +211,7 @@ void AARTCharacterBase::InitializeAttributes()
 		       *FString(__FUNCTION__), *GetName());
 		return;
 	}
-
-	for (TSubclassOf<UARTAttributeSetBase> Set : AttributeSets)
-	{
-		if(Set) ASC->AddAttributeSetSubobject(NewObject<UARTAttributeSetBase>(this, Set));
-	}
-
+	
 	// Can run on Server and Client
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
@@ -220,7 +220,7 @@ void AARTCharacterBase::InitializeAttributes()
 		DefaultAttributes, GetCharacterLevel(), EffectContext);
 	if (NewHandle.IsValid())
 	{
-		ASC->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), ASC);
+		ASC->ApplyGameplayEffectSpecToSelf(*NewHandle.Data.Get());
 	}
 }
 

@@ -7,7 +7,7 @@
 #include "Ability/EC/ARTHealingExecutionCalculation.h"
 
 #include "Ability/ARTGlobalTags.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Healing.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Healing.h"
 
 // Declare the attributes to capture and define how we want to capture them from the Source and Target.
 struct ARTHealingStatics

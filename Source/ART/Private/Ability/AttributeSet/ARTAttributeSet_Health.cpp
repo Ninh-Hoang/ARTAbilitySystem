@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 

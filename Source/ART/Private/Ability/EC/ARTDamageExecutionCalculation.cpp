@@ -6,10 +6,10 @@
 
 #include "Ability/EC/ARTDamageExecutionCalculation.h"
 #include "Ability/ARTGlobalTags.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Damage.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Defense.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Offense.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Shield.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Damage.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Defense.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Offense.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Shield.h"
 
 // Declare the attributes to capture and define how we want to capture them from the Source and Target.
 struct ARTDamageStatics

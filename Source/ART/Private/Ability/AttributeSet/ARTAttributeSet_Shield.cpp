@@ -1,4 +1,4 @@
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Shield.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Shield.h"
 
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"

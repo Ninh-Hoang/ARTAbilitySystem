@@ -1,6 +1,6 @@
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Movement.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Movement.h"
 
-#include "Ability/FARTAggregatorEvaluateMetaDataLibrary.h"
+#include "Ability/AttributeSet/FARTAggregatorEvaluateMetaDataLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 UARTAttributeSet_Movement::UARTAttributeSet_Movement()

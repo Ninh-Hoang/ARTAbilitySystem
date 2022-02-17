@@ -3,12 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Modules/ModuleManager.h"
-
 #include "Engine.h"
-#include "Net/UnrealNetwork.h"
 #include "Networking.h"
-#include "Online.h"
 #include "UObject/ObjectMacros.h"
 
 #if WITH_EDITOR

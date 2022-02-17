@@ -35,7 +35,7 @@ public:
 	UPROPERTY()
 	FGameplayTag InteractingRemovalTag;
 
-	static UARTAbilitySystemGlobals& ARTGet()
+	static UARTAbilitySystemGlobals& GetARTASG()
 	{
 		return dynamic_cast<UARTAbilitySystemGlobals&>(Get());
 	}

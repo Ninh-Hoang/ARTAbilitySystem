@@ -121,12 +121,9 @@ protected:
 	class UARTAbilitySystemComponent* ASC;
 	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
-	TArray<class UARTAbilitySet*> AbilitySets;
+	TArray<TSoftObjectPtr<UARTAbilitySet>> AbilitySets;
 
 	TArray<FARTAbilitySetHandle> AbilitySetHandles;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
-	TArray<TSubclassOf<class UARTAttributeSetBase>> AttributeSets;
 	
 	// Default attributes for a character for initializing on spawn/respawn.
 	// This is an instant GE that overrides the values for attributes that get reset on spawn/respawn.
@@ -146,7 +143,7 @@ protected:
 	TSubclassOf<class UARTStatusTextWidgetComponent> DamageNumberClass;
 
 	// Grant abilities on the Server. The Ability Specs will be replicated to the owning client.
-	virtual void AddCharacterAbilitiesAndEffects();
+	virtual void InitializeAbilitySet();
 
 	// Initialize the Character's attributes. Must run on Server but we run it on Client too
 	// so that we don't have to wait. The Server's replication to the Client won't matter since

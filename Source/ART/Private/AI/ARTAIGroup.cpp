@@ -2,6 +2,7 @@
 
 
 #include "AI/ARTAIGroup.h"
+#include "DrawDebugHelpers.h"
 #include "ARTCharacter/AI/ARTAIController.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 

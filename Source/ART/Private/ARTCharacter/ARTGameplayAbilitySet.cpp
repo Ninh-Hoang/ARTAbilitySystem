@@ -1,8 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "ARTCharacter/ARTGameplayAbilitySet.h"
-#include "Ability/ARTGameplayEffect.h"
-#include "Ability/ARTGameplayAbility.h"
+#include "Abilities/GameplayAbility.h"
+#include "GameplayEffect.h"
 #include "Ability/ARTAbilitySystemComponent.h"
+#include "Ability/AttributeSet/ARTAttributeSetBase.h"
 
 void FARTAbilitySetHandle::AddAbilitySpecHandle(const FGameplayAbilitySpecHandle& Handle)
 {
@@ -43,6 +44,21 @@ FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent
  
     FARTAbilitySetHandle OutHandle;
     OutHandle.HandleId = ARTAbilitySetHandle_Impl::GetNextQueuedHandleIdForUse();
+    
+    // Grant attribute sets
+    for (int32 AttributeIndex = 0; AttributeIndex < GrantedAttributeSets.Num(); ++AttributeIndex)
+    {
+        const FARTAbilitySet_Attribute& AttributeSetToGrant = GrantedAttributeSets[AttributeIndex];
+ 
+        if (!IsValid(AttributeSetToGrant.Attribute))
+        {
+            UE_LOG(LogAbilitySystem, Error, TEXT("GrantedAttributeSet[%d] on ability set [%s] is not valid."), AttributeIndex, *GetNameSafe(this));
+            continue;
+        }
+
+        //we do not to send this to handle, we will not remove attribute set at runtime, remove ability set will only remove ability and effect
+        ASC->AddAttributeSetSubobject(NewObject<UARTAttributeSetBase>(ASC->GetAvatarActor(), AttributeSetToGrant.Attribute));
+    }
  
     // Grant the gameplay abilities.
     for (int32 AbilityIndex = 0; AbilityIndex < GrantedGameplayAbilities.Num(); ++AbilityIndex)
@@ -55,7 +71,7 @@ FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent
             continue;
         }
  
-        UARTGameplayAbility* AbilityCDO = AbilityToGrant.Ability->GetDefaultObject<UARTGameplayAbility>();
+        UGameplayAbility* AbilityCDO = AbilityToGrant.Ability->GetDefaultObject<UGameplayAbility>();
  
         FGameplayAbilitySpec AbilitySpec(AbilityCDO, AbilityToGrant.AbilityLevel);
         AbilitySpec.SourceObject = OverrideSourceObject;
@@ -80,8 +96,6 @@ FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent
         OutHandle.AddGameplayEffectHandle(GameplayEffectHandle);
     }
  
- 
- 
     return OutHandle;
 }
  
@@ -103,6 +117,8 @@ void UARTAbilitySet::TakeAbilitySet(FARTAbilitySetHandle& AbilitySetHandle)
         // Must be authoritative to give or take ability sets.
         return;
     }
+
+    
  
     for (const FGameplayAbilitySpecHandle& Handle : AbilitySetHandle.AbilitySpecHandles)
     {

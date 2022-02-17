@@ -3,6 +3,7 @@
 
 #include "Ability/ARTActorBase.h"
 #include "Ability/ARTAbilitySystemComponent.h"
+#include "ARTCharacter/ARTGameplayAbilitySet.h"
 
 // Sets default values
 AARTActorBase::AARTActorBase()
@@ -18,8 +19,9 @@ AARTActorBase::AARTActorBase()
 	
 }
 
-class UAbilitySystemComponent* AARTActorBase::GetAbilitySystemComponent() const
+UAbilitySystemComponent* AARTActorBase::GetAbilitySystemComponent() const
 {
+	//return if already valid (not lazy loading)
 	return AbilitySystemComponent;
 }
 
@@ -27,4 +29,30 @@ class UAbilitySystemComponent* AARTActorBase::GetAbilitySystemComponent() const
 void AARTActorBase::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AARTActorBase::CreateASC()
+{
+	AbilitySystemComponent = NewObject<UARTAbilitySystemComponent>(this);
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+	AbilitySystemComponent->RegisterComponent();
+}
+
+void AARTActorBase::InitializeASC()
+{
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+    
+	//TODO: Level
+	if (HasAuthority())
+	{
+		for (TSoftObjectPtr<UARTAbilitySet> Set : AbilitySets)
+		{
+			UARTAbilitySet* LoadedSet = Set.IsValid() ? Set.Get() : Set.LoadSynchronous();
+			if (LoadedSet)
+			{
+				LoadedSet->GiveAbilitySetTo(AbilitySystemComponent, this);
+			}
+		}
+	}
 }

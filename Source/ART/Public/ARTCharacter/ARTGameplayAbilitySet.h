@@ -13,18 +13,18 @@
  */
 
 class UARTAbilitySystemComponent;
+class UARTAttributeSetBase;
+class UGameplayEffect;
+class UGameplayAbility;
 
 USTRUCT(BlueprintType)
-struct FARTAbilitySet_GameplayEffect
+struct FARTAbilitySet_Attribute
 {
 	GENERATED_BODY()
 
 public:
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<class UARTGameplayEffect> GameplayEffect;
-
-	UPROPERTY(EditDefaultsOnly)
-	int32 EffectLevel;
+	TSubclassOf<UARTAttributeSetBase> Attribute;
 };
 
 USTRUCT(BlueprintType)
@@ -34,13 +34,26 @@ struct FARTAbilitySet_Ability
 
 public:
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<class UARTGameplayAbility> Ability;
+	TSubclassOf<UGameplayAbility> Ability;
 
 	UPROPERTY(EditDefaultsOnly)
 	int32 AbilityLevel;
 
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTag InputTag;
+};
+
+USTRUCT(BlueprintType)
+struct FARTAbilitySet_GameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayEffect> GameplayEffect;
+
+	UPROPERTY(EditDefaultsOnly)
+	int32 EffectLevel;
 };
 
 USTRUCT(BlueprintType)
@@ -55,11 +68,10 @@ struct FARTAbilitySetHandle
  
 private:
 	friend class UARTAbilitySet;
- 
+	
 	void AddAbilitySpecHandle(const FGameplayAbilitySpecHandle& Handle);
 	void AddGameplayEffectHandle(const FActiveGameplayEffectHandle& Handle);
- 
-     
+	
 	// Handles to the granted abilities.
 	UPROPERTY()
 	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
@@ -91,7 +103,8 @@ class ART_API UARTAbilitySet : public UPrimaryDataAsset
 public:
  
 	UARTAbilitySet(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
- 
+
+	const TArray<FARTAbilitySet_Attribute>& GetGrantedAttributeSets() const { return GrantedAttributeSets; }
 	const TArray<FARTAbilitySet_Ability>& GetGrantedGameplayAbilities() const { return GrantedGameplayAbilities; }
 	const TArray<FARTAbilitySet_GameplayEffect>& GetGrantedGameplayEffects() const { return GrantedGameplayEffects; }
  
@@ -101,10 +114,18 @@ public:
  
 protected:
 	// Gameplay abilities to grant when this ability set is granted.
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Attribute", meta=(TitleProperty=Attribute))
+	TArray<FARTAbilitySet_Attribute> GrantedAttributeSets;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities", meta=(TitleProperty=Ability))
 	TArray<FARTAbilitySet_Ability> GrantedGameplayAbilities;
- 
+	
 	// Gameplay effects to grant when this ability set is granted.
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects", meta=(TitleProperty=GameplayEffect))
 	TArray<FARTAbilitySet_GameplayEffect> GrantedGameplayEffects;
+
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override
+	{
+		return FPrimaryAssetId("AbilitySet", GetFName());
+	}
 };

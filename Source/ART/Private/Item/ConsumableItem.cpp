@@ -2,18 +2,21 @@
 
 
 #include "Item/ConsumableItem.h"
+
+#include "ARTAssetManager.h"
 #include "Ability/ARTGameplayAbility.h"
 #include "ARTCharacter/ARTSurvivor.h"
-#include <Ability/ARTAbilitySystemComponent.h>
+#include "Ability/ARTAbilitySystemComponent.h"
 
-#define LOCTEXT_NAMESPACE "FoodItem"
+#define LOCTEXT_NAMESPACE "ConsumableItem"
 
 UConsumableItem::UConsumableItem()
 {
+	ItemType = UARTAssetManager::ConsumableItemType;
 	UseActionText = LOCTEXT("ItemUseActionText", "Consume");
 }
 
-void UConsumableItem::Use(AARTSurvivor* Character)
+void UConsumableItem::Use(AARTCharacterBase* Character)
 {
 	UARTAbilitySystemComponent* ASC = Cast<UARTAbilitySystemComponent>(Character->GetAbilitySystemComponent());
 	//UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
@@ -24,29 +27,36 @@ void UConsumableItem::Use(AARTSurvivor* Character)
 		return;
 	}
 
-	for (TSubclassOf<UARTGameplayAbility> AbilityClass : AbilityClasses)
+	for (auto& AbilityData : GrantedAbilities)
 	{
+		const TSubclassOf<UGameplayAbility> AbilityClass = AbilityData.AbilityClass.IsValid() ? AbilityData.AbilityClass.Get() : AbilityData.AbilityClass.LoadSynchronous();
 		if (!AbilityClass)
 		{
+			UE_LOG(LogTemp, Error, TEXT("%s AbilityData is empty."), *FString(__FUNCTION__));
 			continue;
 		}
-		FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(AbilityClass, 1,
-		                                                        static_cast<int32>(AbilityClass.GetDefaultObject()->
-			                                                        AbilityInputID), this);
-		ASC->GiveAbilityAndActivateOnce(AbilitySpec);
+
+		UGameplayAbility* AbilityCDO = AbilityClass->GetDefaultObject<UGameplayAbility>();
+ 
+		FGameplayAbilitySpec AbilitySpec(AbilityCDO, AbilityData.Level);
+		AbilitySpec.SourceObject = this;;
+        
+		const FGameplayAbilitySpecHandle AbilitySpecHandle = ASC->GiveAbility(AbilitySpec);
 	}
 
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
 
-	for (TSubclassOf<UGameplayEffect> EffectClass : EffectClasses)
+	for (auto& EffectData : GrantedEffects)
 	{
+		const TSubclassOf<UGameplayEffect> EffectClass = EffectData.GameplayEffectClass.IsValid() ? EffectData.GameplayEffectClass.Get() :EffectData.GameplayEffectClass.LoadSynchronous();
 		if (!EffectClass)
 		{
+			UE_LOG(LogTemp, Error, TEXT("%s EffectData is empty."), *FString(__FUNCTION__));
 			continue;
 		}
 
-		FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(EffectClass, Character->GetCharacterLevel(),
+		FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(EffectClass, EffectData.Level,
 		                                                            EffectContext);
 
 		if (NewHandle.IsValid())

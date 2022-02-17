@@ -54,13 +54,13 @@ void AItemSpawn::SpawnItem()
 				SpawnParams.SpawnCollisionHandlingOverride =
 					ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-				const int32 ItemQuantity = ItemClass->GetDefaultObject<UItem>()->GetQuantity();
+				//const int32 ItemQuantity = ItemClass->GetDefaultObject<UItem>()->GetQuantity();
 
 				FTransform SpawnTransform = GetActorTransform();
 				SpawnTransform.AddToTranslation(LocationOffset);
 
 				APickup* Pickup = GetWorld()->SpawnActor<APickup>(PickupClass, SpawnTransform, SpawnParams);
-				Pickup->InitializePickup(ItemClass, ItemQuantity);
+				//Pickup->InitializePickup(ItemClass, ItemQuantity);
 				Pickup->OnDestroyed.AddUniqueDynamic(this, &AItemSpawn::OnItemTaken);
 
 				SpawnedPickups.Add(Pickup);

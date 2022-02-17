@@ -58,13 +58,9 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
-
+		InitializeAbilitySet();
 		InitializeAttributes();
-		
-		AddCharacterAbilitiesAndEffects();
-
 		InitializeTagPropertyMap();
-
 		InitializeTagResponseTable();
 
 		AARTPlayerController* PC = Cast<AARTPlayerController>(GetController());
@@ -541,10 +537,10 @@ void AARTSurvivor::UseItem(UItem* Item)
 	//if is server, check if the wanted item is in inventory, if not return
 	if (HasAuthority())
 	{
-		if (InventoryComponent && !InventoryComponent->FindItem(Item))
+		/*if (InventoryComponent && !InventoryComponent->FindItem(Item))
 		{
 			return;
-		}
+		}*/
 	}
 
 	if (Item)
@@ -579,8 +575,8 @@ void AARTSurvivor::DropItem(UItem* Item, int32 Quantity)
 
 	if (HasAuthority())
 	{
-		const int32 ItemQuantity = Item->GetQuantity();
-		const int32 DroppedQuantity = InventoryComponent->ConsumeItem(Item, Quantity);
+		//const int32 ItemQuantity = Item->GetQuantity();
+		//const int32 DroppedQuantity = InventoryComponent->ConsumeItem(Item, Quantity);
 
 		//spawn pickup
 		FActorSpawnParameters SpawnParams;
@@ -596,7 +592,7 @@ void AARTSurvivor::DropItem(UItem* Item, int32 Quantity)
 		ensure(PickupClass);
 
 		APickup* Pickup = GetWorld()->SpawnActor<APickup>(PickupClass, SpawnTransform, SpawnParams);
-		Pickup->InitializePickup(Item->GetClass(), DroppedQuantity);
+		//Pickup->InitializePickup(Item->GetClass(), DroppedQuantity);
 	}
 }
 

@@ -59,7 +59,11 @@ public:
 
 	FORCEINLINE static const FARTGlobalTags& Get() { return ARTTags; }
 
-protected:
+	static void InitializeNativeTags()
+	{
+		ARTTags.AddTags();
+	}
+	
 	//Called to register and assign the native tags
 	virtual void AddTags() override
 	{

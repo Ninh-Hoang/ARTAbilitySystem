@@ -26,10 +26,10 @@ void APickup::InitializePickup(const TSubclassOf<UItem> ItemClass, const int32 Q
 {
 	if (HasAuthority() && ItemClass && Quantity > 0)
 	{
-		Item = NewObject<UItem>(this, ItemClass);
+		/*Item = NewObject<UItem>(this, ItemClass);
 		Item->SetQuantity(Quantity);
 		OnRep_Item();
-		Item->MarkDirtyForReplication();
+		Item->MarkDirtyForReplication();*/
 	}
 }
 
@@ -37,7 +37,7 @@ void APickup::OnRep_Item()
 {
 	if (Item)
 	{
-		PickupMesh->SetStaticMesh(Item->PickupMesh);
+		//PickupMesh->SetStaticMesh(Item->PickupMesh);
 
 		Item->OnItemModified.AddDynamic(this, &APickup::OnItemModified);
 	}
@@ -52,7 +52,7 @@ void APickup::OnTakePickup(AARTSurvivor* Taker)
 
 	if (HasAuthority() && !IsPendingKill() && Item)
 	{
-		if (UInventoryComponent* PlayerInventory = Taker->InventoryComponent)
+		/*if (UInventoryComponent* PlayerInventory = Taker->InventoryComponent)
 		{
 			const FItemAddResult AddResult = PlayerInventory->TryAddItem(Item);
 			if (AddResult.ActualAmountGiven < Item->GetQuantity())
@@ -63,7 +63,7 @@ void APickup::OnTakePickup(AARTSurvivor* Taker)
 			{
 				Destroy();
 			}
-		}
+		}*/
 	}
 }
 
@@ -79,7 +79,7 @@ void APickup::BeginPlay()
 
 	if (HasAuthority() && ItemTemplate && bNetStartup)
 	{
-		InitializePickup(ItemTemplate->GetClass(), ItemTemplate->GetQuantity());
+		//InitializePickup(ItemTemplate->GetClass(), ItemTemplate->GetQuantity());
 	}
 
 	if (!bNetStartup)
@@ -120,7 +120,7 @@ void APickup::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent
 	{
 		if (ItemTemplate)
 		{
-			PickupMesh->SetStaticMesh(ItemTemplate->PickupMesh);
+			//PickupMesh->SetStaticMesh(ItemTemplate->PickupMesh);
 		}
 	}
 }

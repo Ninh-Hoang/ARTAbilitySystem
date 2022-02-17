@@ -10,6 +10,8 @@ public class ART : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		MinFilesUsingPrecompiledHeaderOverride = 1;
 		
+		if (Target.Configuration != UnrealTargetConfiguration.Shipping) bUseUnity = false;
+		
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...

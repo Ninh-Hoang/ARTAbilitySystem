@@ -16,7 +16,7 @@ void UInventorySet::InitInventory(class UInventoryComponent* InventoryComponent)
 	{
 		if (Item.ItemClass)
 		{
-			InventoryComponent->TryAddItemFromClass(Item.ItemClass, Item.Quantity);
+			//InventoryComponent->TryAddItemFromClass(Item.ItemClass, Item.Quantity);
 		}
 	}
 }

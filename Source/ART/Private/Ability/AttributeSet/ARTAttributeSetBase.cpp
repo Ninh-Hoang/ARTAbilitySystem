@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ARTCharacter/AttributeSet/ARTAttributeSetBase.h"
+#include "Ability/AttributeSet/ARTAttributeSetBase.h"
 #include "AbilitySystemComponent.h"
 
 UARTAttributeSetBase::UARTAttributeSetBase()

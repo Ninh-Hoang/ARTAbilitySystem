@@ -3,6 +3,7 @@
 
 #include "AI/Tasks/BTTask_ActivateAbility.h"
 
+#include "AbilitySystemComponent.h"
 #include "Ability/ARTGameplayAbility.h"
 #include "AI/Order/ARTOrderComponent.h"
 #include "ARTCharacter/ARTCharacterBase.h"

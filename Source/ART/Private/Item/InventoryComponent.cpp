@@ -8,6 +8,70 @@
 
 #define LOCTEXT_NAMESPACE "Inventory"
 
+bool FItemData::ShouldReplicateItemData() const
+{
+	if (Item && Item->ShouldReplicateItemData(*this))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void FItemData::PostReplicatedAdd(const FItemDataContainer& InArray)
+{
+	if (InArray.Owner)
+	{
+		InArray.Owner->OnAddItem(*this);
+	}
+}
+
+void FItemData::PreReplicatedRemove(const FItemDataContainer& InArray)
+{
+	if (InArray.Owner)
+	{
+		InArray.Owner->OnRemoveItem(*this);
+	}
+}
+
+void FItemData::PostReplicatedChange(const FItemDataContainer& InArray)
+{
+	if (InArray.Owner)
+	{
+		InArray.Owner->OnItemDataChanged(*this);
+	}
+}
+
+FString FItemData::GetDebugString()
+{
+	return FString::Printf(TEXT("(%s)"), *GetNameSafe(Item));
+}
+
+void FItemDataContainer::RegisterOwner(UInventoryComponent* InOwner)
+{
+	Owner = InOwner;
+}
+
+FScopedItemListLock::FScopedItemListLock(UInventoryComponent& InContainer)
+	: InventoryComponent(InContainer) 
+{
+	InventoryComponent.IncrementItemListLock();
+}
+
+FScopedItemListLock::~FScopedItemListLock()
+{
+	InventoryComponent.DecrementItemListLock();
+}
+
+FScopedItemAbilityListLock::FScopedItemAbilityListLock(UInventoryComponent& InInventoryComponent, const UItem& InItem)
+	: Item(InItem), ItemLock(InInventoryComponent)
+{
+}
+
+FScopedItemAbilityListLock::~FScopedItemAbilityListLock()
+{
+}
+
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
@@ -18,12 +82,208 @@ UInventoryComponent::UInventoryComponent()
 	// ...
 }
 
-FItemAddResult UInventoryComponent::TryAddItem(UItem* Item)
+void UInventoryComponent::OnRegister()
 {
-	return TryAddItem_Internal(Item);
+	Super::OnRegister();
+
+	ItemContainer.RegisterOwner(this);
 }
 
-FItemAddResult UInventoryComponent::TryAddItemFromClass(TSubclassOf<UItem> ItemClass, const int32 Quantity)
+void UInventoryComponent::CacheIsNetSimulated()
+{
+	bCachedIsNetSimulated = IsNetSimulating();
+}
+
+void UInventoryComponent::OnAddItem(FItemData& ItemData)
+{
+}
+
+void UInventoryComponent::OnRemoveItem(FItemData& ItemData)
+{
+}
+
+void UInventoryComponent::OnItemDataChanged(FItemData& ItemData)
+{
+}
+
+void UInventoryComponent::IncrementItemListLock()
+{
+	ItemScopeLockCount++;
+}
+
+void UInventoryComponent::DecrementItemListLock()
+{
+	if (--ItemScopeLockCount == 0)
+	{
+		TArray<FItemData, TInlineAllocator<2> > LocalPendingAdds(MoveTemp(ItemPendingAdds));
+		for (FItemData& Item : LocalPendingAdds)
+		{
+			TryAddItemData(Item);
+		}
+
+		TArray<FItemData, TInlineAllocator<2> > LocalPendingRemoves(MoveTemp(ItemPendingRemoves));
+		for (FItemData& Item : LocalPendingRemoves)
+		{
+			//RemoveItem(Item);
+		}
+	}
+}
+
+FItemAddResult UInventoryComponent::TryAddItem(const UItem* Item, int32 Quantity)
+{
+	return TryAddItemData(FItemData(const_cast<UItem*>(Item), Quantity));
+}
+
+FItemAddResult UInventoryComponent::TryAddItemData(const FItemData& ItemData)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !ItemData.IsValid())
+		return FItemAddResult::AddedNone(-1, LOCTEXT("ErrorMessage", ""));
+
+	UItem* Item = ItemData.Item;
+	const int32 AddAmount = ItemData.GetQuantity();
+	bool AddAll = true;
+	int32 ActualAddAmount = AddAmount;
+	FText ErrorText;
+
+	//if item weight is 0, don't check weight capacity
+	if (!FMath::IsNearlyZero(Item->Weight))
+	{
+		int32 WeightMaxAddAmount = FMath::FloorToInt((WeightCapacity - GetCurrentWeight() / Item->Weight));
+		ActualAddAmount = FMath::Min(ActualAddAmount, WeightMaxAddAmount);
+	}
+
+	if(ActualAddAmount < 1) return FItemAddResult::AddedNone(AddAmount, LOCTEXT("InventoryCapacityMaxText","Could not add item. Exceed inventory weight capacity"));
+
+	if(ActualAddAmount < AddAmount)
+	{
+		AddAll = false;
+		ErrorText = LOCTEXT("InventoryTooMuchWeightText", "Could not add all items.");
+	}
+	
+	if(Item->AllowMultipleStack)
+	{
+		int32 AmountToAddLeft = ActualAddAmount;
+		if(Item->bStackable)
+		{
+			TArray<FItemData*> ItemWithNotFullStack;
+			if(FindAllItemWithNotMaxStack(Item->GetClass(), ItemWithNotFullStack))
+			{
+				//fill all not full stack, cache the number left after filling all
+				for(FItemData* SingleItem : ItemWithNotFullStack)
+				{
+					if(AmountToAddLeft <= 0) break;
+					const int32 CapacityMaxAddAmount = SingleItem->Item->MaxStackSize - SingleItem->Quantity;
+					const int32 AddAmoutToThisStack = FMath::Min(AmountToAddLeft, CapacityMaxAddAmount);
+					AmountToAddLeft -= AddAmoutToThisStack;
+				}
+			}
+			
+			if(AmountToAddLeft > 0)
+			{
+				int32 AmountOfNewItem = AmountToAddLeft/Item->MaxStackSize;
+				const int32 FinalItemStack = AmountToAddLeft%Item->MaxStackSize;
+
+				AmountOfNewItem = FinalItemStack > 0 ? AmountOfNewItem + 1 : AmountOfNewItem;
+				
+				const int32 ActualAmountOfNewItem = FMath::Min(Capacity-ItemContainer.Num(), AmountOfNewItem);
+
+				if(ActualAmountOfNewItem < AmountOfNewItem)
+				{
+					AddAll = false;
+					ErrorText = LOCTEXT("InventoryExceedCapacityText", "Could not add all items.");
+				}
+				
+				for(int32 i = 0; i < ActualAmountOfNewItem; i++)
+				{
+					const int32 ThisStackNum = FMath::Min(Item->MaxStackSize, AmountToAddLeft);
+					AmountToAddLeft -= ThisStackNum;
+					AddItem(Item, ThisStackNum);
+				}
+			}
+			
+			ActualAddAmount = ActualAddAmount - AmountToAddLeft;
+			if(ActualAddAmount == 0)  return FItemAddResult::AddedNone(AddAmount, LOCTEXT("InventoryCapacityMaxText","Could not add item. Exceed inventory capacity"));
+		}
+		else
+		{
+			const int32 ActualAmountOfNewItem = FMath::Min(Capacity-ItemContainer.Num(), AmountToAddLeft);
+			
+			if(ActualAmountOfNewItem < AmountToAddLeft)
+			{
+				AddAll = false;
+				ErrorText = LOCTEXT("InventoryExceedCapacityText", "Could not add all items.");
+			}
+			
+			for(int32 i = 0; i < ActualAmountOfNewItem; i++)
+			{
+				AddItem(Item);
+			}
+			
+		}
+	}
+	else
+	{
+		if(Item->bStackable)
+		{
+			FItemData ExistingItem;
+			if(FindItem(Item, ExistingItem))
+			{
+				ActualAddAmount = FMath::Min(ActualAddAmount, Item->MaxStackSize - ExistingItem.Quantity);
+
+				if(ActualAddAmount == 0)
+				{
+					AddAll = false;
+					return FItemAddResult::AddedNone(AddAmount, LOCTEXT("InventoryItemMaxStackText","Could not add item. ItemStack maxed"));
+				}
+				
+				if(ActualAddAmount < AddAmount)
+				{
+					AddAll = false;
+					ErrorText = LOCTEXT("InventoryItemMaxStackText", "Could not add all items.");
+				}
+				ExistingItem.AddQuantity(ActualAddAmount);
+			}
+			else
+			{
+				ActualAddAmount = FMath::Min(ActualAddAmount, Item->MaxStackSize);
+				
+				if(ActualAddAmount < AddAmount)
+				{
+					AddAll = false;
+					ErrorText = LOCTEXT("InventoryItemMaxStackText", "Could not add all items.");
+				}
+				
+				AddItem(Item, ActualAddAmount);
+			}
+		}
+		else
+		{
+			FItemData ExistingItem;
+			if(FindItem(Item, ExistingItem))
+			{
+				AddAll = false;
+				return FItemAddResult::AddedNone(AddAmount, LOCTEXT("InventoryItemUniqueItemExistText","Could not add item. UniqueItemExist"));
+			}
+			else
+			{
+				ActualAddAmount = 1;
+				AddItem(Item);
+
+				if(ActualAddAmount < AddAmount)
+				{
+					AddAll = false;
+					ErrorText = LOCTEXT("InventoryItemUniqueItemExistText", "Could not add all items.");
+				}
+				
+			}
+		}
+	}
+
+	if(AddAll) return FItemAddResult::AddedAll(AddAmount);
+	return FItemAddResult::AddedSome(AddAmount, ActualAddAmount, ErrorText);
+}
+
+/*FItemAddResult UInventoryComponent::TryAddItemFromClass(TSubclassOf<UItem> ItemClass, const int32 Quantity)
 {
 	UItem* Item = NewObject<UItem>(GetOwner(), ItemClass);
 	Item->SetQuantity(Quantity);
@@ -37,9 +297,9 @@ int32 UInventoryComponent::ConsumeItem(UItem* Item)
 		ConsumeItem(Item, Item->GetQuantity());
 	}
 	return 0;
-}
+}*/
 
-int32 UInventoryComponent::ConsumeItem(UItem* Item, const int32 Quantity)
+/*int32 UInventoryComponent::ConsumeItem(UItem* Item, const int32 Quantity)
 {
 	if (GetOwner() && GetOwner()->HasAuthority() && Item)
 	{
@@ -77,67 +337,87 @@ bool UInventoryComponent::RemoveItem(UItem* Item)
 		}
 	}
 	return false;
-}
+}*/
 
-bool UInventoryComponent::HasItem(TSubclassOf<UItem> ItemClass, const int32 Quantity) const
+bool UInventoryComponent::HasItem(const UItem* SearchItem, const int32 Quantity) const
 {
-	if (UItem* ItemToFind = FindItemByClass(ItemClass))
+	if(Quantity < 1) return true;
+	
+	FItemData TempItem;
+	if(Quantity == 1)
+		return FindItem(SearchItem, TempItem);
+
+	if(Quantity > 1)
 	{
-		return ItemToFind->GetQuantity() >= Quantity;
+		int32 CurrentQuantity = 0;
+		for(const FItemData& Item : ItemContainer.Items)
+		{
+			if(Item.Item == SearchItem)
+			{
+				CurrentQuantity += Item.Quantity;
+				if(CurrentQuantity >= Quantity) return true;
+			}
+		}
 	}
 	return false;
 }
 
-UItem* UInventoryComponent::FindItem(UItem* Item) const
+bool UInventoryComponent::FindItem(const UItem* SearchItem, FItemData& OutItem) const
 {
-	if (Item)
+	if(!SearchItem) return false;
+	
+	for(const FItemData& Item : ItemContainer.Items)
 	{
-		for (UItem* InvItem : Items)
+		if(Item.Item  == SearchItem)
 		{
-			if (InvItem && InvItem->GetClass() == Item->GetClass())
-			{
-				return InvItem;
-			}
+			OutItem = Item;
+			return true;
 		}
 	}
-	return nullptr;
+	return false;
 }
 
-UItem* UInventoryComponent::FindItemByClass(TSubclassOf<UItem> ItemClass) const
+bool UInventoryComponent::FindItems(const UItem* SearchItem, TArray<FItemData*>& OutItems) const
 {
-	for (UItem* InvItem : Items)
+	if(!SearchItem) return false;
+
+	bool Found = false;
+
+	for(const FItemData& Item : ItemContainer.Items)
 	{
-		if (InvItem && InvItem->GetClass() == ItemClass)
+		if(Item.Item  == SearchItem)
 		{
-			return InvItem;
+			OutItems.Add(const_cast<FItemData*>(&Item));
+			Found = true;
 		}
 	}
-	return nullptr;
+	return Found;
 }
 
-TArray<UItem*> UInventoryComponent::FindItemsByClass(TSubclassOf<UItem> ItemClass) const
+bool UInventoryComponent::FindAllItemWithNotMaxStack(const TSubclassOf<UItem> ItemClass,
+	TArray<FItemData*>& OutItems) const
 {
-	TArray<UItem*> ItemsOfClass;
-	for (UItem* InvItem : Items)
+	if(!ItemClass) return false;
+
+	bool Found = false;
+	for(const FItemData& Item : ItemContainer.Items)
 	{
-		if (InvItem && InvItem->GetClass()->IsChildOf(ItemClass))
+		if(Item.Item->GetClass() == ItemClass && Item.Quantity < Item.Item->MaxStackSize)
 		{
-			ItemsOfClass.Add(InvItem);
+			OutItems.Add(const_cast<FItemData*>(&Item));
+			Found = true;
 		}
 	}
-	return ItemsOfClass;
+	return Found;
 }
 
 float UInventoryComponent::GetCurrentWeight() const
 {
 	float Weight = 0.0;
 
-	for (UItem* Item : Items)
+	for(const FItemData& Item : ItemContainer.Items)
 	{
-		if (Item)
-		{
-			Weight += Item->GetStackWeight();
-		}
+		Weight += Item.Item->Weight;
 	}
 
 	return Weight;
@@ -161,124 +441,31 @@ void UInventoryComponent::ClientRefreshInventory_Implementation()
 	OnInventoryUpdated.Broadcast();
 }
 
-UItem* UInventoryComponent::AddItem(UItem* Item)
+FItemData* UInventoryComponent::AddItem(UItem* Item)
 {
 	if (GetOwner()->HasAuthority())
 	{
-		UItem* NewItem = NewObject<UItem>(GetOwner(), Item->GetClass());
-		NewItem->SetQuantity(Item->GetQuantity());
-		NewItem->OwningInventory = this;
-		NewItem->AddedToInventory(this);
-		Items.Add(NewItem);
-		NewItem->MarkDirtyForReplication();
-
-		return NewItem;
+		const FItemData ItemDataToAdd(Item, Item->MaxStackSize);
+		
+		FItemData& AddedItemData = ItemContainer.Items[ItemContainer.Items.Add(ItemDataToAdd)];
+		
+		ItemContainer.MarkItemDirty(AddedItemData );
+		return &AddedItemData;
 	}
-
 	return nullptr;
 }
 
-FItemAddResult UInventoryComponent::TryAddItem_Internal(UItem* Item)
+FItemData* UInventoryComponent::AddItem(UItem* Item, int32 Quantity)
 {
-	if (GetOwner() && GetOwner()->HasAuthority() && Item)
+	if (GetOwner()->HasAuthority())
 	{
-		const int32 AddAmount = Item->GetQuantity();
-
-		//check if inventory capacity full
-		if (Items.Num() + 1 > GetCapacity())
-		{
-			return FItemAddResult::AddedNone(
-				AddAmount, LOCTEXT("InventoryCapacityFullText", "Could not add item. Inventory is full."));
-		}
-
-		//if item weight is 0, don't check weight capacity
-		if (FMath::IsNearlyZero(Item->Weight))
-		{
-			//not enough weight for one item
-			if (GetCurrentWeight() + Item->Weight > GetWeightCapacity())
-			{
-				return FItemAddResult::AddedNone(AddAmount, LOCTEXT("InventoryTooMuchWeight",
-				                                                    "Could not add item. Exceed inventory weight capacity"));
-			}
-		}
-
-		//check if item is stackable, if we already have a stack and add it there
-		if (Item->bStackable)
-		{
-			//check if item quantity is over max stack size
-			ensure(Item->GetQuantity() <= Item->MaxStackSize);
-
-			//if there is already a stack of this item
-			if (UItem* ExistingItem = FindItem(Item))
-			{
-				//if max stack not reached
-				if (ExistingItem->GetQuantity() < ExistingItem->MaxStackSize)
-				{
-					const int32 CapacityMaxAddAmount = ExistingItem->MaxStackSize - ExistingItem->GetQuantity();
-					int32 ActualAddAmount = FMath::Min(AddAmount, CapacityMaxAddAmount);
-
-					FText ErrorText = LOCTEXT("InventoryErrorText", "Could not add all items.");
-
-					//adjust if the weight is exceeding capacity
-					if (!FMath::IsNearlyZero(Item->Weight))
-					{
-						//find max amount of item can take due to weight
-						const int32 WeightMaxAddAmount = FMath::FloorToInt(
-							(WeightCapacity - GetCurrentWeight() / Item->Weight));
-						ActualAddAmount = FMath::Min(ActualAddAmount, WeightMaxAddAmount);
-
-						if (ActualAddAmount < AddAmount)
-						{
-							ErrorText = FText::Format(
-								LOCTEXT("InventoryTooMuchWeightText",
-								        "Could not entire stack of {ItemName} to Inventory."), Item->ItemDisplayName);
-						}
-					}
-					else if (ActualAddAmount < AddAmount)
-					{
-						ErrorText = FText::Format(
-							LOCTEXT("InventoryTooManyStacksText", "Could not entire stack of {ItemName} to Inventory."),
-							Item->ItemDisplayName);
-					}
-
-					//if could not add any item
-					if (ActualAddAmount <= 0)
-					{
-						return FItemAddResult::AddedNone(
-							AddAmount, LOCTEXT("InventoryErrorText", "Could not add any item to inventory"));
-					}
-
-					ExistingItem->SetQuantity(ExistingItem->GetQuantity() + ActualAddAmount);
-
-					ensure(ExistingItem->GetQuantity() <= ExistingItem->MaxStackSize);
-
-					if (ActualAddAmount < AddAmount)
-					{
-						return FItemAddResult::AddedSome(AddAmount, ActualAddAmount, ErrorText);
-					}
-					return FItemAddResult::AddedAll(AddAmount);
-				}
-				return FItemAddResult::AddedNone(AddAmount, FText::Format(
-					                                 LOCTEXT("InventoryFullStackText",
-					                                         "Could not add {ItemName}. Already max stack."),
-					                                 Item->ItemDisplayName));
-			}
-			AddItem(Item);
-
-			return FItemAddResult::AddedAll(AddAmount);
-		}
-		ensure(Item->GetQuantity() == 1);
-
-		AddItem(Item);
-
-		return FItemAddResult::AddedAll(AddAmount);
+		const FItemData ItemDataToAdd(Item, Quantity);
+		FItemData& AddedItemData = ItemContainer.Items[ItemContainer.Items.Add(ItemDataToAdd)];
+		
+		ItemContainer.MarkItemDirty(AddedItemData );
+		return &AddedItemData;
 	}
-
-	//should not be called on client
-	/*if (Item) {
-		check(false);
-	}*/
-	return FItemAddResult::AddedNone(-1, LOCTEXT("ErrorMessage", ""));
+	return nullptr;
 }
 
 void UInventoryComponent::OnRep_Items()
@@ -290,25 +477,8 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UInventoryComponent, Items);
+	DOREPLIFETIME(UInventoryComponent, ItemContainer);
 }
 
-bool UInventoryComponent::ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch,
-                                              FReplicationFlags* RepFlags)
-{
-	bool bWroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
-
-	if (Channel->KeyNeedsToReplicate(0, ReplicatedItemsKey))
-	{
-		for (UItem* Item : Items)
-		{
-			if (Channel->KeyNeedsToReplicate(Item->GetUniqueID(), Item->RepKey))
-			{
-				bWroteSomething |= Channel->ReplicateSubobject(Item, *Bunch, *RepFlags);
-			}
-		}
-	}
-	return bWroteSomething;
-}
 
 #undef LOCTEXT_NAMESPACE

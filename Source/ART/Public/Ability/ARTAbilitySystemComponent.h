@@ -88,16 +88,6 @@ public:
 
 	FReceivedDamageDelegate ReceivedDamage;
 
-	//called on Server when any gameplay effect added to target (will be used if GE is type instant)
-	void OnGameplayEffectAppliedToTargetCallback(UAbilitySystemComponent* Target,
-	                                             const FGameplayEffectSpec& SpecApplied,
-	                                             FActiveGameplayEffectHandle ActiveHandle);
-
-	//called on both Client and Server when Duration base GE applied to self (Will be used with duration base GE instead of OnGameplayEffectAppliedToTargetCallback)
-	void OnActiveGameplayEffectAppliedToSelfCallback(UAbilitySystemComponent* Target,
-	                                                 const FGameplayEffectSpec& SpecApplied,
-	                                                 FActiveGameplayEffectHandle ActiveHandle);
-
 	// Called from GDDamageExecCalculation. Broadcasts on ReceivedDamage whenever this ASC receives damage.
 	virtual void ReceiveDamage(UARTAbilitySystemComponent* SourceASC, float UnmitigatedDamage, float MitigatedDamage);
 
@@ -113,6 +103,9 @@ public:
 	virtual void NotifyAbilityEnded(FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability,
 	                                bool bWasCancelled) override;
 
+	/** Get an outgoing GameplayEffectSpec that is ready to be applied to other things. */
+	virtual FGameplayEffectSpecHandle MakeOutgoingSpec(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level,
+													   FGameplayEffectContextHandle Context) const override;
 	//expose cancel ability to BP
 	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "CancelAbilityWithTag"))
 	void CancelAbilitiesWithTag(const FGameplayTagContainer WithTags, const FGameplayTagContainer WithoutTags,
@@ -131,31 +124,13 @@ public:
 	int32 K2_GetTagCount(FGameplayTag TagToCheck) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities")
-	FGameplayAbilitySpecHandle FindAbilitySpecHandleForClass(TSubclassOf<UGameplayAbility> AbilityClass,
-	                                                         UObject* OptionalSourceObject = nullptr);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities")
 	int32 FindAbilityChargeViaCooldownTag(FGameplayTagContainer CooldownTag);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities")
+	FGameplayAbilitySpecHandle FindAbilitySpecHandleForClass(TSubclassOf<UGameplayAbility> AbilityClass,
+															 UObject* OptionalSourceObject = nullptr);
 	// Turn on RPC batching in ASC. Off by default.
 	virtual bool ShouldDoServerAbilityRPCBatch() const override { return true; }
-
-	// Exposes AddLooseGameplayTag to Blueprint. This tag is *not* replicated.
-	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "AddLooseGameplayTag"))
-	void K2_AddLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count = 1);
-
-	// Exposes AddLooseGameplayTags to Blueprint. These tags are *not* replicated.
-	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "AddLooseGameplayTags"))
-	void K2_AddLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count = 1);
-
-	// Exposes RemoveLooseGameplayTag to Blueprint. This tag is *not* replicated.
-	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "RemoveLooseGameplayTag"))
-	void K2_RemoveLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count = 1);
-
-	// Exposes RemoveLooseGameplayTags to Blueprint. These tags are *not* replicated.
-	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "RemoveLooseGameplayTags"))
-	void K2_RemoveLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count = 1);
-
 	// Attempts to activate the given ability handle and batch all RPCs into one. This will only batch all RPCs that happen
 	// in one frame. Best case scenario we batch ActivateAbility, SendTargetData, and EndAbility into one RPC instead of three.
 	// Worst case we batch ActivateAbility and SendTargetData into one RPC instead of two and call EndAbility later in a separate
@@ -166,90 +141,7 @@ public:
 	// bullet is one RPC for SendTargetData. We then send one final RPC for the EndAbility when we're done firing.
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	virtual bool BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle InAbilityHandle, bool EndAbilityImmediately);
-
-	UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters",
-		GameplayTagFilter = "GameplayCue"))
-	void ExecuteGameplayCueLocal(const FGameplayTag GameplayCueTag,
-	                             const FGameplayCueParameters& GameplayCueParameters);
-
-	UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters",
-		GameplayTagFilter = "GameplayCue"))
-	void AddGameplayCueLocal(const FGameplayTag GameplayCueTag, const FGameplayCueParameters& GameplayCueParameters);
-
-	UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters",
-		GameplayTagFilter = "GameplayCue"))
-	void RemoveGameplayCueLocal(const FGameplayTag GameplayCueTag, const FGameplayCueParameters& GameplayCueParameters);
-
-	UFUNCTION(BlueprintCallable, Category = "Ability")
-	virtual FString GetCurrentPredictionKeyStatus();
-
-	/**
-	* If this ASC has a valid prediction key, attempt to predictively apply this GE.
-	* If the key is not valid, it will apply the GE without prediction.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
-		"ApplyGameplayEffectToSelfWithPrediction"))
-	FActiveGameplayEffectHandle BP_ApplyGameplayEffectToSelfWithPrediction(
-		TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level, FGameplayEffectContextHandle EffectContext);
-
-	/**
-	* If this ASC has a valid prediction key, attempt to predictively apply this GE to the target.
-	* If the key is not valid, it will apply the GE to the target without prediction.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
-		"ApplyGameplayEffectToTargetWithPrediction"))
-	FActiveGameplayEffectHandle BP_ApplyGameplayEffectToTargetWithPrediction(
-		TSubclassOf<UGameplayEffect> GameplayEffectClass, UAbilitySystemComponent* Target, float Level,
-		FGameplayEffectContextHandle Context);
-
-	/**
-	* If this ASC has a valid prediction key, attempt to predictively apply this GESpec
-	* If the key is not valid, it will apply the GE without prediction.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
-		"ApplyGameplayEffectSpecToSelfWithPrediction"))
-	FActiveGameplayEffectHandle BP_ApplyGameplayEffectSpecToSelfWithPrediction(
-		const FGameplayEffectSpec& GameplayEffect);
-
-	/**
-	* If this ASC has a valid prediction key, attempt to predictively apply this GESpec
-	* If the key is not valid, it will apply the GE without prediction.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
-		"ApplyGameplayEffectSpecToSelfWithPrediction"))
-	FActiveGameplayEffectHandle BP_ApplyGameplayEffectSpecToTargetWithPrediction(
-		const FGameplayEffectSpec& GameplayEffect, UAbilitySystemComponent* Target);
-
-	//change active gameplay effect duration
-	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName = "Change Active Effect Duration"))
-	bool SetGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float NewDuration);
-
-	//add active gameplay effect duration
-	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
-		"Add Active Effect Duration by Float"))
-	bool AddGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float AddDuration);
-
-	/** Get an outgoing GameplayEffectSpec that is ready to be applied to other things. */
-	virtual FGameplayEffectSpecHandle MakeOutgoingSpec(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level,
-	                                                   FGameplayEffectContextHandle Context) const override;
-
-	//FOR AI and UI
-	/** Returns a list of currently active ability primary instances that match the tags */
-	UFUNCTION(BlueprintPure, Meta =( AutoCreateRefTerm = "GameplayTagContainer"))
-	void GetActivePrimaryAbilityInstancesWithTags(const FGameplayTagContainer& GameplayTagContainer,
-	                                TArray<UARTGameplayAbility*>& ActiveAbilities);
-
-	//** return a list of currently active ability class default that match the tags */
-	UFUNCTION(BlueprintPure, Meta =( AutoCreateRefTerm = "GameplayTagContainer"))
-	void GetActiveAbilityClassDefaultWithTags(const FGameplayTagContainer& GameplayTagContainer,
-									TArray<UARTGameplayAbility*>& ActiveAbilities);
-
-	UFUNCTION(BlueprintPure)
-	void GetActiveEffectHandlesByClass(TSubclassOf<UGameplayEffect> SourceGameplayEffect,
-	                                   TArray<FActiveGameplayEffectHandle>& OutActiveEffectHandles);
 	
-	UFUNCTION(BlueprintPure)
-	void GetAllActiveAbilityClassDefaults(TArray<UARTGameplayAbility*>& ActiveAbilityCDO);
 	// ----------------------------------------------------------------------------------------------------------------
 	//	AnimMontage Support for multiple USkeletalMeshComponents on the AvatarActor.
 	//  Only one ability can be animating at a time though?
@@ -324,7 +216,7 @@ protected:
 	//  Only one ability can be animating at a time though?
 	// ----------------------------------------------------------------------------------------------------------------	
 
-	// Set if montage rep happens while we don't have the animinstance associated with us yet
+	// Set if montage rep happens while we don't have the anim instance associated with us yet
 	UPROPERTY()
 	bool bPendingMontageRepForMesh;
 
@@ -390,16 +282,142 @@ protected:
 	bool ServerCurrentMontageSetPlayRateForMesh_Validate(USkeletalMeshComponent* InMesh,
 	                                                     UAnimMontage* ClientAnimMontage, float InPlayRate);
 
+	/*
+	 * Prediction outside GAS
+	 */
 public:
+	UFUNCTION(BlueprintCallable, Category = "Ability")
+	virtual FString GetCurrentPredictionKeyStatus();
+
+	/**
+	* If this ASC has a valid prediction key, attempt to predictive apply this GE.
+	* If the key is not valid, it will apply the GE without prediction.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
+		"ApplyGameplayEffectToSelfWithPrediction"))
+	FActiveGameplayEffectHandle BP_ApplyGameplayEffectToSelfWithPrediction(
+		TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level, FGameplayEffectContextHandle EffectContext);
+
+	/**
+	* If this ASC has a valid prediction key, attempt to predictive apply this GE to the target.
+	* If the key is not valid, it will apply the GE to the target without prediction.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
+		"ApplyGameplayEffectToTargetWithPrediction"))
+	FActiveGameplayEffectHandle BP_ApplyGameplayEffectToTargetWithPrediction(
+		TSubclassOf<UGameplayEffect> GameplayEffectClass, UAbilitySystemComponent* Target, float Level,
+		FGameplayEffectContextHandle Context);
+
+	/**
+	* If this ASC has a valid prediction key, attempt to predictive apply this GESpec
+	* If the key is not valid, it will apply the GE without prediction.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
+		"ApplyGameplayEffectSpecToSelfWithPrediction"))
+	FActiveGameplayEffectHandle BP_ApplyGameplayEffectSpecToSelfWithPrediction(
+		const FGameplayEffectSpec& GameplayEffect);
+
+	/**
+	* If this ASC has a valid prediction key, attempt to predictive apply this GESpec
+	* If the key is not valid, it will apply the GE without prediction.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
+		"ApplyGameplayEffectSpecToSelfWithPrediction"))
+	FActiveGameplayEffectHandle BP_ApplyGameplayEffectSpecToTargetWithPrediction(
+		const FGameplayEffectSpec& GameplayEffect, UAbilitySystemComponent* Target);
+
+	/*
+	 * Change Gameplay Effect Duration
+	 */
+public:
+	//change active gameplay effect duration
+	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName = "Change Active Effect Duration"))
+	bool SetGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float NewDuration);
+
+	//add active gameplay effect duration
+	UFUNCTION(BlueprintCallable, Category = "GameplayEffect", Meta = (DisplayName =
+		"Add Active Effect Duration by Float"))
+	bool AddGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float AddDuration);
+
+	/*
+	 * Local Gameplay Cue
+	 */
+public:
+	UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters",
+		GameplayTagFilter = "GameplayCue"))
+	void ExecuteGameplayCueLocal(const FGameplayTag GameplayCueTag,
+								 const FGameplayCueParameters& GameplayCueParameters);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters",
+		GameplayTagFilter = "GameplayCue"))
+	void AddGameplayCueLocal(const FGameplayTag GameplayCueTag, const FGameplayCueParameters& GameplayCueParameters);
+
+	UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters",
+		GameplayTagFilter = "GameplayCue"))
+	void RemoveGameplayCueLocal(const FGameplayTag GameplayCueTag, const FGameplayCueParameters& GameplayCueParameters);
+
+	/*
+	 * Loose GameplayTags
+	 */
+public:
+	// Exposes AddLooseGameplayTag to Blueprint. This tag is *not* replicated.
+	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "AddLooseGameplayTag"))
+	void K2_AddLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count = 1);
+
+	// Exposes AddLooseGameplayTags to Blueprint. These tags are *not* replicated.
+	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "AddLooseGameplayTags"))
+	void K2_AddLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count = 1);
+
+	// Exposes RemoveLooseGameplayTag to Blueprint. This tag is *not* replicated.
+	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "RemoveLooseGameplayTag"))
+	void K2_RemoveLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count = 1);
+
+	// Exposes RemoveLooseGameplayTags to Blueprint. These tags are *not* replicated.
+	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "RemoveLooseGameplayTags"))
+	void K2_RemoveLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count = 1);
+
+	/*
+	 * AI and UI get ability instance, class default object..etc
+	 */
+public:
+	/** Returns a list of currently active ability primary instances that match the tags */
+	UFUNCTION(BlueprintPure, Meta =( AutoCreateRefTerm = "GameplayTagContainer"))
+	void GetActivePrimaryAbilityInstancesWithTags(const FGameplayTagContainer& GameplayTagContainer,
+									TArray<UARTGameplayAbility*>& ActiveAbilities);
+
+	//** return a list of currently active ability class default that match the tags */
+	UFUNCTION(BlueprintPure, Meta =( AutoCreateRefTerm = "GameplayTagContainer"))
+	void GetActiveAbilityClassDefaultWithTags(const FGameplayTagContainer& GameplayTagContainer,
+									TArray<UARTGameplayAbility*>& ActiveAbilities);
+
+	UFUNCTION(BlueprintPure)
+	void GetActiveEffectHandlesByClass(TSubclassOf<UGameplayEffect> SourceGameplayEffect,
+									   TArray<FActiveGameplayEffectHandle>& OutActiveEffectHandles);
+	
+	UFUNCTION(BlueprintPure)
+	void GetAllActiveAbilityClassDefaults(TArray<UARTGameplayAbility*>& ActiveAbilityCDO);
+	/*
+	 * GameplayEffect send GameplayEvent when applied
+	 */
+protected:
+	//called on Server when any gameplay effect added to target (will be used if GE is type instant)
+	void OnGameplayEffectAppliedToTargetCallback(UAbilitySystemComponent* Target,
+												 const FGameplayEffectSpec& SpecApplied,
+												 FActiveGameplayEffectHandle ActiveHandle);
+
+	//called on both Client and Server when Duration base GE applied to self (Will be used with duration base GE instead of OnGameplayEffectAppliedToTargetCallback)
+	void OnActiveGameplayEffectAppliedToSelfCallback(UAbilitySystemComponent* Target,
+													 const FGameplayEffectSpec& SpecApplied,
+													 FActiveGameplayEffectHandle ActiveHandle);
 	/*
 	 * Order System
 	 */
-	
-	//~ Begin IRTSAutoOrderProvider Interface
+public:
+	//~ Begin IAutoOrderProvider Interface
 	virtual void GetAutoOrders_Implementation(TArray<FARTOrderTypeWithIndex>& OutAutoOrders) override;
 	virtual FOnAutoOrderUpdate* GetAutoOrderAddDelegate() override;
 	virtual FOnAutoOrderUpdate* GetAutoOrderRemoveDelegate() override;
-	//~ End IRTSAutoOrderProvider Interface
+	//~ End IAutoOrderProvider Interface
 
 	virtual void OnGiveAbility(FGameplayAbilitySpec& AbilitySpec) override;
 
@@ -411,6 +429,21 @@ protected:
 	
 private:
 	/** Order type that is used to issue a unit to activate an ability. */
-	UPROPERTY(Category = "Order", BlueprintReadOnly, EditDefaultsOnly, meta = (AllowPrivateAccess = true))
+	UPROPERTY(Category = "Abilities|Order", BlueprintReadOnly, EditDefaultsOnly, meta = (AllowPrivateAccess = true))
 	TSoftClassPtr<UARTUseAbilityOrder> UseAbilityOrder;
+
+	/*
+	 * Ability Tag relationship
+	 */
+protected:
+	/* Mapping of Ability Tag to block and cancel tags. */
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities|GameplayTags")
+	class UARTAbilityTagRelationship* AbilityTagRelationship;
+
+private:
+	virtual void ApplyAbilityBlockAndCancelTags(const FGameplayTagContainer& AbilityTags, UGameplayAbility* RequestingAbility, bool bEnableBlockTags, const FGameplayTagContainer& BlockTags, bool bExecuteCancelTags, const FGameplayTagContainer& CancelTags) override;
+
+public:
+	void GetRelationshipActivationTagRequirements(const FGameplayTagContainer& AbilityTags, FGameplayTagContainer& OutActivationRequired, FGameplayTagContainer& OutActivationBlocked) const;
+	void GetRelationshipAbilityCancelTags(const FGameplayTagContainer& AbilityTags, FGameplayTagContainer& OutAbilityCancelTags) const;
 };

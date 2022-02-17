@@ -36,7 +36,12 @@ ACameraPawn::ACameraPawn()
 void ACameraPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	InitSpawnPlayerTeam();
+
+	//only server spawn
+	if(HasAuthority())
+	{
+		InitSpawnPlayerTeam();
+	}
 }
 
 // Called every frame
@@ -87,7 +92,11 @@ void ACameraPawn::InitSpawnPlayerTeam()
 	{
 		OffsetPosition += FVector(0, -100, 0);
 		AARTCharacterAI* AllyPawn = GetWorld()->SpawnActor<AARTCharacterAI>(PawnClass, OffsetPosition, FRotator(0), Params);
-		AARTGameState::GetAIConductor(this)->AddAlliesToList(AllyPawn);
+
+		if(UARTAIConductor* AIConductor = AARTGameState::GetAIConductor(this))
+		{
+			AIConductor->AddAlliesToList(AllyPawn);
+		}
 	}
 
 	ChangeCurrentUnitInternal(PlayerPawn);

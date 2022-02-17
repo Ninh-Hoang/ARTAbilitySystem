@@ -2,17 +2,16 @@
 
 
 #include "ARTCharacter/AI/ARTAIController.h"
-
 #include "AI/Order/ARTBlackboardHelper.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
-
 #include "AI/Order/ARTOrderHelper.h"
 #include "ARTCharacter/ARTCharacterBase.h"
 #include "ARTCharacter/ARTPathFollowingComponent.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 #include "Framework/ARTGameState.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "ART/ART.h"
 
 AARTAIController::AARTAIController(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UARTPathFollowingComponent>(TEXT("PathFollowingComponent")))

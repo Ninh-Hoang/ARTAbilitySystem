@@ -155,7 +155,7 @@ public:
 
 	/** Ability will be cancel if these tag added on ASC */
 	UPROPERTY(EditDefaultsOnly, Category = Tags, meta=(Categories="AbilityTagCategory"))
-	FGameplayTagContainer AbilityCancelTag;
+	FGameplayTagContainer AbilityCancelTags;
 
 	// Map of gameplay tags to gameplay effect containers
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameplayEffects")
@@ -165,6 +165,8 @@ public:
 	// Epic's comment: Projects may want to initiate passives or do other "BeginPlay" type of logic here.
 	virtual void OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 
+	virtual bool DoesAbilitySatisfyTagRequirements(const UAbilitySystemComponent& AbilitySystemComponent, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const override;
+	
 	//Do not called this directly, this is only used for logic after ability is activated
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	                             const FGameplayAbilityActivationInfo ActivationInfo,
@@ -352,23 +354,6 @@ protected:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Animation", Meta = (AdvancedDisplay = "OverrideBlendOutTime"))
 	void MontageStopForAllMeshes(float OverrideBlendOutTime = -1.0f);
-
-public:
-	// ----------------------------------------------------------------------------------------------------------------
-	//	ARTAvatarActorInfo Getter
-	// ----------------------------------------------------------------------------------------------------------------
-
-	/*const FARTGameplayAbilityActorInfo* GetARTActorInfo(const FGameplayAbilityActorInfo* Info) const;
-
-	UFUNCTION(BlueprintPure, Category = "Ability|ActorInfo")
-	FARTGameplayAbilityActorInfo BP_GetARTActorInfo();
-
-	UFUNCTION(BlueprintPure, Category = "Ability|ActorInfo")
-	UAnimInstance* GetAnimInstance() const;
-
-	UFUNCTION(BlueprintPure, Category = "Ability|ActorInfo")
-	AWeapon* BP_GetWeapon() const;*/
-
 
 protected:
 	/**

@@ -50,6 +50,6 @@ public:
 	//Returns pointer to the AIDirector in the world
 	UFUNCTION(BlueprintPure, BlueprintAuthorityOnly, Meta = (WorldContext = "WorldContextObject", CompactNodeTitle = "AIConductor"), Category = "Level|LevelManager")
     static class UARTAIConductor* GetAIConductor(const UObject* WorldContextObject);
-
+	
 	void SetWaveState(EWaveState NewState);
 };

@@ -3,14 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Item/WeaponActor.h"
-#include "ProjectileWeapon.generated.h"
+#include "Item/Item.h"
+#include "SkillItem.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ART_API AProjectileWeapon : public AWeaponActor
+class ART_API USkillItem : public UItem
 {
 	GENERATED_BODY()
+	
+	USkillItem();
+	
 };

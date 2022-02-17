@@ -1,4 +1,4 @@
-﻿#include "Ability/FARTAggregatorEvaluateMetaDataLibrary.h"
+﻿#include "Ability/AttributeSet/FARTAggregatorEvaluateMetaDataLibrary.h"
 #include "AbilitySystemComponent.h"
 
 /** Custom functions. The idea here is that we may want to mix and match these (if FAggregatorEvaluateMetaData starts to hold more than just the qualifier functions) */
@@ -21,20 +21,22 @@ void QualifierFunc_MostNegativeMod_AllPositiveMods(const FAggregatorEvaluatePara
 		float ExpectedDelta = 0.f;
 		switch (ModInfo.Op)
 		{
-		case EGameplayModOp::Additive:
-			ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude;
-			break;
-		case EGameplayModOp::Multiplicitive:
-			ExpectedDelta = (BaseValue * ModInfo.Mod->EvaluatedMagnitude) - BaseValue;
-			break;
-		case EGameplayModOp::Division:
-			ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude > 0.f
-				                ? ((BaseValue / ModInfo.Mod->EvaluatedMagnitude) - BaseValue)
-				                : 0.f;
-			break;
-		case EGameplayModOp::Override:
-			ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude - BaseValue;
-			break;
+			case EGameplayModOp::Additive:
+				ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude;
+				break;
+			case EGameplayModOp::Multiplicitive:
+				ExpectedDelta = (BaseValue * ModInfo.Mod->EvaluatedMagnitude) - BaseValue;
+				break;
+			case EGameplayModOp::Division:
+				ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude > 0.f
+					                ? ((BaseValue / ModInfo.Mod->EvaluatedMagnitude) - BaseValue)
+					                : 0.f;
+				break;
+			case EGameplayModOp::Override:
+				ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude - BaseValue;
+				break;
+			default:
+				break;
 		}
 
 		// If its a negative mod
@@ -88,20 +90,22 @@ void QualifierFunc_MostNegativeMod_MostPositiveModPerClass(const FAggregatorEval
 
 		switch (ModInfo.Op)
 		{
-		case EGameplayModOp::Additive:
-			ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude;
-			break;
-		case EGameplayModOp::Multiplicitive:
-			ExpectedDelta = (BaseValue * ModInfo.Mod->EvaluatedMagnitude) - BaseValue;
-			break;
-		case EGameplayModOp::Division:
-			ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude > 0.f
-				                ? ((BaseValue / ModInfo.Mod->EvaluatedMagnitude) - BaseValue)
-				                : 0.f;
-			break;
-		case EGameplayModOp::Override:
-			ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude - BaseValue;
-			break;
+			case EGameplayModOp::Additive:
+				ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude;
+				break;
+			case EGameplayModOp::Multiplicitive:
+				ExpectedDelta = (BaseValue * ModInfo.Mod->EvaluatedMagnitude) - BaseValue;
+				break;
+			case EGameplayModOp::Division:
+				ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude > 0.f
+					                ? ((BaseValue / ModInfo.Mod->EvaluatedMagnitude) - BaseValue)
+					                : 0.f;
+				break;
+			case EGameplayModOp::Override:
+				ExpectedDelta = ModInfo.Mod->EvaluatedMagnitude - BaseValue;
+				break;
+			default:
+				break;
 		}
 
 		//turn it off, enable the most positive one later

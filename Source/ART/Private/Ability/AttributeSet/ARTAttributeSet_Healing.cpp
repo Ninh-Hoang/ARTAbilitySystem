@@ -1,8 +1,8 @@
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Healing.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Healing.h"
 #include "GameplayEffectExtension.h"
 #include "ARTCharacter/ARTCharacterBase.h"
 #include "ARTCharacter/ARTPlayerController.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
 
 UARTAttributeSet_Healing::UARTAttributeSet_Healing()
 {

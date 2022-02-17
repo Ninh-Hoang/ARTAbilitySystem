@@ -1,4 +1,4 @@
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Offense.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Offense.h"
 
 #include "Net/UnrealNetwork.h"
 

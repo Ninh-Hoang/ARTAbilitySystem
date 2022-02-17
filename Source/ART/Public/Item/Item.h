@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include <Engine/DataAsset.h>
+#include "Engine/DataAsset.h"
+#include "Styling/SlateBrush.h"
 #include "Item.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnItemModified);
@@ -12,10 +13,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnItemModified);
  * 
  */
 class UStaticMesh;
-class UTexture2D;
-class UInventoryComponent;
-class AARTSurvivor;
 class UItemTooltip;
+class UGameplayAbility;
+class UGameplayEffect;
+class AARTCharacterBase;
 
 UENUM()
 enum class EItemRarity : uint8
@@ -27,6 +28,24 @@ enum class EItemRarity : uint8
 	IR_SuperRare UMETA(DisplayName = "Super Rare")
 };
 
+USTRUCT(BlueprintType)
+struct FItem_AbilityData
+{
+	GENERATED_BODY()
+
+	TSoftClassPtr<UGameplayAbility> AbilityClass;
+	int32 Level = 1;
+};
+
+USTRUCT(BlueprintType)
+struct FItem_GameplayEffectData
+{
+	GENERATED_BODY()
+
+	TSoftClassPtr<UGameplayEffect> GameplayEffectClass;
+	int32 Level = 1;
+};
+
 
 UCLASS(Abstract, Blueprintable, BlueprintType, EditInlineNew, DefaultToInstanced)
 class ART_API UItem : public UPrimaryDataAsset
@@ -35,88 +54,71 @@ class ART_API UItem : public UPrimaryDataAsset
 
 public:
 	UItem();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	FPrimaryAssetType ItemType;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
-	FText ItemDisplayName;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UIGame"))
+	FText ItemName;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
-	UTexture2D* Thumbnail;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
-	UStaticMesh* PickupMesh;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (MultiLine = true), meta = (AssetBundles = "UI"))
+	FText ItemDescription;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UI"))
 	FText UseActionText;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UIGame"))
 	EItemRarity Rarity;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (MultiLine = true))
-	FText ItemDescription;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UI"))
 	bool bStackable;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (ClampMin = 2, EditCondition = bStackable)
-	)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UI"))
+	bool AllowMultipleStack;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (ClampMin = 2, EditCondition = bStackable), meta = (AssetBundles = "UI"))
 	int32 MaxStackSize;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (ClampMin = 0.0))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (ClampMin = 0.0), meta = (AssetBundles = "UIGame"))
 	float Weight;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UI"))
+	FSlateBrush Icon;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
-	TSubclassOf<UItemTooltip> ItemTooltip;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "Game"))
+	TSoftObjectPtr<UStaticMesh> PickupMesh;
 
-	UPROPERTY(ReplicatedUsing=OnRep_Quantity, EditAnywhere, Category = "Item", meta = (UIMin = 1, EditCondition =
-		bStackable))
-	int32 Quantity;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item, meta = (AssetBundles = "UI"))
+	TSoftClassPtr<UItemTooltip> ItemTooltip;
 
-	UPROPERTY()
-	UInventoryComponent* OwningInventory;
+	//Gameplay Ability System
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Item, meta = (AssetBundles = "Ability"))
+	TArray<FItem_AbilityData> GrantedAbilities;
 
-	UPROPERTY()
-	int32 RepKey;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Item, meta = (AssetBundles = "Ability"))
+	TArray<FItem_GameplayEffectData> GrantedEffects;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnItemModified OnItemModified;
-
-	//Gameplay Ability System
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ARTPickup")
-	TArray<TSubclassOf<class UARTGameplayAbility>> AbilityClasses;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ARTPickup")
-	TArray<TSubclassOf<class UGameplayEffect>> EffectClasses;
-
-protected:
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual bool IsSupportedForNetworking() const override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-public:
-	UFUNCTION(BlueprintPure, Category = "Item")
+	virtual bool ShouldReplicateItemData(const struct FItemData& ItemData) const { return true;}
+	
+	UFUNCTION(BlueprintPure, Category = Item)
 	virtual bool ShouldShowInInventory() const;
 
-	UFUNCTION(BlueprintCallable, Category = "Item")
-	FORCEINLINE float GetStackWeight() const { return Weight * Quantity; }
-
-	UFUNCTION(BlueprintCallable, Category = "Item")
-	void SetQuantity(const int32 NewQuantity);
-
-	UFUNCTION(BlueprintPure, Category = "Item")
-	FORCEINLINE int32 GetQuantity() const { return Quantity; }
-
-	virtual void Use(AARTSurvivor* Character);
+	virtual void Use(AARTCharacterBase* Character);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnUse(AARTSurvivor* Character);
+	void OnUse(AARTCharacterBase* Character);
 
-	virtual void AddedToInventory(UInventoryComponent* Inventory);
+	/** Returns the logical name, equivalent to the primary asset id */
+	UFUNCTION(BlueprintCallable, Category = Item)
+	FString GetIdentifierString() const;
 
-	UFUNCTION()
-	void OnRep_Quantity();
-	
-	void MarkDirtyForReplication();
+	/** Overridden to use saved type */
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
 };

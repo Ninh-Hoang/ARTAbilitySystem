@@ -116,21 +116,135 @@ void UARTGameplayAbility::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo
 	}
 }
 
+bool UARTGameplayAbility::DoesAbilitySatisfyTagRequirements(const UAbilitySystemComponent& AbilitySystemComponent,
+	const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags,
+	FGameplayTagContainer* OptionalRelevantTags) const
+{
+	bool bBlocked = false;
+    bool bMissing = false;
+ 
+    const UAbilitySystemGlobals& AbilitySystemGlobals = UAbilitySystemGlobals::Get();
+    const FGameplayTag& BlockedTag = AbilitySystemGlobals.ActivateFailTagsBlockedTag;
+    const FGameplayTag& MissingTag = AbilitySystemGlobals.ActivateFailTagsMissingTag;
+ 
+    // Check if any of this ability's tags are currently blocked
+    if (AbilitySystemComponent.AreAbilityTagsBlocked(AbilityTags))
+    {
+        bBlocked = true;
+    }
+ 
+    /*
+     * Relationship related code
+     */
+     
+    const UARTAbilitySystemComponent* ASC = Cast<UARTAbilitySystemComponent>(&AbilitySystemComponent);
+    static FGameplayTagContainer AbilityRequiredTags;
+    AbilityRequiredTags = ActivationRequiredTags;
+     
+    static FGameplayTagContainer AbilityBlockedTags; 
+    AbilityBlockedTags = ActivationBlockedTags;
+ 
+    // This gets the additional tags from the ASC's relationship mapping for the abilities tags.
+    if (ASC)
+    {
+        ASC->GetRelationshipActivationTagRequirements(AbilityTags, AbilityRequiredTags, AbilityBlockedTags);
+    }
+ 
+    /*
+     * End of relationship code
+     */
+ 
+    // Check to see the required/blocked tags for this ability
+    if (AbilityBlockedTags.Num() || AbilityRequiredTags.Num())
+    {
+        static FGameplayTagContainer AbilitySystemComponentTags;
+         
+        AbilitySystemComponentTags.Reset();
+        AbilitySystemComponent.GetOwnedGameplayTags(AbilitySystemComponentTags);
+ 
+        if (AbilitySystemComponentTags.HasAny(AbilityBlockedTags))
+        {
+            bBlocked = true;
+        }
+ 
+        if (!AbilitySystemComponentTags.HasAll(AbilityRequiredTags))
+        {
+            bMissing = true;
+        }
+    }
+ 
+    if (SourceTags != nullptr)
+    {
+        if (SourceBlockedTags.Num() || SourceRequiredTags.Num())
+        {
+            if (SourceTags->HasAny(SourceBlockedTags))
+            {
+                bBlocked = true;
+            }
+ 
+            if (!SourceTags->HasAll(SourceRequiredTags))
+            {
+                bMissing = true;
+            }
+        }
+    }
+ 
+    if (TargetTags != nullptr)
+    {
+        if (TargetBlockedTags.Num() || TargetRequiredTags.Num())
+        {
+            if (TargetTags->HasAny(TargetBlockedTags))
+            {
+                bBlocked = true;
+            }
+ 
+            if (!TargetTags->HasAll(TargetRequiredTags))
+            {
+                bMissing = true;
+            }
+        }
+    }
+ 
+    if (bBlocked)
+    {
+        if (OptionalRelevantTags && BlockedTag.IsValid())
+        {
+            OptionalRelevantTags->AddTag(BlockedTag);
+        }
+        return false;
+    }
+    if (bMissing)
+    {
+        if (OptionalRelevantTags && MissingTag.IsValid())
+        {
+            OptionalRelevantTags->AddTag(MissingTag);
+        }
+        return false;
+    }
+ 
+    return true;
+}
+
 void UARTGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                           const FGameplayAbilityActorInfo* ActorInfo,
                                           const FGameplayAbilityActivationInfo ActivationInfo,
                                           const FGameplayEventData* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	UAbilitySystemComponent* const ASC = GetAbilitySystemComponentFromActorInfo();
-
 	//TODO: Should we register on ActivatedAbility or granted?
 	//for listen to ASC tag and cancel itself if match AbilityCancelTag
-	TArray<FGameplayTag> CancelTagArray;
-	AbilityCancelTag.GetGameplayTagArray(CancelTagArray);
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	for (FGameplayTag Tag : CancelTagArray)
+	FGameplayTagContainer AbilityCancelTagsWithRelaionship = AbilityCancelTags;
+	
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+
+	//if this is ART ability system comp, we will append this with the relationship data if has one
+	if(UARTAbilitySystemComponent* ARTASC = Cast<UARTAbilitySystemComponent>(ASC))
+	{
+		ARTASC->GetRelationshipAbilityCancelTags(AbilityTags, AbilityCancelTagsWithRelaionship);
+	}
+	
+	for (FGameplayTag Tag : AbilityCancelTagsWithRelaionship)
 	{
 		FOnGameplayEffectTagCountChanged& Delegate =
 			ASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::NewOrRemoved);
@@ -147,10 +261,8 @@ void UARTGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
-	UAbilitySystemComponent* const ASC = GetAbilitySystemComponentFromActorInfo();
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	//for listen to ASC tag and cancel itself if match AbilityCancelTag
-	TArray<FGameplayTag> CancelTagArray;
-	AbilityCancelTag.GetGameplayTagArray(CancelTagArray);
 
 	for (TPair<FGameplayTag, FDelegateHandle> Pair : RegisteredCancelTagEventHandles)
 	{
@@ -640,31 +752,6 @@ void UARTGameplayAbility::MontageStopForAllMeshes(float OverrideBlendOutTime)
 		}
 	}
 }
-
-// ----------------------------------------------------------------------------------------------------------------
-//	ARTAvatarActorInfo Getter
-// ----------------------------------------------------------------------------------------------------------------
-
-/*const FARTGameplayAbilityActorInfo* UARTGameplayAbility::GetARTActorInfo(const FGameplayAbilityActorInfo* InInfo) const
-{
-	return static_cast<const FARTGameplayAbilityActorInfo*>(InInfo);
-}
-
-FARTGameplayAbilityActorInfo UARTGameplayAbility::BP_GetARTActorInfo()
-{
-	return *GetARTActorInfo(CurrentActorInfo);
-}
-
-UAnimInstance* UARTGameplayAbility::GetAnimInstance() const
-{
-	return GetActorInfo().GetAnimInstance();
-}
-
-AWeapon* UARTGameplayAbility::BP_GetWeapon() const
-{
-	const FARTGameplayAbilityActorInfo* KaosActorInfo = GetARTActorInfo(CurrentActorInfo);
-	return KaosActorInfo ? KaosActorInfo->GetWeapon() : nullptr;
-}*/
 
 // ----------------------------------------------------------------------------------------------------------------
 // Order functions

@@ -11,7 +11,7 @@
 #include "AI/Order/ARTOrderComponent.h"
 #include "AI/Order/ARTSelectComponent.h"
 #include "ARTCharacter/AI/ARTNavigationInvokerComponent.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
 #include "Framework/ARTGameState.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -59,14 +59,17 @@ void AARTCharacterAI::BeginPlay()
 	//Add AI to Director if it was not load from map (drop in map)
 	if(!HasAnyFlags(RF_WasLoaded))
 	{
-		AARTGameState::GetAIConductor(this)->AddAIToList(this);
+		if(UARTAIConductor* AIConductor = AARTGameState::GetAIConductor(this))
+		{
+			AIConductor->AddAIToList(this);
+		}
 	}
 
 	if (IsValid(ASC))
 	{
 		ASC->InitAbilityActorInfo(this, this);
+		InitializeAbilitySet();
 		InitializeAttributes();
-		AddCharacterAbilitiesAndEffects();
 		InitializeTagPropertyMap();
 		InitializeTagResponseTable();
 

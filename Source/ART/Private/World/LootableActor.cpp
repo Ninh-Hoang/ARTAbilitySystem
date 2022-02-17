@@ -63,8 +63,8 @@ void ALootableActor::BeginPlay()
 				{
 					if (ItemClass)
 					{
-						const int32 Quantity = Cast<UItem>(ItemClass->GetDefaultObject())->GetQuantity();
-						Inventory->TryAddItemFromClass(ItemClass, Quantity);
+						//const int32 Quantity = Cast<UItem>(ItemClass->GetDefaultObject())->GetQuantity();
+						//Inventory->TryAddItemFromClass(ItemClass, Quantity);
 					}
 				}
 			}

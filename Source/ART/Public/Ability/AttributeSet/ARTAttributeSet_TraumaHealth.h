@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
 #include "ARTAttributeSet_TraumaHealth.generated.h"
 
 /**

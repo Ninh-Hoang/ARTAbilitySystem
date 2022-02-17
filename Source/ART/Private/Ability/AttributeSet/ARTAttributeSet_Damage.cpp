@@ -1,10 +1,10 @@
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Damage.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Damage.h"
 #include "GameplayEffectExtension.h"
 #include "ARTCharacter/ARTCharacterBase.h"
 #include "ARTCharacter/ARTPlayerController.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Shield.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_TraumaHealth.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Shield.h"
+#include "Ability/AttributeSet/ARTAttributeSet_TraumaHealth.h"
 
 UARTAttributeSet_Damage::UARTAttributeSet_Damage()
 {

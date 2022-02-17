@@ -13,6 +13,7 @@
 #include "Ability/ARTGameplayEffectTypes.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Ability/ARTAbilityTagRelationship.h"
 
 UARTAbilitySystemComponent::UARTAbilitySystemComponent()
 {
@@ -25,95 +26,6 @@ void UARTAbilitySystemComponent::BeginPlay()
 		this, &UARTAbilitySystemComponent::OnGameplayEffectAppliedToTargetCallback);
 	OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(
 		this, &UARTAbilitySystemComponent::OnActiveGameplayEffectAppliedToSelfCallback);
-}
-
-//TODO MAYBE THIS CAN BE CHEAPER
-void UARTAbilitySystemComponent::OnGameplayEffectAppliedToTargetCallback(
-	UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
-{
-	const UARTGameplayEffect* Effect = Cast<UARTGameplayEffect>(SpecApplied.Def);
-	if (!Effect || Effect->GameplayEvents.Num() < 1 || Effect->DurationPolicy != EGameplayEffectDurationType::Instant)
-	{
-		return;
-	}
-
-	for (FGameplayEffectEvent Event : Effect->GameplayEvents)
-	{
-		FGameplayEventData Data;
-		FGameplayTag GameplayEventTag;
-
-		AActor* EventInstigator = nullptr;
-		AActor* EventTarget = nullptr;
-
-		Event.AttempAssignGameplayEventDataActors(GetAvatarActor(), Target->GetAvatarActor(), EventInstigator,
-		                                          EventTarget);
-
-		Data.Instigator = EventInstigator;
-		Data.Target = EventTarget;
-
-		Event.AttemptCalculateMagnitude(SpecApplied, Data.EventMagnitude, false);
-
-		const FGameplayTagContainer* InstigatorTags = SpecApplied.CapturedSourceTags.GetAggregatedTags();
-		const FGameplayTagContainer* TargetTags = SpecApplied.CapturedTargetTags.GetAggregatedTags();
-
-		Event.AttemptReturnGameplayEventTags(InstigatorTags, TargetTags, GameplayEventTag, Data.InstigatorTags,
-		                                     Data.TargetTags);
-
-		if (const FHitResult* Hit = SpecApplied.GetEffectContext().Get()->GetHitResult())
-		{
-			Data.TargetData = UARTBlueprintFunctionLibrary::AbilityTargetDataFromHitResult(*Hit);
-		}
-
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(EventTarget, GameplayEventTag, Data);
-	}
-}
-
-void UARTAbilitySystemComponent::OnActiveGameplayEffectAppliedToSelfCallback(
-	UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
-{
-	const UARTGameplayEffect* Effect = Cast<UARTGameplayEffect>(SpecApplied.Def);
-	if (!Effect || Effect->GameplayEvents.Num() < 1
-		|| Effect->DurationPolicy == EGameplayEffectDurationType::Instant)
-	{
-		return;
-	}
-
-	for (FGameplayEffectEvent Event : Effect->GameplayEvents)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"),
-		       *SpecApplied.GetEffectContext().GetInstigatorAbilitySystemComponent()->GetAvatarActor()->GetName());
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *Target->GetAvatarActor()->GetName());
-
-		FGameplayEventData Data;
-		FGameplayTag GameplayEventTag;
-
-		AActor* SourceAvatarActor = SpecApplied.GetEffectContext().GetInstigatorAbilitySystemComponent()->
-		                                        GetAvatarActor();
-		AActor* TargetAvatarActor = GetAvatarActor();
-
-		AActor* EventInstigator = nullptr;
-		AActor* EventTarget = nullptr;
-
-		Event.AttempAssignGameplayEventDataActors(SourceAvatarActor, GetAvatarActor(), EventInstigator, EventTarget);
-
-		Data.Instigator = EventInstigator;
-		Data.Target = EventTarget;
-
-		Event.AttemptCalculateMagnitude(SpecApplied, Data.EventMagnitude, false);
-
-		const FGameplayTagContainer* InstigatorTags = SpecApplied.CapturedSourceTags.GetAggregatedTags();
-		const FGameplayTagContainer* TargetTags = SpecApplied.CapturedTargetTags.GetAggregatedTags();
-
-		Event.AttemptReturnGameplayEventTags(InstigatorTags, TargetTags, GameplayEventTag, Data.InstigatorTags,
-		                                     Data.TargetTags);
-
-		if (const FHitResult* Hit = SpecApplied.GetEffectContext().Get()->GetHitResult())
-		{
-			Data.TargetData = UARTBlueprintFunctionLibrary::AbilityTargetDataFromHitResult(*Hit);
-		}
-
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(EventTarget, GameplayEventTag, Data);
-	}
 }
 
 void UARTAbilitySystemComponent::ReceiveDamage(UARTAbilitySystemComponent* SourceASC, float UnmitigatedDamage,
@@ -187,6 +99,39 @@ void UARTAbilitySystemComponent::NotifyAbilityEnded(FGameplayAbilitySpecHandle H
 	ClearAnimatingAbilityForAllMeshes(Ability);
 }
 
+FGameplayEffectSpecHandle UARTAbilitySystemComponent::MakeOutgoingSpec(TSubclassOf<UGameplayEffect> GameplayEffectClass,
+																	   float Level,
+																	   FGameplayEffectContextHandle Context) const
+{
+	FGameplayEffectSpecHandle Spec = Super::MakeOutgoingSpec(GameplayEffectClass, Level, Context);
+	if (Spec.IsValid())
+	{
+		UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
+		if (UARTGameplayEffect* ArtGE = Cast<UARTGameplayEffect>(GameplayEffect))
+		{
+			//TODO: some strange execution flow here, is soft pointer is valid, the hard ref would be too
+			if(!ArtGE->Curves.IsValid())
+			{
+				ArtGE->Curves.LoadSynchronous();
+			}
+			
+			UARTCurve* GECurve = ArtGE->Curves.Get();
+			
+			if (GECurve)
+			{
+				//for each curve in ARTCurve asset, take the curve's tag and use it to SetByCallerMagnitude for GE
+				FGameplayTagContainer TagList;
+				GECurve->GetCurveTagList(TagList);
+
+				for(auto& Tag : TagList)
+					Spec.Data->SetSetByCallerMagnitude(Tag, GECurve->GetCurveValueByTag(Tag, Level));
+			}
+		}
+		return Spec;
+	}
+	return FGameplayEffectSpecHandle(nullptr);
+}
+
 void UARTAbilitySystemComponent::CancelAbilitiesWithTag(const FGameplayTagContainer WithTags,
                                                         const FGameplayTagContainer WithoutTags,
                                                         UGameplayAbility* Ignore)
@@ -258,24 +203,6 @@ int32 UARTAbilitySystemComponent::K2_GetTagCount(FGameplayTag TagToCheck) const
 	return GetTagCount(TagToCheck);
 }
 
-FGameplayAbilitySpecHandle UARTAbilitySystemComponent::FindAbilitySpecHandleForClass(
-	TSubclassOf<UGameplayAbility> AbilityClass, UObject* OptionalSourceObject)
-{
-	ABILITYLIST_SCOPE_LOCK();
-	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
-	{
-		TSubclassOf<UGameplayAbility> SpecAbilityClass = Spec.Ability->GetClass();
-		if (SpecAbilityClass == AbilityClass)
-		{
-			if (!OptionalSourceObject || (OptionalSourceObject && Spec.SourceObject == OptionalSourceObject))
-			{
-				return Spec.Handle;
-			}
-		}
-	}
-	return FGameplayAbilitySpecHandle();
-}
-
 int32 UARTAbilitySystemComponent::FindAbilityChargeViaCooldownTag(FGameplayTagContainer InCooldownTag)
 {
 	ABILITYLIST_SCOPE_LOCK();
@@ -292,24 +219,26 @@ int32 UARTAbilitySystemComponent::FindAbilityChargeViaCooldownTag(FGameplayTagCo
 	return 0;
 }
 
-void UARTAbilitySystemComponent::K2_AddLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count)
-{
-	AddLooseGameplayTag(GameplayTag, Count);
-}
+/*
+ * Batch RPC
+ */
 
-void UARTAbilitySystemComponent::K2_AddLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count)
+FGameplayAbilitySpecHandle UARTAbilitySystemComponent::FindAbilitySpecHandleForClass(
+	TSubclassOf<UGameplayAbility> AbilityClass, UObject* OptionalSourceObject)
 {
-	AddLooseGameplayTags(GameplayTags, Count);
-}
-
-void UARTAbilitySystemComponent::K2_RemoveLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count)
-{
-	RemoveLooseGameplayTag(GameplayTag, Count);
-}
-
-void UARTAbilitySystemComponent::K2_RemoveLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count)
-{
-	RemoveLooseGameplayTags(GameplayTags, Count);
+	ABILITYLIST_SCOPE_LOCK();
+	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
+	{
+		TSubclassOf<UGameplayAbility> SpecAbilityClass = Spec.Ability->GetClass();
+		if (SpecAbilityClass == AbilityClass)
+		{
+			if (!OptionalSourceObject || (OptionalSourceObject && Spec.SourceObject == OptionalSourceObject))
+			{
+				return Spec.Handle;
+			}
+		}
+	}
+	return FGameplayAbilitySpecHandle();
 }
 
 bool UARTAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle InAbilityHandle,
@@ -336,295 +265,9 @@ bool UARTAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpec
 	return AbilityActivated;
 }
 
-void UARTAbilitySystemComponent::ExecuteGameplayCueLocal(const FGameplayTag GameplayCueTag,
-                                                         const FGameplayCueParameters& GameplayCueParameters)
-{
-	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
-		GetOwner(), GameplayCueTag, EGameplayCueEvent::Type::Executed, GameplayCueParameters);
-}
-
-void UARTAbilitySystemComponent::AddGameplayCueLocal(const FGameplayTag GameplayCueTag,
-                                                     const FGameplayCueParameters& GameplayCueParameters)
-{
-	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
-		GetOwner(), GameplayCueTag, EGameplayCueEvent::Type::OnActive, GameplayCueParameters);
-}
-
-void UARTAbilitySystemComponent::RemoveGameplayCueLocal(const FGameplayTag GameplayCueTag,
-                                                        const FGameplayCueParameters& GameplayCueParameters)
-{
-	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
-		GetOwner(), GameplayCueTag, EGameplayCueEvent::Type::Removed, GameplayCueParameters);
-}
-
-FString UARTAbilitySystemComponent::GetCurrentPredictionKeyStatus()
-{
-	return ScopedPredictionKey.ToString() + " is valid for more prediction: " + (
-		ScopedPredictionKey.IsValidForMorePrediction() ? TEXT("true") : TEXT("false"));
-}
-
-FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectToSelfWithPrediction(
-	TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level, FGameplayEffectContextHandle EffectContext)
-{
-	if (GameplayEffectClass)
-	{
-		if (!EffectContext.IsValid())
-		{
-			EffectContext = MakeEffectContext();
-		}
-
-		UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
-
-		if (CanPredict())
-		{
-			return ApplyGameplayEffectToSelf(GameplayEffect, Level, EffectContext, ScopedPredictionKey);
-		}
-
-		return ApplyGameplayEffectToSelf(GameplayEffect, Level, EffectContext);
-	}
-
-	return FActiveGameplayEffectHandle();
-}
-
-FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectToTargetWithPrediction(
-	TSubclassOf<UGameplayEffect> GameplayEffectClass, UAbilitySystemComponent* Target, float Level,
-	FGameplayEffectContextHandle Context)
-{
-	if (Target == nullptr)
-	{
-		ABILITY_LOG(
-			Log,
-			TEXT(
-				"UAbilitySystemComponent::BP_ApplyGameplayEffectToTargetWithPrediction called with null Target. %s. Context: %s"
-			), *GetFullName(), *Context.ToString());
-		return FActiveGameplayEffectHandle();
-	}
-
-	if (GameplayEffectClass == nullptr)
-	{
-		ABILITY_LOG(
-			Error,
-			TEXT(
-				"UAbilitySystemComponent::BP_ApplyGameplayEffectToTargetWithPrediction called with null GameplayEffectClass. %s. Context: %s"
-			), *GetFullName(), *Context.ToString());
-		return FActiveGameplayEffectHandle();
-	}
-
-	UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
-
-	if (CanPredict())
-	{
-		return ApplyGameplayEffectToTarget(GameplayEffect, Target, Level, Context, ScopedPredictionKey);
-	}
-
-	return ApplyGameplayEffectToTarget(GameplayEffect, Target, Level, Context);
-}
-
-FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectSpecToSelfWithPrediction(
-	const FGameplayEffectSpec& GameplayEffect)
-{
-	if (CanPredict())
-	{
-		return ApplyGameplayEffectSpecToSelf(GameplayEffect, ScopedPredictionKey);
-	}
-
-	return ApplyGameplayEffectSpecToSelf(GameplayEffect);
-}
-
-FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectSpecToTargetWithPrediction(
-	const FGameplayEffectSpec& GameplayEffect, UAbilitySystemComponent* Target)
-{
-	if (Target == nullptr)
-	{
-		ABILITY_LOG(
-			Log,
-			TEXT(
-				"UAbilitySystemComponent::BP_ApplyGameplayEffectSpecToTargetWithPrediction called with null Target. %s. Context: %s"
-			), *GetFullName(), *GameplayEffect.GetEffectContext().ToString());
-		return FActiveGameplayEffectHandle();
-	}
-
-	if (CanPredict())
-	{
-		return ApplyGameplayEffectSpecToTarget(GameplayEffect, Target, ScopedPredictionKey);
-	}
-
-	return ApplyGameplayEffectSpecToTarget(GameplayEffect, Target);
-}
-
-bool UARTAbilitySystemComponent::SetGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float NewDuration)
-{
-	if (!Handle.IsValid())
-	{
-		return false;
-	}
-
-	const FActiveGameplayEffect* ActiveGameplayEffect = GetActiveGameplayEffect(Handle);
-	if (!ActiveGameplayEffect)
-	{
-		return false;
-	}
-
-	FActiveGameplayEffect* AGE = const_cast<FActiveGameplayEffect*>(ActiveGameplayEffect);
-	if (NewDuration > 0)
-	{
-		AGE->Spec.Duration = NewDuration;
-	}
-	else
-	{
-		AGE->Spec.Duration = 0.01f;
-	}
-
-	AGE->StartServerWorldTime = ActiveGameplayEffects.GetServerWorldTime();
-	AGE->CachedStartServerWorldTime = AGE->StartServerWorldTime;
-	AGE->StartWorldTime = ActiveGameplayEffects.GetWorldTime();
-	ActiveGameplayEffects.MarkItemDirty(*AGE);
-	ActiveGameplayEffects.CheckDuration(Handle);
-
-	AGE->EventSet.OnTimeChanged.Broadcast(AGE->Handle, AGE->StartWorldTime, AGE->GetDuration());
-	OnGameplayEffectDurationChange(*AGE);
-
-	return true;
-}
-
-bool UARTAbilitySystemComponent::AddGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float AddDuration)
-{
-	if (!Handle.IsValid())
-	{
-		return false;
-	}
-
-	const FActiveGameplayEffect* ActiveGameplayEffect = GetActiveGameplayEffect(Handle);
-	if (!ActiveGameplayEffect)
-	{
-		return false;
-	}
-
-
-	FActiveGameplayEffect* AGE = const_cast<FActiveGameplayEffect*>(ActiveGameplayEffect);
-	if (AddDuration > 0.f)
-	{
-		AGE->Spec.Duration += AddDuration;
-	}
-	if (AddDuration < 0.f)
-	{
-		if (AGE->Spec.Duration + AddDuration > 0.01f)
-		{
-			AGE->Spec.Duration += AddDuration;
-		}
-		else
-		{
-			AGE->Spec.Duration = 0.01f;
-		}
-	}
-
-	AGE->StartServerWorldTime = ActiveGameplayEffects.GetServerWorldTime();
-	AGE->CachedStartServerWorldTime = AGE->StartServerWorldTime;
-	AGE->StartWorldTime = ActiveGameplayEffects.GetWorldTime();
-	ActiveGameplayEffects.MarkItemDirty(*AGE);
-	ActiveGameplayEffects.CheckDuration(Handle);
-
-	AGE->EventSet.OnTimeChanged.Broadcast(AGE->Handle, AGE->StartWorldTime, AGE->GetDuration());
-	OnGameplayEffectDurationChange(*AGE);
-
-	return true;
-}
-
-FGameplayEffectSpecHandle UARTAbilitySystemComponent::MakeOutgoingSpec(TSubclassOf<UGameplayEffect> GameplayEffectClass,
-                                                                       float Level,
-                                                                       FGameplayEffectContextHandle Context) const
-{
-	FGameplayEffectSpecHandle Spec = Super::MakeOutgoingSpec(GameplayEffectClass, Level, Context);
-	if (Spec.IsValid())
-	{
-		UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
-		if (UARTGameplayEffect* ArtGE = Cast<UARTGameplayEffect>(GameplayEffect))
-		{
-			//TODO: some strange execution flow here, is soft pointer is valid, the hard ref would be too
-			if(!ArtGE->Curves.IsValid())
-			{
-				ArtGE->Curves.LoadSynchronous();
-			}
-			
-			UARTCurve* GECurve = ArtGE->Curves.Get();
-			
-			if (GECurve)
-			{
-				//for each curve in ARTCurve asset, take the curve's tag and use it to SetByCallerMagnitude for GE
-				FGameplayTagContainer TagList;
-				GECurve->GetCurveTagList(TagList);
-
-				for(auto& Tag : TagList)
-					Spec.Data->SetSetByCallerMagnitude(Tag, GECurve->GetCurveValueByTag(Tag, Level));
-			}
-		}
-		return Spec;
-	}
-	return FGameplayEffectSpecHandle(nullptr);
-}
-
-//FOR AI OR UI
-/* Returns a list of currently active ability instances that match the tags */
-void UARTAbilitySystemComponent::GetActivePrimaryAbilityInstancesWithTags(const FGameplayTagContainer& GameplayTagContainer,
-                                                            TArray<UARTGameplayAbility*>& ActiveAbilities)
-{
-	ActiveAbilities.Reset();
-	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
-	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
-
-	// Iterate the list of all ability specs
-	for (const FGameplayAbilitySpec* Spec : AbilitiesToActivate)
-	{
-		// Iterate all instances on this ability spec
-		UGameplayAbility* CDOAbility = Spec->Ability;
-		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
-		
-		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
-
-		ActiveAbilities.Add(Cast<UARTGameplayAbility>(AbilitySource));
-	}
-}
-
-void UARTAbilitySystemComponent::GetActiveAbilityClassDefaultWithTags(const FGameplayTagContainer& GameplayTagContainer,
-	TArray<UARTGameplayAbility*>& ActiveAbilities)
-{
-	ActiveAbilities.Reset();
-	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
-	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
-
-	// Iterate the list of all ability specs
-	for (const FGameplayAbilitySpec* Spec : AbilitiesToActivate)
-	{
-		ActiveAbilities.Add(Cast<UARTGameplayAbility>(Spec->Ability));
-	}
-}
-
-void UARTAbilitySystemComponent::GetActiveEffectHandlesByClass(TSubclassOf<UGameplayEffect> SourceGameplayEffect,
-                                                               TArray<FActiveGameplayEffectHandle>&
-                                                               OutActiveEffectHandles)
-{
-	OutActiveEffectHandles.Reset();
-
-	if (SourceGameplayEffect)
-	{
-		FGameplayEffectQuery Query;
-		Query.CustomMatchDelegate.BindLambda([&](const FActiveGameplayEffect& CurEffect)
-		{
-			return CurEffect.Spec.Def && SourceGameplayEffect == CurEffect.Spec.Def->GetClass();
-		});
-
-		OutActiveEffectHandles = ActiveGameplayEffects.GetActiveEffects(Query);
-	}
-}
-
-void UARTAbilitySystemComponent::GetAllActiveAbilityClassDefaults(TArray<UARTGameplayAbility*>& ActiveAbilityCDO)
-{
-	ActiveAbilityCDO.Reset();
-	for(const auto& Spec : ActivatableAbilities.Items)
-	{
-		ActiveAbilityCDO.Add(Cast<UARTGameplayAbility>(Spec.Ability));
-	}
-}
+/*
+ * Everything ability montage
+ */
 
 float UARTAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimatingAbility,
                                                      USkeletalMeshComponent* InMesh,
@@ -1453,6 +1096,391 @@ bool UARTAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Validate
 {
 	return true;
 }
+FString UARTAbilitySystemComponent::GetCurrentPredictionKeyStatus()
+{
+	return ScopedPredictionKey.ToString() + " is valid for more prediction: " + (
+		ScopedPredictionKey.IsValidForMorePrediction() ? TEXT("true") : TEXT("false"));
+}
+
+/*
+ * Prediction outside GAS
+ */
+
+FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectToSelfWithPrediction(
+	TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level, FGameplayEffectContextHandle EffectContext)
+{
+	if (GameplayEffectClass)
+	{
+		if (!EffectContext.IsValid())
+		{
+			EffectContext = MakeEffectContext();
+		}
+
+		UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
+
+		if (CanPredict())
+		{
+			return ApplyGameplayEffectToSelf(GameplayEffect, Level, EffectContext, ScopedPredictionKey);
+		}
+
+		return ApplyGameplayEffectToSelf(GameplayEffect, Level, EffectContext);
+	}
+
+	return FActiveGameplayEffectHandle();
+}
+
+FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectToTargetWithPrediction(
+	TSubclassOf<UGameplayEffect> GameplayEffectClass, UAbilitySystemComponent* Target, float Level,
+	FGameplayEffectContextHandle Context)
+{
+	if (Target == nullptr)
+	{
+		ABILITY_LOG(
+			Log,
+			TEXT(
+				"UAbilitySystemComponent::BP_ApplyGameplayEffectToTargetWithPrediction called with null Target. %s. Context: %s"
+			), *GetFullName(), *Context.ToString());
+		return FActiveGameplayEffectHandle();
+	}
+
+	if (GameplayEffectClass == nullptr)
+	{
+		ABILITY_LOG(
+			Error,
+			TEXT(
+				"UAbilitySystemComponent::BP_ApplyGameplayEffectToTargetWithPrediction called with null GameplayEffectClass. %s. Context: %s"
+			), *GetFullName(), *Context.ToString());
+		return FActiveGameplayEffectHandle();
+	}
+
+	UGameplayEffect* GameplayEffect = GameplayEffectClass->GetDefaultObject<UGameplayEffect>();
+
+	if (CanPredict())
+	{
+		return ApplyGameplayEffectToTarget(GameplayEffect, Target, Level, Context, ScopedPredictionKey);
+	}
+
+	return ApplyGameplayEffectToTarget(GameplayEffect, Target, Level, Context);
+}
+
+FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectSpecToSelfWithPrediction(
+	const FGameplayEffectSpec& GameplayEffect)
+{
+	if (CanPredict())
+	{
+		return ApplyGameplayEffectSpecToSelf(GameplayEffect, ScopedPredictionKey);
+	}
+
+	return ApplyGameplayEffectSpecToSelf(GameplayEffect);
+}
+
+FActiveGameplayEffectHandle UARTAbilitySystemComponent::BP_ApplyGameplayEffectSpecToTargetWithPrediction(
+	const FGameplayEffectSpec& GameplayEffect, UAbilitySystemComponent* Target)
+{
+	if (Target == nullptr)
+	{
+		ABILITY_LOG(
+			Log,
+			TEXT(
+				"UAbilitySystemComponent::BP_ApplyGameplayEffectSpecToTargetWithPrediction called with null Target. %s. Context: %s"
+			), *GetFullName(), *GameplayEffect.GetEffectContext().ToString());
+		return FActiveGameplayEffectHandle();
+	}
+
+	if (CanPredict())
+	{
+		return ApplyGameplayEffectSpecToTarget(GameplayEffect, Target, ScopedPredictionKey);
+	}
+
+	return ApplyGameplayEffectSpecToTarget(GameplayEffect, Target);
+}
+
+/*
+ * Change Gameplay Effect Duration
+ */
+
+bool UARTAbilitySystemComponent::SetGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float NewDuration)
+{
+	if (!Handle.IsValid())
+	{
+		return false;
+	}
+
+	const FActiveGameplayEffect* ActiveGameplayEffect = GetActiveGameplayEffect(Handle);
+	if (!ActiveGameplayEffect)
+	{
+		return false;
+	}
+
+	FActiveGameplayEffect* AGE = const_cast<FActiveGameplayEffect*>(ActiveGameplayEffect);
+	if (NewDuration > 0)
+	{
+		AGE->Spec.Duration = NewDuration;
+	}
+	else
+	{
+		AGE->Spec.Duration = 0.01f;
+	}
+
+	AGE->StartServerWorldTime = ActiveGameplayEffects.GetServerWorldTime();
+	AGE->CachedStartServerWorldTime = AGE->StartServerWorldTime;
+	AGE->StartWorldTime = ActiveGameplayEffects.GetWorldTime();
+	ActiveGameplayEffects.MarkItemDirty(*AGE);
+	ActiveGameplayEffects.CheckDuration(Handle);
+
+	AGE->EventSet.OnTimeChanged.Broadcast(AGE->Handle, AGE->StartWorldTime, AGE->GetDuration());
+	OnGameplayEffectDurationChange(*AGE);
+
+	return true;
+}
+
+bool UARTAbilitySystemComponent::AddGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float AddDuration)
+{
+	if (!Handle.IsValid())
+	{
+		return false;
+	}
+
+	const FActiveGameplayEffect* ActiveGameplayEffect = GetActiveGameplayEffect(Handle);
+	if (!ActiveGameplayEffect)
+	{
+		return false;
+	}
+
+
+	FActiveGameplayEffect* AGE = const_cast<FActiveGameplayEffect*>(ActiveGameplayEffect);
+	if (AddDuration > 0.f)
+	{
+		AGE->Spec.Duration += AddDuration;
+	}
+	if (AddDuration < 0.f)
+	{
+		if (AGE->Spec.Duration + AddDuration > 0.01f)
+		{
+			AGE->Spec.Duration += AddDuration;
+		}
+		else
+		{
+			AGE->Spec.Duration = 0.01f;
+		}
+	}
+
+	AGE->StartServerWorldTime = ActiveGameplayEffects.GetServerWorldTime();
+	AGE->CachedStartServerWorldTime = AGE->StartServerWorldTime;
+	AGE->StartWorldTime = ActiveGameplayEffects.GetWorldTime();
+	ActiveGameplayEffects.MarkItemDirty(*AGE);
+	ActiveGameplayEffects.CheckDuration(Handle);
+
+	AGE->EventSet.OnTimeChanged.Broadcast(AGE->Handle, AGE->StartWorldTime, AGE->GetDuration());
+	OnGameplayEffectDurationChange(*AGE);
+
+	return true;
+}
+
+/*
+ * Local Gameplay Cue
+ */
+
+void UARTAbilitySystemComponent::ExecuteGameplayCueLocal(const FGameplayTag GameplayCueTag,
+														 const FGameplayCueParameters& GameplayCueParameters)
+{
+	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
+		GetOwner(), GameplayCueTag, EGameplayCueEvent::Type::Executed, GameplayCueParameters);
+}
+
+void UARTAbilitySystemComponent::AddGameplayCueLocal(const FGameplayTag GameplayCueTag,
+													 const FGameplayCueParameters& GameplayCueParameters)
+{
+	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
+		GetOwner(), GameplayCueTag, EGameplayCueEvent::Type::OnActive, GameplayCueParameters);
+}
+
+void UARTAbilitySystemComponent::RemoveGameplayCueLocal(const FGameplayTag GameplayCueTag,
+														const FGameplayCueParameters& GameplayCueParameters)
+{
+	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
+		GetOwner(), GameplayCueTag, EGameplayCueEvent::Type::Removed, GameplayCueParameters);
+}
+
+/*
+ * Loose GameplayTags
+ */
+
+void UARTAbilitySystemComponent::K2_AddLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count)
+{
+	AddLooseGameplayTag(GameplayTag, Count);
+}
+
+void UARTAbilitySystemComponent::K2_AddLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count)
+{
+	AddLooseGameplayTags(GameplayTags, Count);
+}
+
+void UARTAbilitySystemComponent::K2_RemoveLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count)
+{
+	RemoveLooseGameplayTag(GameplayTag, Count);
+}
+
+void UARTAbilitySystemComponent::K2_RemoveLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count)
+{
+	RemoveLooseGameplayTags(GameplayTags, Count);
+}
+
+/*
+ * AI and UI get ability instance, class default object..etc
+ */
+
+void UARTAbilitySystemComponent::GetActivePrimaryAbilityInstancesWithTags(const FGameplayTagContainer& GameplayTagContainer,
+                                                            TArray<UARTGameplayAbility*>& ActiveAbilities)
+{
+	ActiveAbilities.Reset();
+	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
+	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
+
+	// Iterate the list of all ability specs
+	for (const FGameplayAbilitySpec* Spec : AbilitiesToActivate)
+	{
+		// Iterate all instances on this ability spec
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+		
+		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
+
+		ActiveAbilities.Add(Cast<UARTGameplayAbility>(AbilitySource));
+	}
+}
+
+void UARTAbilitySystemComponent::GetActiveAbilityClassDefaultWithTags(const FGameplayTagContainer& GameplayTagContainer,
+	TArray<UARTGameplayAbility*>& ActiveAbilities)
+{
+	ActiveAbilities.Reset();
+	TArray<FGameplayAbilitySpec*> AbilitiesToActivate;
+	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivate, false);
+
+	// Iterate the list of all ability specs
+	for (const FGameplayAbilitySpec* Spec : AbilitiesToActivate)
+	{
+		ActiveAbilities.Add(Cast<UARTGameplayAbility>(Spec->Ability));
+	}
+}
+
+void UARTAbilitySystemComponent::GetActiveEffectHandlesByClass(TSubclassOf<UGameplayEffect> SourceGameplayEffect,
+                                                               TArray<FActiveGameplayEffectHandle>&
+                                                               OutActiveEffectHandles)
+{
+	OutActiveEffectHandles.Reset();
+
+	if (SourceGameplayEffect)
+	{
+		FGameplayEffectQuery Query;
+		Query.CustomMatchDelegate.BindLambda([&](const FActiveGameplayEffect& CurEffect)
+		{
+			return CurEffect.Spec.Def && SourceGameplayEffect == CurEffect.Spec.Def->GetClass();
+		});
+
+		OutActiveEffectHandles = ActiveGameplayEffects.GetActiveEffects(Query);
+	}
+}
+
+void UARTAbilitySystemComponent::GetAllActiveAbilityClassDefaults(TArray<UARTGameplayAbility*>& ActiveAbilityCDO)
+{
+	ActiveAbilityCDO.Reset();
+	for(const auto& Spec : ActivatableAbilities.Items)
+	{
+		ActiveAbilityCDO.Add(Cast<UARTGameplayAbility>(Spec.Ability));
+	}
+}
+/*
+ * GameplayEffect send GameplayEvent when applied
+ */
+
+void UARTAbilitySystemComponent::OnGameplayEffectAppliedToTargetCallback(
+	UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
+{
+	const UARTGameplayEffect* Effect = Cast<UARTGameplayEffect>(SpecApplied.Def);
+	if (!Effect || Effect->GameplayEvents.Num() < 1 || Effect->DurationPolicy != EGameplayEffectDurationType::Instant)
+	{
+		return;
+	}
+
+	for (FGameplayEffectEvent Event : Effect->GameplayEvents)
+	{
+		FGameplayEventData Data;
+		FGameplayTag GameplayEventTag;
+
+		AActor* EventInstigator = nullptr;
+		AActor* EventTarget = nullptr;
+
+		Event.AttempAssignGameplayEventDataActors(GetAvatarActor(), Target->GetAvatarActor(), EventInstigator,
+		                                          EventTarget);
+
+		Data.Instigator = EventInstigator;
+		Data.Target = EventTarget;
+
+		Event.AttemptCalculateMagnitude(SpecApplied, Data.EventMagnitude, false);
+
+		const FGameplayTagContainer* InstigatorTags = SpecApplied.CapturedSourceTags.GetAggregatedTags();
+		const FGameplayTagContainer* TargetTags = SpecApplied.CapturedTargetTags.GetAggregatedTags();
+
+		Event.AttemptReturnGameplayEventTags(InstigatorTags, TargetTags, GameplayEventTag, Data.InstigatorTags,
+		                                     Data.TargetTags);
+
+		if (const FHitResult* Hit = SpecApplied.GetEffectContext().Get()->GetHitResult())
+		{
+			Data.TargetData = UARTBlueprintFunctionLibrary::AbilityTargetDataFromHitResult(*Hit);
+		}
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(EventTarget, GameplayEventTag, Data);
+	}
+}
+
+void UARTAbilitySystemComponent::OnActiveGameplayEffectAppliedToSelfCallback(
+	UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
+{
+	const UARTGameplayEffect* Effect = Cast<UARTGameplayEffect>(SpecApplied.Def);
+	if (!Effect || Effect->GameplayEvents.Num() < 1
+		|| Effect->DurationPolicy == EGameplayEffectDurationType::Instant)
+	{
+		return;
+	}
+
+	for (FGameplayEffectEvent Event : Effect->GameplayEvents)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s"),
+		       *SpecApplied.GetEffectContext().GetInstigatorAbilitySystemComponent()->GetAvatarActor()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *Target->GetAvatarActor()->GetName());
+
+		FGameplayEventData Data;
+		FGameplayTag GameplayEventTag;
+
+		AActor* SourceAvatarActor = SpecApplied.GetEffectContext().GetInstigatorAbilitySystemComponent()->
+		                                        GetAvatarActor();
+		AActor* TargetAvatarActor = GetAvatarActor();
+
+		AActor* EventInstigator = nullptr;
+		AActor* EventTarget = nullptr;
+
+		Event.AttempAssignGameplayEventDataActors(SourceAvatarActor, GetAvatarActor(), EventInstigator, EventTarget);
+
+		Data.Instigator = EventInstigator;
+		Data.Target = EventTarget;
+
+		Event.AttemptCalculateMagnitude(SpecApplied, Data.EventMagnitude, false);
+
+		const FGameplayTagContainer* InstigatorTags = SpecApplied.CapturedSourceTags.GetAggregatedTags();
+		const FGameplayTagContainer* TargetTags = SpecApplied.CapturedTargetTags.GetAggregatedTags();
+
+		Event.AttemptReturnGameplayEventTags(InstigatorTags, TargetTags, GameplayEventTag, Data.InstigatorTags,
+		                                     Data.TargetTags);
+
+		if (const FHitResult* Hit = SpecApplied.GetEffectContext().Get()->GetHitResult())
+		{
+			Data.TargetData = UARTBlueprintFunctionLibrary::AbilityTargetDataFromHitResult(*Hit);
+		}
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(EventTarget, GameplayEventTag, Data);
+	}
+}
 
 /*
 * Order System
@@ -1519,5 +1547,42 @@ void UARTAbilitySystemComponent::OnRemoveAbility(FGameplayAbilitySpec& AbilitySp
 	if (Ability->GetTargetType() != EARTTargetType::PASSIVE)
 	{
 		OnAutoOrderRemove.Broadcast((FARTOrderTypeWithIndex(UseAbilityOrder, Ability->GetAutoOrderPriority(), Ability->AbilityTags)));
+	}
+}
+
+/*
+ * Ability Tag relationship
+ */
+
+void UARTAbilitySystemComponent::ApplyAbilityBlockAndCancelTags(const FGameplayTagContainer& AbilityTags,
+	UGameplayAbility* RequestingAbility, bool bEnableBlockTags, const FGameplayTagContainer& BlockTags,
+	bool bExecuteCancelTags, const FGameplayTagContainer& CancelTags)
+{
+	FGameplayTagContainer AbilityBlockTags = BlockTags;
+	FGameplayTagContainer AbilityCancelTags = CancelTags;
+     
+	if (AbilityTagRelationship)
+	{
+		AbilityTagRelationship->GetAbilityTagsToBlockAndCancel(AbilityTags, &AbilityBlockTags, &AbilityCancelTags);
+	}
+ 
+	Super::ApplyAbilityBlockAndCancelTags(AbilityTags, RequestingAbility, bEnableBlockTags, AbilityBlockTags, bExecuteCancelTags, AbilityCancelTags);
+}
+
+void UARTAbilitySystemComponent::GetRelationshipActivationTagRequirements(const FGameplayTagContainer& AbilityTags,
+	FGameplayTagContainer& OutActivationRequired, FGameplayTagContainer& OutActivationBlocked) const
+{
+	if (AbilityTagRelationship)
+	{
+		AbilityTagRelationship->GetActivationRequiredAndBlockedTags(AbilityTags, &OutActivationRequired, &OutActivationBlocked);
+	}
+}
+
+void UARTAbilitySystemComponent::GetRelationshipAbilityCancelTags(const FGameplayTagContainer& AbilityTags,
+	FGameplayTagContainer& OutAbilityCancelTags) const
+{
+	if (AbilityTagRelationship)
+	{
+		AbilityTagRelationship->GetAbilityCancelTags(AbilityTags, &OutAbilityCancelTags);
 	}
 }

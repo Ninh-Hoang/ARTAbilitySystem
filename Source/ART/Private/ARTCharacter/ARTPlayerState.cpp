@@ -11,7 +11,7 @@
 #include "Item/InventorySet.h"
 
 #include "ARTCharacter/ARTCharacterBase.h"
-#include "ARTCharacter/AttributeSet/ARTAttributeSet_Health.h"
+#include "Ability/AttributeSet/ARTAttributeSet_Health.h"
 
 AARTPlayerState::AARTPlayerState()
 {
@@ -31,7 +31,7 @@ AARTPlayerState::AARTPlayerState()
 	// Set PlayerState's NetUpdateFrequency to the same as the Character.
 	// Default is very low for PlayerStates and introduces perceived lag in the ability system.
 	// 100 is probably way too high for a shipping game, you can adjust to fit your needs.
-	NetUpdateFrequency = 100.0f;
+	NetUpdateFrequency = 60.0f;
 
 	// Cache tags
 	DeadTag = FGameplayTag::RequestGameplayTag("State.Dead");

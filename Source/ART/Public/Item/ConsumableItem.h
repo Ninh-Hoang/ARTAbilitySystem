@@ -10,8 +10,6 @@
  * 
  */
 
-class AARTSurvivor;
-
 UCLASS()
 class ART_API UConsumableItem : public UItem
 {
@@ -21,5 +19,5 @@ public:
 	UConsumableItem();
 
 protected:
-	virtual void Use(AARTSurvivor* Character) override;
+	virtual void Use(class AARTCharacterBase* Character) override;
 };

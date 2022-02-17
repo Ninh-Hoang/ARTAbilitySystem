@@ -3,6 +3,7 @@
 
 #include "AI/ARTAIConductor.h"
 
+#include "DrawDebugHelpers.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
 #include "AI/ARTAIGroup.h"
