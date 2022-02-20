@@ -9,12 +9,14 @@
 
 extern const int32 NAMED_ITEM_SLOT;
 
+struct FARTInventoryItemSlot;
 class UARTItemStack;
 class UGameplayAbility;
 class UGameplayEffect;
 class UARTItemInputBinder;
 class UARTInventoryComponent;
 class UARTItemGenerator;
+class UARTItemStack_SlotContainer;
 
 //starting item, useful for init inventory
 USTRUCT(BlueprintType)
@@ -98,6 +100,7 @@ public:
 	TArray<AActor*> TrackingActors;
 };
 
+//containing Tag for slot query
 USTRUCT(BlueprintType)
 struct ART_API FARTItemSlotFilter
 {
@@ -182,6 +185,51 @@ struct TStructOpsTypeTraits<FARTItemSlotFilterHandle> : public TStructOpsTypeTra
 };
 
 USTRUCT(BlueprintType)
+struct ART_API FARTItemQuery
+{
+	GENERATED_BODY()
+public:
+	FARTItemQuery()
+	{
+
+	}
+	  		 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Filter")
+	FGameplayTagQuery ItemTypeQuery;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Filter")
+	FGameplayTagQuery SlotTypeQuery;
+
+	bool MatchesSlot(const FARTInventoryItemSlot& ItemSlot) const;
+
+	static FARTItemQuery QuerySlotMatchingTag(FGameplayTag Tag);
+	static FARTItemQuery QueryForMatchingItemTag(FGameplayTag Tag);
+	
+	static FARTItemQuery QueryForSlot(const FGameplayTagQuery& SlotQuery);
+	static FARTItemQuery QueryForItemType(const FGameplayTagQuery& ItemQuery);
+
+	bool IsValid() const;
+};
+
+USTRUCT(BlueprintType)
+struct ART_API FARTEquippedItemInfo
+{
+	GENERATED_BODY()
+public:
+	FARTEquippedItemInfo()
+	{
+
+	}
+
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> AddedAbilities;
+	UPROPERTY()
+	TArray<UAttributeSet*> InstancedAttributeSets;
+	UPROPERTY()
+	TArray< FActiveGameplayEffectHandle> AddedGameplayEffects;
+};
+
+USTRUCT(BlueprintType)
 struct ART_API FARTItemSlotDefinition
 {
 	GENERATED_BODY()
@@ -193,6 +241,9 @@ public:
 	FARTItemSlotFilter Filter;
 };
 
+//---------------------------------------------
+// INVENTORY ITEM STRUCT
+//---------------------------------------------
 USTRUCT(BlueprintType)
 struct ART_API FARTInventoryItemSlot : public FFastArraySerializerItem
 {
@@ -277,7 +328,7 @@ struct FARTInventoryItemSlotArray : public FFastArraySerializer
 public:
 
 	UPROPERTY()
-	TArray< FARTInventoryItemSlot> Slots;
+	TArray<FARTInventoryItemSlot> Slots;
 
 	UPROPERTY()
 	UARTInventoryComponent* Owner;
@@ -346,8 +397,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
 	FGameplayTagContainer SlotTags;
-
-
+	
 	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = Inventory)
 	UARTInventoryComponent* ParentInventory;
 
@@ -396,50 +446,214 @@ struct TStructOpsTypeTraits<FARTInventoryItemSlotReference> : public TStructOpsT
 	};
 };
 
-USTRUCT(BlueprintType)
-struct ART_API FARTItemQuery
+//---------------------------------------------
+// CONTAINER ITEM STRUCT
+//---------------------------------------------
+
+/*USTRUCT(BlueprintType)
+struct ART_API FARTContainerItemSlot : public FFastArraySerializerItem
 {
 	GENERATED_BODY()
-public:
-	FARTItemQuery()
-	{
-
-	}
-	  		 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Filter")
-	FGameplayTagQuery ItemTypeQuery;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Filter")
-	FGameplayTagQuery SlotTypeQuery;
-
-	bool MatchesSlot(const FARTInventoryItemSlot& ItemSlot) const;
-
-	static FARTItemQuery QuerySlotMatchingTag(FGameplayTag Tag);
-	static FARTItemQuery QueryForMatchingItemTag(FGameplayTag Tag);
 	
-	static FARTItemQuery QueryForSlot(const FGameplayTagQuery& SlotQuery);
-	static FARTItemQuery QueryForItemType(const FGameplayTagQuery& ItemQuery);
-
-	bool IsValid() const;
-};
-
-USTRUCT(BlueprintType)
-struct ART_API FARTEquippedItemInfo
-{
-	GENERATED_BODY()
 public:
-	FARTEquippedItemInfo()
+	FARTContainerItemSlot()
+		:FFastArraySerializerItem(),
+		ItemStack(nullptr),
+		SlotId(NAMED_ITEM_SLOT),
+		OldItemStack(nullptr)
+	{
+		
+	}
+
+	FARTContainerItemSlot(const FARTContainerItemSlot& Copy)
+		: FFastArraySerializerItem(Copy),
+		ItemStack(Copy.ItemStack),
+		ItemSlotFilter(Copy.ItemSlotFilter),
+		SlotId(Copy.SlotId),
+		SlotTags(Copy.SlotTags),
+		OldItemStack(nullptr)
 	{
 
 	}
 
+	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = Container)
+	UARTItemStack* ItemStack;
+
 	UPROPERTY()
-	TArray<FGameplayAbilitySpecHandle> AddedAbilities;
-	UPROPERTY()
-	TArray<UAttributeSet*> InstancedAttributeSets;
-	UPROPERTY()
-	TArray< FActiveGameplayEffectHandle> AddedGameplayEffects;
+	FARTItemSlotFilterHandle ItemSlotFilter;	
+	
+	UPROPERTY(BlueprintReadOnly, VisibleInstanceOnly, Category = Container)
+	int32 SlotId;	  
+	
+	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = Container)
+	FGameplayTagContainer SlotTags;
+
+	TWeakObjectPtr<UARTItemStack> OldItemStack;
+
+	static FARTContainerItemSlot Invalid;
+
+	void ToDebugStrings(TArray<FString>& OutStrings, bool Detailed) const;
+	// Comparison operator 
+	bool operator==(FARTContainerItemSlot const& Other) const
+	{
+		return SlotId == Other.SlotId && ItemStack == Other.ItemStack;
+	}
+
+	//Comparison operator
+	bool operator!=(FARTContainerItemSlot const& Other) const
+	{
+		return !(FARTContainerItemSlot::operator==(Other));
+	}
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+
+	void PreReplicatedRemove(const struct FARTContainerItemSlotArray& InArraySerializer);
+	void PostReplicatedAdd(const struct FARTContainerItemSlotArray& InArraySerializer);
+	void PostReplicatedChange(const struct FARTContainerItemSlotArray& InArraySerializer);
+
+private:
+	UARTItemStack_SlotContainer* ParentStack;
+
+	friend class UARTItemStack_SlotContainer;
 };
+
+template<>
+struct TStructOpsTypeTraits<FARTContainerItemSlot> : public TStructOpsTypeTraitsBase2<FARTContainerItemSlot>
+{
+	enum
+	{
+		WithNetSerializer = true,
+		WithIdenticalViaEquality = true,
+	};
+};
+
+USTRUCT()
+struct FARTContainerItemSlotArray : public FFastArraySerializer
+{
+	GENERATED_USTRUCT_BODY()
+public:
+
+	UPROPERTY()
+	TArray<FARTContainerItemSlot> Slots;
+
+	UPROPERTY()
+	UARTItemStack_SlotContainer* Owner;
+
+	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
+	{
+		return FFastArraySerializer::FastArrayDeltaSerialize<FARTContainerItemSlot, FARTContainerItemSlotArray>(Slots, DeltaParms, *this);
+	}
+};
+
+template<>
+struct TStructOpsTypeTraits< FARTContainerItemSlotArray > : public TStructOpsTypeTraitsBase2< FARTContainerItemSlotArray >
+{
+	enum
+	{
+		WithNetDeltaSerializer = true,
+	};
+};
+
+USTRUCT(BlueprintType)
+struct ART_API FARTContainerItemSlotReference
+{
+	GENERATED_BODY()
+public:
+
+	FARTContainerItemSlotReference()
+		: SlotId(NAMED_ITEM_SLOT)
+		, ParentStack(nullptr)
+	{
+		
+	}
+		
+	FARTContainerItemSlotReference(const FARTContainerItemSlotReference& Copy)
+		: SlotId(Copy.SlotId),
+		SlotTags(Copy.SlotTags),
+		ParentStack(Copy.ParentStack)
+	{
+
+	}
+
+	FARTContainerItemSlotReference(const FARTContainerItemSlot& FromSlot, UARTItemStack_SlotContainer
+	* InParentStack)
+		: SlotId(FromSlot.SlotId)
+		, SlotTags(FromSlot.SlotTags)
+		, ParentStack(InParentStack)
+	{
+
+	}
+
+	FARTContainerItemSlotReference(FGameplayTag InTag, UARTItemStack_SlotContainer
+	* InParentStack)
+		: SlotId(NAMED_ITEM_SLOT)
+		, SlotTags(InTag.GetSingleTagContainer())
+		, ParentStack(InParentStack)
+	{
+
+	}
+
+	FARTContainerItemSlotReference(int32 InSlotId, UARTItemStack_SlotContainer
+	* InParentStack)
+		: SlotId(InSlotId)
+		, ParentStack(InParentStack)
+	{
+
+	}
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Container)
+	int32 SlotId;	
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Container)
+	FGameplayTagContainer SlotTags;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Container)
+	UARTItemStack_SlotContainer* ParentStack;
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+
+	FString ToString() const;
+
+	static FARTContainerItemSlotReference Invalid;
+
+	// Comparison operator
+	bool operator==(const FARTContainerItemSlotReference& Other) const
+	{
+		const bool bIdsMatch = SlotId == Other.SlotId;
+		const bool bParentsMatch = ParentStack == Other.ParentStack;
+		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
+
+		return bParentsMatch && bIdsMatch && TagsMatch;
+	}
+
+	// Comparison operator
+	bool operator!=(const FARTContainerItemSlotReference& Other) const
+	{
+		return !(FARTContainerItemSlotReference::operator==(Other));
+	}
+
+	bool operator==(const FARTContainerItemSlot& Other) const
+	{
+		const bool bIdsMatch = SlotId == Other.SlotId;
+		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
+
+		return bIdsMatch && TagsMatch;
+	}
+
+	bool operator!=(const FARTContainerItemSlot& Other) const
+	{
+		return !(FARTContainerItemSlotReference::operator==(Other));
+	}
+};
+
+template<>
+struct TStructOpsTypeTraits<FARTContainerItemSlotReference> : public TStructOpsTypeTraitsBase2<FARTContainerItemSlotReference>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
+};*/
 
 //---------------------------------------
 

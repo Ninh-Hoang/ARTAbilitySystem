@@ -1,5 +1,6 @@
 ﻿#include "Inventory/ARTInventoryItemTypes.h"
 #include "Inventory/Component/ARTInventoryComponent.h"
+#include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 #include "Inventory/ARTItemStack.h"
 
 const int32 NAMED_ITEM_SLOT = -1;
@@ -91,6 +92,72 @@ bool FARTItemSlotFilterHandle::NetSerialize(FArchive& Ar, UPackageMap* Map, bool
 	return true;
 }
 
+bool FARTItemQuery::MatchesSlot(const FARTInventoryItemSlot& ItemSlot)	const
+{
+	//Slot Tag Matching
+	bool Matches = true;
+
+	//Check to see if we have a matching slot type
+	if (!SlotTypeQuery.IsEmpty())
+	{
+		Matches &= SlotTypeQuery.Matches(ItemSlot.SlotTags); 						 		
+	}	
+
+	if (!ItemTypeQuery.IsEmpty())
+	{
+		//If we are looking for a specific item and this slot doesn't have any item, it's a failed match
+		if (!::IsValid(ItemSlot.ItemStack))
+		{
+			return false;
+		}
+
+		FGameplayTagContainer StackContainer;
+		ItemSlot.ItemStack->GetOwnedGameplayTags(StackContainer);
+
+		Matches &= ItemTypeQuery.Matches(StackContainer);
+	}
+
+	return Matches;
+}
+
+FARTItemQuery FARTItemQuery::QuerySlotMatchingTag(FGameplayTag Tag)
+{
+	FARTItemQuery Query;
+	Query.SlotTypeQuery = FGameplayTagQuery::MakeQuery_MatchTag(Tag);
+
+	return Query;
+}
+
+FARTItemQuery FARTItemQuery::QueryForMatchingItemTag(FGameplayTag Tag)
+{
+	FARTItemQuery Query;
+	Query.ItemTypeQuery = FGameplayTagQuery::MakeQuery_MatchTag(Tag);
+
+	return Query;
+}
+
+FARTItemQuery FARTItemQuery::QueryForSlot(const FGameplayTagQuery& SlotQuery)
+{
+	FARTItemQuery Query;
+	Query.SlotTypeQuery = SlotQuery;
+
+	return Query;
+}
+
+FARTItemQuery FARTItemQuery::QueryForItemType(const FGameplayTagQuery& ItemQuery)
+{
+	FARTItemQuery Query;
+	Query.ItemTypeQuery = ItemQuery;
+
+	return Query;
+}
+
+bool FARTItemQuery::IsValid() const
+{
+	return !SlotTypeQuery.IsEmpty() || !ItemTypeQuery.IsEmpty();
+}
+
+/////////////////////////////////////////////////////////////////
 bool FARTInventoryItemSlotReference::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
 	Ar << SlotId;
@@ -169,69 +236,61 @@ void FARTInventoryItemSlot::PostReplicatedChange(const struct FARTInventoryItemS
 }
 
 /////////////////////////////////////////////////////////////////
-
-bool FARTItemQuery::MatchesSlot(const FARTInventoryItemSlot& ItemSlot)	const
+/*bool FARTContainerItemSlotReference::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
 {
-	//Slot Tag Matching
-	bool Matches = true;
+	Ar << SlotId;
+	SlotTags.NetSerialize(Ar, Map, bOutSuccess);
+	Ar << ParentStack;
 
-	//Check to see if we have a matching slot type
-	if (!SlotTypeQuery.IsEmpty())
-	{
-		Matches &= SlotTypeQuery.Matches(ItemSlot.SlotTags); 						 		
-	}	
+	bOutSuccess = true;
+	return true;
+}
 
-	if (!ItemTypeQuery.IsEmpty())
+FString FARTContainerItemSlotReference::ToString() const
+{
+	return FString::Printf(TEXT("Slot(%d)(%s)-%s"), SlotId, *SlotTags.ToString(), ParentStack ? *ParentStack->GetName() : TEXT("nullptr"));
+}
+
+void FARTContainerItemSlot::ToDebugStrings(TArray<FString>& OutStrings, bool Detailed) const
+{
+	FString SlotName = FString::Printf(TEXT("Slot: %d %s"), SlotId, *SlotTags.ToString()); 
+	OutStrings.Add(SlotName);
+	if (Detailed)
 	{
-		//If we are looking for a specific item and this slot doesn't have any item, it's a failed match
-		if (!::IsValid(ItemSlot.ItemStack))
+		//TODO: Add the slot filter here if we are detailed
+		if (ItemSlotFilter.IsValid())
 		{
-			return false;
+			OutStrings.Add(TEXT("Filtered"));
 		}
-
-		FGameplayTagContainer StackContainer;
-		ItemSlot.ItemStack->GetOwnedGameplayTags(StackContainer);
-
-		Matches &= ItemTypeQuery.Matches(StackContainer);
 	}
-
-	return Matches;
+	if (IsValid(ItemStack))
+	{
+		ItemStack->GetDebugStrings(OutStrings, Detailed);
+	}
 }
 
-FARTItemQuery FARTItemQuery::QuerySlotMatchingTag(FGameplayTag Tag)
+bool FARTContainerItemSlot::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
 {
-	FARTItemQuery Query;
-	Query.SlotTypeQuery = FGameplayTagQuery::MakeQuery_MatchTag(Tag);
+	bOutSuccess = true;
+	Ar << SlotId;
+	Ar << ItemStack;
+	SlotTags.NetSerialize(Ar, Map, bOutSuccess);
+	ItemSlotFilter.NetSerialize(Ar, Map, bOutSuccess);
 
-	return Query;
+	return true;
 }
 
-FARTItemQuery FARTItemQuery::QueryForMatchingItemTag(FGameplayTag Tag)
+void FARTContainerItemSlot::PreReplicatedRemove(const FARTContainerItemSlotArray& InArraySerializer)
 {
-	FARTItemQuery Query;
-	Query.ItemTypeQuery = FGameplayTagQuery::MakeQuery_MatchTag(Tag);
-
-	return Query;
+	
 }
 
-FARTItemQuery FARTItemQuery::QueryForSlot(const FGameplayTagQuery& SlotQuery)
+void FARTContainerItemSlot::PostReplicatedAdd(const FARTContainerItemSlotArray& InArraySerializer)
 {
-	FARTItemQuery Query;
-	Query.SlotTypeQuery = SlotQuery;
-
-	return Query;
 }
 
-FARTItemQuery FARTItemQuery::QueryForItemType(const FGameplayTagQuery& ItemQuery)
+void FARTContainerItemSlot::PostReplicatedChange(const FARTContainerItemSlotArray& InArraySerializer)
 {
-	FARTItemQuery Query;
-	Query.ItemTypeQuery = ItemQuery;
+}*/
 
-	return Query;
-}
-
-bool FARTItemQuery::IsValid() const
-{
-	return !SlotTypeQuery.IsEmpty() || !ItemTypeQuery.IsEmpty();
-}
 
