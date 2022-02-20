@@ -17,7 +17,7 @@ void UARTItemStack_SlotContainer::CreateContainerSlot(const FGameplayTagContaine
 {
 }
 
-void UARTItemStack_SlotContainer::RemoveInventorySlot(const FARTInventoryItemSlotReference& Slot)
+void UARTItemStack_SlotContainer::RemoveInventorySlot(const FARTItemSlotReference& Slot)
 {
 }
 

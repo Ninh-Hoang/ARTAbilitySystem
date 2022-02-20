@@ -152,12 +152,12 @@ UARTInventoryComponent_Active* UARTItemBPFunctionLibrary::GetActiveInventoryComp
 }
 
 
-bool UARTItemBPFunctionLibrary::IsValidItemSlotRef(const FARTInventoryItemSlotReference& ItemSlotRef)
+bool UARTItemBPFunctionLibrary::IsValidItemSlotRef(const FARTItemSlotReference& ItemSlotRef)
 {
 	return IsValid(ItemSlotRef);
 }
 
-UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTInventoryItemSlotReference& ItemSlotRef)
+UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTItemSlotReference& ItemSlotRef)
 {
 	if (!IsValid(ItemSlotRef))
 	{
@@ -167,12 +167,12 @@ UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTInventoryIte
 	return ItemSlotRef.ParentInventory->GetItemSlot(ItemSlotRef).ItemStack;
 }
 
-bool UARTItemBPFunctionLibrary::EqualEqual_FARTInventoryItemSlotReference(const FARTInventoryItemSlotReference& ItemSlotRef, const FARTInventoryItemSlotReference& OtherItemSlotRef)
+bool UARTItemBPFunctionLibrary::EqualEqual_FARTItemSlotReference(const FARTItemSlotReference& ItemSlotRef, const FARTItemSlotReference& OtherItemSlotRef)
 {
 	return ItemSlotRef == OtherItemSlotRef;
 }
 
-UARTInventoryComponent* UARTItemBPFunctionLibrary::GetInventoryFromSlot(const FARTInventoryItemSlotReference& ItemSlotRef)
+UARTInventoryComponent* UARTItemBPFunctionLibrary::GetInventoryFromSlot(const FARTItemSlotReference& ItemSlotRef)
 {
 	return ItemSlotRef.ParentInventory;
 }
@@ -251,7 +251,7 @@ bool UARTItemBPFunctionLibrary::ASCRemoveInstancedAttributeSet(UAbilitySystemCom
 	return true;
 }
 
-float UARTItemBPFunctionLibrary::GetActiveAttributeFromItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute)
+float UARTItemBPFunctionLibrary::GetActiveAttributeFromItemSlot(const FARTItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute)
 {
 	bSuccessfullyFoundAttribute = false;
 	UARTInventoryComponent_Active* Inventory = Cast<UARTInventoryComponent_Active>(ItemSlotRef.ParentInventory);
@@ -292,7 +292,7 @@ float UARTItemBPFunctionLibrary::GetActiveAttributeFromItemSlot(const FARTInvent
 	return 0.0f;
 }
 
-float UARTItemBPFunctionLibrary::GetEquippedAttributeFromItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute)
+float UARTItemBPFunctionLibrary::GetEquippedAttributeFromItemSlot(const FARTItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute)
 {
 	bSuccessfullyFoundAttribute = false;
 	UARTInventoryComponent_Equippable* Inventory = Cast<UARTInventoryComponent_Equippable>(ItemSlotRef.ParentInventory);

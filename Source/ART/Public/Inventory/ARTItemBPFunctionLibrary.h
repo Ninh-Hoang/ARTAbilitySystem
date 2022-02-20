@@ -57,10 +57,10 @@ public:
 	static class UARTInventoryComponent_Active* GetActiveInventoryComponent(AActor* Actor, bool bSearchComponents = false);
 	
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static float GetActiveAttributeFromItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute);
+	static float GetActiveAttributeFromItemSlot(const FARTItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute);
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static float GetEquippedAttributeFromItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute);
+	static float GetEquippedAttributeFromItemSlot(const FARTItemSlotReference& ItemSlotRef, FGameplayAttribute Attribute, bool& bSuccessfullyFoundAttribute);
 
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory|Debug", meta = (WorldContext = "WorldContextObject"))
@@ -74,16 +74,16 @@ public:
 
 	////INVENTORY SLOTS
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static bool IsValidItemSlotRef(const FARTInventoryItemSlotReference& ItemSlotRef);
+	static bool IsValidItemSlotRef(const FARTItemSlotReference& ItemSlotRef);
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static UARTItemStack* GetItemFromSlot(const FARTInventoryItemSlotReference& ItemSlotRef);
+	static UARTItemStack* GetItemFromSlot(const FARTItemSlotReference& ItemSlotRef);
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Equal ARTInventoryItemSlotReference", CompactNodeTitle = "==", Keywords = "== equal"), Category = "ART|Inventory")
-	static bool EqualEqual_FARTInventoryItemSlotReference(const FARTInventoryItemSlotReference& ItemSlotRef, const FARTInventoryItemSlotReference& OtherItemSlotRef);
+	static bool EqualEqual_FARTItemSlotReference(const FARTItemSlotReference& ItemSlotRef, const FARTItemSlotReference& OtherItemSlotRef);
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static UARTInventoryComponent* GetInventoryFromSlot(const FARTInventoryItemSlotReference& ItemSlotRef);
+	static UARTInventoryComponent* GetInventoryFromSlot(const FARTItemSlotReference& ItemSlotRef);
 
 	/////INVENTORY QUERY
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")

@@ -5,11 +5,11 @@
 
 const int32 NAMED_ITEM_SLOT = -1;
 
-FARTInventoryItemSlot FARTInventoryItemSlot::Invalid = FARTInventoryItemSlot();
-FARTInventoryItemSlotReference FARTInventoryItemSlotReference::Invalid = FARTInventoryItemSlotReference();
+FARTItemSlot FARTItemSlot::Invalid = FARTItemSlot();
+FARTItemSlotReference FARTItemSlotReference::Invalid = FARTItemSlotReference();
 
 
-bool IsValid(const FARTInventoryItemSlotReference& ItemRef)
+bool IsValid(const FARTItemSlotReference& ItemRef)
 {
 	if (!IsValid(ItemRef.ParentInventory))
 	{
@@ -92,7 +92,7 @@ bool FARTItemSlotFilterHandle::NetSerialize(FArchive& Ar, UPackageMap* Map, bool
 	return true;
 }
 
-bool FARTItemQuery::MatchesSlot(const FARTInventoryItemSlot& ItemSlot)	const
+bool FARTItemQuery::MatchesSlot(const FARTItemSlot& ItemSlot)	const
 {
 	//Slot Tag Matching
 	bool Matches = true;
@@ -158,7 +158,7 @@ bool FARTItemQuery::IsValid() const
 }
 
 /////////////////////////////////////////////////////////////////
-bool FARTInventoryItemSlotReference::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+bool FARTItemSlotReference::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
 	Ar << SlotId;
 	SlotTags.NetSerialize(Ar, Map, bOutSuccess);
@@ -168,12 +168,12 @@ bool FARTInventoryItemSlotReference::NetSerialize(FArchive& Ar, class UPackageMa
 	return true;
 }
 
-FString FARTInventoryItemSlotReference::ToString() const
+FString FARTItemSlotReference::ToString() const
 {
 	return FString::Printf(TEXT("Slot(%d)(%s)-%s"), SlotId, *SlotTags.ToString(), ParentInventory ? *ParentInventory->GetName() : TEXT("nullptr"));
 }
 
-void FARTInventoryItemSlot::ToDebugStrings(TArray<FString>& OutStrings, bool Detailed) const
+void FARTItemSlot::ToDebugStrings(TArray<FString>& OutStrings, bool Detailed) const
 {
 	FString SlotName = FString::Printf(TEXT("Slot: %d %s"), SlotId, *SlotTags.ToString()); 
 	OutStrings.Add(SlotName);
@@ -191,7 +191,7 @@ void FARTInventoryItemSlot::ToDebugStrings(TArray<FString>& OutStrings, bool Det
 	}
 }
 
-bool FARTInventoryItemSlot::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+bool FARTItemSlot::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
 	bOutSuccess = true;
 	Ar << SlotId;
@@ -202,36 +202,36 @@ bool FARTInventoryItemSlot::NetSerialize(FArchive& Ar, class UPackageMap* Map, b
 	return true;
 }
 
-void FARTInventoryItemSlot::PreReplicatedRemove(const struct FARTInventoryItemSlotArray& InArraySerializer)
+void FARTItemSlot::PreReplicatedRemove(const struct FARTItemSlotArray& InArraySerializer)
 {
 	Owner = InArraySerializer.Owner;
 	Owner->PostInventoryUpdate();
 
 	if (IsValid(ItemStack))
 	{
-		Owner->OnItemSlotChange.Broadcast(Owner, FARTInventoryItemSlotReference(*this, Owner), nullptr, ItemStack);
+		Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotReference(*this, Owner), nullptr, ItemStack);
 	}
 	OldItemStack = nullptr;
 }
 
-void FARTInventoryItemSlot::PostReplicatedAdd(const struct FARTInventoryItemSlotArray& InArraySerializer)
+void FARTItemSlot::PostReplicatedAdd(const struct FARTItemSlotArray& InArraySerializer)
 {
 	Owner = InArraySerializer.Owner;
 	Owner->PostInventoryUpdate();
 
 	if (IsValid(ItemStack))
 	{
-		Owner->OnItemSlotChange.Broadcast(Owner, FARTInventoryItemSlotReference(*this, Owner), ItemStack, nullptr);
+		Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotReference(*this, Owner), ItemStack, nullptr);
 	}
 	OldItemStack = ItemStack;
 }
 
-void FARTInventoryItemSlot::PostReplicatedChange(const struct FARTInventoryItemSlotArray& InArraySerializer)
+void FARTItemSlot::PostReplicatedChange(const struct FARTItemSlotArray& InArraySerializer)
 {
 	Owner = InArraySerializer.Owner;
 	Owner->PostInventoryUpdate();
 	
-	Owner->OnItemSlotChange.Broadcast(Owner, FARTInventoryItemSlotReference(*this, Owner), ItemStack, OldItemStack.Get());
+	Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotReference(*this, Owner), ItemStack, OldItemStack.Get());
 	OldItemStack = ItemStack;	
 }
 

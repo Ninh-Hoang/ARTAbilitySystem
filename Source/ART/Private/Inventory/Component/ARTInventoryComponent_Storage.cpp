@@ -48,7 +48,7 @@ void UARTInventoryComponent_Storage::UpdateStorageInventorySlots()
 	}
 		
 	//First, Count how many Storage slots we have
-	TArray<FARTInventoryItemSlotReference> Slots;
+	TArray<FARTItemSlotReference> Slots;
 	Query_GetAllStorageSlots(Slots);
 
 	const int32 SlotCount = Slots.Num();
@@ -85,7 +85,7 @@ void UARTInventoryComponent_Storage::OnInventorySizeAttributeChange(const FOnAtt
 	UpdateStorageInventorySlots();
 }
 
-bool UARTInventoryComponent_Storage::Query_GetAllStorageSlots(TArray<FARTInventoryItemSlotReference>& OutSlotRefs)
+bool UARTInventoryComponent_Storage::Query_GetAllStorageSlots(TArray<FARTItemSlotReference>& OutSlotRefs)
 {
 	return Query_GetAllSlots(FARTItemQuery::QuerySlotMatchingTag(InvStorageSlotTag), OutSlotRefs);
 }

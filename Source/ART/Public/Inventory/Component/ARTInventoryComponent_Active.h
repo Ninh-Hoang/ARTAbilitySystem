@@ -29,16 +29,16 @@ public:
 	// Called when the game stARTs
 	virtual void BeginPlay() override;
 
-	virtual void OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTInventoryItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack) override;
+	virtual void OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack) override;
 	   
 	UFUNCTION(BlueprintPure, Category = "Inventory")
-	virtual FARTInventoryItemSlotReference GetActiveItemSlot();
+	virtual FARTItemSlotReference GetActiveItemSlot();
 
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	virtual UARTItemStack* GetActiveItemStack();
 
 	UFUNCTION(BlueprintPure, Category = "Inventory")
-	virtual FARTInventoryItemSlotReference GetActiveItemSlotInSlot(int32 InActiveItemSlot);
+	virtual FARTItemSlotReference GetActiveItemSlotInSlot(int32 InActiveItemSlot);
 
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	virtual UARTItemStack* GetActiveItemStackInSlot(int32 InActiveItemSlot);
@@ -79,11 +79,11 @@ public:
 
 	virtual void MakeItemInactive();
 	virtual void MakeItemActive(int32 NewActiveItemSlot);
-	virtual void MakeItemActive(const FARTInventoryItemSlotReference& ItemSlotRef);
+	virtual void MakeItemActive(const FARTItemSlotReference& ItemSlotRef);
 
-	virtual bool IsActiveItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef) const;
+	virtual bool IsActiveItemSlot(const FARTItemSlotReference& ItemSlotRef) const;
 	
-	virtual int32 GetActiveItemIndexBySlotRef(const FARTInventoryItemSlotReference& ItemSlotRef);
+	virtual int32 GetActiveItemIndexBySlotRef(const FARTItemSlotReference& ItemSlotRef);
 	virtual int32 GetActiveItemIndexByTag(FGameplayTag Tag);
 
 	virtual void SwitchToPendingItemSlot();
@@ -108,11 +108,11 @@ public:
 	int32 GetIndexForActiveItemSlotTagQuery(const FGameplayTagQuery& TagQuery);
 
 protected:
-	virtual bool MakeItemInactive_Internal(const FARTInventoryItemSlotReference& ItemSlot);
-	virtual bool MakeItemInactive_Internal(const FARTInventoryItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
-	virtual bool MakeItemActive_Internal(const FARTInventoryItemSlotReference& ItemSlot);
-	virtual bool MakeItemActive_Internal(const FARTInventoryItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
+	virtual bool MakeItemInactive_Internal(const FARTItemSlotReference& ItemSlot);
+	virtual bool MakeItemInactive_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
+	virtual bool MakeItemActive_Internal(const FARTItemSlotReference& ItemSlot);
+	virtual bool MakeItemActive_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
 
 
-	TArray<FARTInventoryItemSlotReference> CachedActiveItemSlots;
+	TArray<FARTItemSlotReference> CachedActiveItemSlots;
 };

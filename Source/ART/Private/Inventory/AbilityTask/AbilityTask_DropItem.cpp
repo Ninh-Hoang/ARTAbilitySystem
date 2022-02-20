@@ -19,7 +19,7 @@ UAbilityTask_DropItem::UAbilityTask_DropItem(const FObjectInitializer& ObjectIni
 
 }
 
-UAbilityTask_DropItem* UAbilityTask_DropItem::DropItemFromInventory(UGameplayAbility* OwningAbility, const FARTInventoryItemSlotReference& FromSlot)
+UAbilityTask_DropItem* UAbilityTask_DropItem::DropItemFromInventory(UGameplayAbility* OwningAbility, const FARTItemSlotReference& FromSlot)
 {
 	UAbilityTask_DropItem* Task = NewAbilityTask<UAbilityTask_DropItem>(OwningAbility);
 	Task->SlotReference = FromSlot;

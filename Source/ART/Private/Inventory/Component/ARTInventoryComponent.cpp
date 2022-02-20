@@ -46,7 +46,7 @@ void UARTInventoryComponent::InitializeComponent()
 
 void UARTInventoryComponent::CreateInventorySlot(const FGameplayTagContainer& SlotTags, const FARTItemSlotFilterHandle& Filter)
 {
-	FARTInventoryItemSlot Slot;
+	FARTItemSlot Slot;
 	Slot.SlotId = IdCounter;
 	Slot.SlotTags = SlotTags;
 	Slot.ItemSlotFilter = Filter;
@@ -61,14 +61,14 @@ void UARTInventoryComponent::CreateInventorySlot(const FGameplayTagContainer& Sl
 	PostInventoryUpdate();	
 }
 
-void UARTInventoryComponent::RemoveInventorySlot(const FARTInventoryItemSlotReference& Slot)
+void UARTInventoryComponent::RemoveInventorySlot(const FARTItemSlotReference& Slot)
 {
 	if (!IsValidItemSlot(Slot))
 	{
 		return;
 	}
 
-	FARTInventoryItemSlot& ItemSlot = GetItemSlot(Slot);
+	FARTItemSlot& ItemSlot = GetItemSlot(Slot);
 
 	BagInventory.Slots.Remove(ItemSlot);
 	BagInventory.MarkArrayDirty();
@@ -111,7 +111,7 @@ bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
 	//Find the first empty item slot
 	for (auto Slot : BagInventory.Slots)
 	{
-		FARTInventoryItemSlotReference SlotRef(Slot, this);
+		FARTItemSlotReference SlotRef(Slot, this);
 		if (AcceptsItem(Item, SlotRef) && PlaceItemIntoSlot(Item, SlotRef))
 		{
 			return true;
@@ -121,7 +121,7 @@ bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
 	return false;
 }
 
-bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTInventoryItemSlotReference& ItemSlot)
+bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotReference& ItemSlot)
 {
 	//We can't do this on clients
 	if (GetOwnerRole() != ROLE_Authority)
@@ -143,7 +143,7 @@ bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTIn
 	}
 
 	//Place the item into the slot
-	FARTInventoryItemSlot& Slot = GetItemSlot(ItemSlot);
+	FARTItemSlot& Slot = GetItemSlot(ItemSlot);
 	UARTItemStack* PreviousItem = Slot.ItemStack;
 	Slot.ItemStack = Item;
 
@@ -157,7 +157,7 @@ bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTIn
 	return true;
 }
 
-bool UARTInventoryComponent::RemoveItemFromInventory(const FARTInventoryItemSlotReference& ItemSlot)
+bool UARTInventoryComponent::RemoveItemFromInventory(const FARTItemSlotReference& ItemSlot)
 {
 	//We can't do this on clients
 	if (GetOwnerRole() != ROLE_Authority)
@@ -171,7 +171,7 @@ bool UARTInventoryComponent::RemoveItemFromInventory(const FARTInventoryItemSlot
 		return false;
 	}
 
-	FARTInventoryItemSlot& Item = GetItemSlot(ItemSlot);
+	FARTItemSlot& Item = GetItemSlot(ItemSlot);
 	UARTItemStack* PreviousItem = Item.ItemStack;
 
 	//Check to make sure we have a valid item in this slot
@@ -196,7 +196,7 @@ bool UARTInventoryComponent::RemoveItemFromInventory(const FARTInventoryItemSlot
 
 bool UARTInventoryComponent::RemoveAllItemsFromInventory(TArray<UARTItemStack*>& OutItemsRemoved)
 {
-	for (FARTInventoryItemSlot& ItemSlot : BagInventory.Slots)
+	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 	{
 		if (!IsValid(ItemSlot.ItemStack))
 		{
@@ -204,13 +204,13 @@ bool UARTInventoryComponent::RemoveAllItemsFromInventory(TArray<UARTItemStack*>&
 		}
 
 		OutItemsRemoved.Add(ItemSlot.ItemStack);
-		RemoveItemFromInventory(FARTInventoryItemSlotReference(ItemSlot, this));
+		RemoveItemFromInventory(FARTItemSlotReference(ItemSlot, this));
 	}
 
 	return true;
 }
 
-bool UARTInventoryComponent::SwapItemSlots(const FARTInventoryItemSlotReference& SourceSlot, const FARTInventoryItemSlotReference& DestSlot)
+bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotReference& SourceSlot, const FARTItemSlotReference& DestSlot)
 {
 	//If we aren't the server, Call the server RPC
 	if (GetOwnerRole() != ROLE_Authority)
@@ -253,7 +253,7 @@ bool UARTInventoryComponent::SwapItemSlots(const FARTInventoryItemSlotReference&
 	return true;
 }
 
-bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTInventoryItemSlotReference& Slot)
+bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTItemSlotReference& Slot)
 {
 	
 	if (!AcceptsItem_AssumeEmptySlot(Item, Slot))
@@ -261,7 +261,7 @@ bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTInventor
 		return false;
 	}
 	
-	FARTInventoryItemSlot& SlotSlot = GetItemSlot(Slot);
+	FARTItemSlot& SlotSlot = GetItemSlot(Slot);
 
 	//We have an item already in here!
 	if (IsValid(SlotSlot.ItemStack))
@@ -272,7 +272,7 @@ bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTInventor
 	return true;
 }
 
-bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTInventoryItemSlotReference& Slot)
+bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotReference& Slot)
 {
 	//First step, ensure that the slot is valid
 	if (!IsValidItemSlot(Slot))
@@ -280,7 +280,7 @@ bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, co
 		return false;
 	}
 		
-	FARTInventoryItemSlot& SlotSlot = GetItemSlot(Slot);
+	FARTItemSlot& SlotSlot = GetItemSlot(Slot);
 
 	//Check if we have a filter, and if we do determine if the filter will let the item in
 	if (IsValid(SlotSlot.ItemSlotFilter) && IsValid(Item))
@@ -292,14 +292,14 @@ bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, co
 	return true;
 }
 
-UARTItemStack* UARTInventoryComponent::GetItemInSlot(const FARTInventoryItemSlotReference& Reference)
+UARTItemStack* UARTInventoryComponent::GetItemInSlot(const FARTItemSlotReference& Reference)
 {
 	if (!IsValidItemSlot(Reference))
 	{
 		return nullptr;
 	}
 
-	FARTInventoryItemSlot& ItemSlot = GetItemSlot(Reference);
+	FARTItemSlot& ItemSlot = GetItemSlot(Reference);
 	BagInventory.MarkItemDirty(ItemSlot);
 	return ItemSlot.ItemStack;
 }
@@ -309,7 +309,7 @@ void UARTInventoryComponent::OnRep_BagInventory()
 	//Check all of the item stacks and ensure they have a proper outer.  
 	for (int32 i = 0; i < BagInventory.Slots.Num(); i++)
 	{
-		FARTInventoryItemSlot& Slot = BagInventory.Slots[i];
+		FARTItemSlot& Slot = BagInventory.Slots[i];
 		if (IsValid(Slot.ItemStack) && Slot.ItemStack->GetOuter() != GetOwner())
 		{
 			Slot.ItemStack->Rename(nullptr, GetOwner());
@@ -318,10 +318,10 @@ void UARTInventoryComponent::OnRep_BagInventory()
 	OnInventoryUpdate.Broadcast(this);
 }
 
-bool UARTInventoryComponent::IsValidItemSlot(const FARTInventoryItemSlotReference& Slot)
+bool UARTInventoryComponent::IsValidItemSlot(const FARTItemSlotReference& Slot)
 {	
 	//Check to see if we contain this reference
-	for (const FARTInventoryItemSlotReference& Ref : AllReferences)
+	for (const FARTItemSlotReference& Ref : AllReferences)
 	{
 		if (Slot == Ref)
 		{
@@ -332,11 +332,11 @@ bool UARTInventoryComponent::IsValidItemSlot(const FARTInventoryItemSlotReferenc
 	return false;
 }
 
-FARTInventoryItemSlot& UARTInventoryComponent::GetItemSlot(const FARTInventoryItemSlotReference& RefSlot)
+FARTItemSlot& UARTInventoryComponent::GetItemSlot(const FARTItemSlotReference& RefSlot)
 {
 	check(IsValidItemSlot(RefSlot));
 
-	for (FARTInventoryItemSlot& SlotSlot : BagInventory.Slots)
+	for (FARTItemSlot& SlotSlot : BagInventory.Slots)
 	{		
 		if (RefSlot == SlotSlot)
 		{
@@ -355,16 +355,16 @@ int32 UARTInventoryComponent::GetInventorySize()
 }
 
 
-TArray<FARTInventoryItemSlotReference> UARTInventoryComponent::GetAllSlotReferences()
+TArray<FARTItemSlotReference> UARTInventoryComponent::GetAllSlotReferences()
 {
 	return AllReferences;
 }
 
-void UARTInventoryComponent::PopulateSlotReferenceArray(TArray<FARTInventoryItemSlotReference>& RefArray)
+void UARTInventoryComponent::PopulateSlotReferenceArray(TArray<FARTItemSlotReference>& RefArray)
 {
 	for (int i = 0; i < BagInventory.Slots.Num(); i++)
 	{
-		FARTInventoryItemSlotReference SlotRef(BagInventory.Slots[i], this);
+		FARTItemSlotReference SlotRef(BagInventory.Slots[i], this);
 		RefArray.Add(SlotRef);
 	}
 }
@@ -437,7 +437,7 @@ UARTInventoryComponent* GetDebugTarget(FARTInventoryDebugTargetInfo* TargetInfo)
 
 
 
-//FARTOnItemSlotUpdate& UARTInventoryComponent::GetItemSlotUpdateDelegate(const FARTInventoryItemSlotReference& ItemSlotRef)
+//FARTOnItemSlotUpdate& UARTInventoryComponent::GetItemSlotUpdateDelegate(const FARTItemSlotReference& ItemSlotRef)
 //{
 //	return ItemSlotUpdates.FindOrAdd(ItemSlotRef);
 //}
@@ -455,26 +455,26 @@ void UARTInventoryComponent::PostInventoryUpdate()
 	OnInventoryUpdate.Broadcast(this);
 }
 
-bool UARTInventoryComponent::Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTInventoryItemSlotReference>& OutSlotRefs)
+bool UARTInventoryComponent::Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotReference>& OutSlotRefs)
 {
-	for (FARTInventoryItemSlot& ItemSlot : BagInventory.Slots)
+	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 	{
 		if (Query.MatchesSlot(ItemSlot))
 		{
-			OutSlotRefs.Add(FARTInventoryItemSlotReference(ItemSlot, this));
+			OutSlotRefs.Add(FARTItemSlotReference(ItemSlot, this));
 		}
 	}
 	return OutSlotRefs.Num() > 0;
 }
 
-FARTInventoryItemSlotReference UARTInventoryComponent::Query_GetFirstSlot(const FARTItemQuery& Query)
+FARTItemSlotReference UARTInventoryComponent::Query_GetFirstSlot(const FARTItemQuery& Query)
 {
-	TArray<FARTInventoryItemSlotReference> OutSlotRefs;
+	TArray<FARTItemSlotReference> OutSlotRefs;
 	
 	if (!Query_GetAllSlots(Query, OutSlotRefs))
 	{
 		UE_LOG(LogInventory, Warning, TEXT("Tried to query for %s but didn't find it"), *Query.SlotTypeQuery.GetDescription())
-		return FARTInventoryItemSlotReference();
+		return FARTItemSlotReference();
 	}
 
 	return OutSlotRefs[0];
@@ -484,7 +484,7 @@ FARTInventoryItemSlotReference UARTInventoryComponent::Query_GetFirstSlot(const 
 
 void UARTInventoryComponent::Query_GetAllItems(const FARTItemQuery& Query, TArray<UARTItemStack*>& OutItems)
 {
-	for (FARTInventoryItemSlot& ItemSlot : BagInventory.Slots)
+	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 	{
 		if (!IsValid(ItemSlot.ItemStack))
 		{
@@ -574,7 +574,7 @@ void UARTInventoryComponent::Debug_Internal(struct FInventoryComponentDebugInfo&
 	//Draw the bag inventory
 	{
 		DebugLine(Info, FString::Printf(TEXT("Bag Inventory (Slots: %d)"), GetInventorySize()), 0.0f, 0.0f);
-		ForEachItemSlot_ReadOnly([&Info, this, DetailedDisplay](const FARTInventoryItemSlot& InventorySlot) {
+		ForEachItemSlot_ReadOnly([&Info, this, DetailedDisplay](const FARTItemSlot& InventorySlot) {
 			TArray<FString> DebugStrings;
 			InventorySlot.ToDebugStrings(DebugStrings, DetailedDisplay);
 

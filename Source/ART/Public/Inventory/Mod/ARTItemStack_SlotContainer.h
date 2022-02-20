@@ -12,7 +12,7 @@
  */
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FARTOnContainerUpdate, class UARTItemStack_SlotContainer*, ItemStack);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FARTOnContainerSlotUpdate, class UARTItemStack_SlotContainer*, ParentStack, const FARTInventoryItemSlotReference&, ItemSlotRef, UARTItemStack*, ChildStack, UARTItemStack*, PreviousItemStack);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FARTOnContainerSlotUpdate, class UARTItemStack_SlotContainer*, ParentStack, const FARTItemSlotReference&, ItemSlotRef, UARTItemStack*, ChildStack, UARTItemStack*, PreviousItemStack);
 
 
 UCLASS(Blueprintable, BlueprintType)
@@ -32,13 +32,13 @@ public:
 protected:
 	virtual void CreateContainerSlot(const FGameplayTagContainer& SlotTags, const FARTItemSlotFilterHandle& Filter);
 
-	virtual void RemoveInventorySlot(const FARTInventoryItemSlotReference& Slot);
+	virtual void RemoveInventorySlot(const FARTItemSlotReference& Slot);
 	
 private:
 	UPROPERTY(Replicated)
-	FARTInventoryItemSlotArray ItemContainer;
+	FARTItemSlotArray ItemContainer;
 	
-	TArray<FARTInventoryItemSlotReference> AllReferences;
+	TArray<FARTItemSlotReference> AllReferences;
 
 	int32 IdCounter;
 	

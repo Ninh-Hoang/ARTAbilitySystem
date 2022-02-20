@@ -18,18 +18,18 @@ public:
 	{
 
 	}
-	FARTInventoryItemInfoEntry(const FARTInventoryItemSlotReference& Ref)
+	FARTInventoryItemInfoEntry(const FARTItemSlotReference& Ref)
 		: ItemSlotRef(Ref)
 	{
 
 	}
 	UPROPERTY(BlueprintReadOnly, Category = "Abilities")
-	FARTInventoryItemSlotReference ItemSlotRef;
+	FARTItemSlotReference ItemSlotRef;
 	UPROPERTY(BlueprintReadOnly, Category = "Abilities")
 	FARTEquippedItemInfo EquippedItemInfo;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FARTInvOnItemEquippedDelegate, class UARTInventoryComponent*, Inventory, const FARTInventoryItemSlotReference&, ItemSlotRef, UARTItemStack*, ItemStack);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FARTInvOnItemEquippedDelegate, class UARTInventoryComponent*, Inventory, const FARTItemSlotReference&, ItemSlotRef, UARTItemStack*, ItemStack);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FARTInvOnAttributeSetCreated, class UARTInventoryComponent_Equippable*, Inventory, class UAttributeSet*, AttributeSet, UARTItemStack*, AttributeSource);
 
 
@@ -47,9 +47,9 @@ public:
 
 
 	UFUNCTION()
-	virtual void OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTInventoryItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack);
+	virtual void OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack);
 
-	virtual bool IsEquippedItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef);
+	virtual bool IsEquippedItemSlot(const FARTItemSlotReference& ItemSlotRef);
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities", Replicated, meta = (AllowPrivateAccess = "true"))
 	TArray<FARTInventoryItemInfoEntry> EquippedItemAbilityInfos;
@@ -64,21 +64,21 @@ public:
 	FARTInvOnAttributeSetCreated OnAttributeSetCreated;
 	
 protected:
-	virtual bool MakeItemEquipped_Internal(const FARTInventoryItemSlotReference& ItemSlot);
-	virtual bool MakeItemEquipped_Internal(const FARTInventoryItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
-	virtual bool MakeItemUnequipped_Internal(const FARTInventoryItemSlotReference& ItemSlot);
-	virtual bool MakeItemUnequipped_Internal(const FARTInventoryItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
+	virtual bool MakeItemEquipped_Internal(const FARTItemSlotReference& ItemSlot);
+	virtual bool MakeItemEquipped_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
+	virtual bool MakeItemUnequipped_Internal(const FARTItemSlotReference& ItemSlot);
+	virtual bool MakeItemUnequipped_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack);
 
 	virtual bool ApplyAbilityInfo_Internal(const FARTItemDefinition_AbilityInfo& AbilityInfo, FARTEquippedItemInfo& StoreInto, UARTItemStack* AbilitySource);
 	virtual bool ClearAbilityInfo_Internal(const FARTItemDefinition_AbilityInfo& AbilityInfo, FARTEquippedItemInfo& StoreInto);
 
-	virtual void ApplyMods(UARTItemStack* ItemStack, const FARTInventoryItemSlotReference& ItemSlot);
-	virtual void RemoveMods(UARTItemStack* ItemStack, const FARTInventoryItemSlotReference& ItemSlot);
+	virtual void ApplyMods(UARTItemStack* ItemStack, const FARTItemSlotReference& ItemSlot);
+	virtual void RemoveMods(UARTItemStack* ItemStack, const FARTItemSlotReference& ItemSlot);
 
 private: 	
 	virtual void Debug_Internal(struct FInventoryComponentDebugInfo& Info) override;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAllEquippableSlots"))
-	bool Query_GetAllEquippableSlots(TArray<FARTInventoryItemSlotReference>& OutSlotRefs);
+	bool Query_GetAllEquippableSlots(TArray<FARTItemSlotReference>& OutSlotRefs);
 };

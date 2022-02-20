@@ -35,6 +35,6 @@ protected:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAllStorageSlots"))
-	bool Query_GetAllStorageSlots(TArray<FARTInventoryItemSlotReference>& OutSlotRefs);
+	bool Query_GetAllStorageSlots(TArray<FARTItemSlotReference>& OutSlotRefs);
 	
 };

@@ -18,9 +18,9 @@ struct FGameplayAbilityTargetData_ItemSwitch : public FGameplayAbilityTargetData
 public:
 
 	UPROPERTY()
-	FARTInventoryItemSlotReference FromSlot;
+	FARTItemSlotReference FromSlot;
 	UPROPERTY()
-	FARTInventoryItemSlotReference ToSlot;
+	FARTItemSlotReference ToSlot;
 
 	// -------------------------------------
 
@@ -46,7 +46,7 @@ struct TStructOpsTypeTraits<FGameplayAbilityTargetData_ItemSwitch> : public TStr
 	};
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FARTSwitchItemsRecieved, const FARTInventoryItemSlotReference&, FromSlot, const FARTInventoryItemSlotReference&, ToSlot);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FARTSwitchItemsRecieved, const FARTItemSlotReference&, FromSlot, const FARTItemSlotReference&, ToSlot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FARTItemSwitchCancelled);
 
 UCLASS()
@@ -57,7 +57,7 @@ public:
 	UAbilityTask_SwitchInventory(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "true", HideSpawnParms = "Instigator"), Category = "Ability|Tasks")
-	static UAbilityTask_SwitchInventory* SwitchInventorySlots(UGameplayAbility* OwningAbility, const FARTInventoryItemSlotReference& FromSlot, const FARTInventoryItemSlotReference& ToSlot);
+	static UAbilityTask_SwitchInventory* SwitchInventorySlots(UGameplayAbility* OwningAbility, const FARTItemSlotReference& FromSlot, const FARTItemSlotReference& ToSlot);
 	
 	virtual FGameplayAbilityTargetDataHandle GenerateTargetHandle() override;
 	virtual void HandleTargetData(const FGameplayAbilityTargetDataHandle& Data) override;
@@ -71,6 +71,6 @@ public:
 
 protected:
 
-	FARTInventoryItemSlotReference FromSlot;
-	FARTInventoryItemSlotReference ToSlot;
+	FARTItemSlotReference FromSlot;
+	FARTItemSlotReference ToSlot;
 };

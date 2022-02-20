@@ -35,7 +35,7 @@ void UARTInventoryComponent_Equippable::GetLifetimeReplicatedProps(TArray<FLifet
 	DOREPLIFETIME_CONDITION(UARTInventoryComponent_Equippable, EquippedItemAbilityInfos, COND_OwnerOnly);
 }
 
-void UARTInventoryComponent_Equippable::OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTInventoryItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack)
+void UARTInventoryComponent_Equippable::OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack)
 {
 	if (IsValid(PreviousItemStack) && IsEquippedItemSlot(ItemSlotRef))
 	{
@@ -47,7 +47,7 @@ void UARTInventoryComponent_Equippable::OnItemEquipped(class UARTInventoryCompon
 	}
 }
 
-bool UARTInventoryComponent_Equippable::IsEquippedItemSlot(const FARTInventoryItemSlotReference& ItemSlotRef)
+bool UARTInventoryComponent_Equippable::IsEquippedItemSlot(const FARTItemSlotReference& ItemSlotRef)
 {
 	if (!ItemSlotRef.SlotTags.HasTagExact(InvEquipSlotTag))
 	{
@@ -56,7 +56,7 @@ bool UARTInventoryComponent_Equippable::IsEquippedItemSlot(const FARTInventoryIt
 	return true;
 }
 
-bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTInventoryItemSlotReference& ItemSlot)
+bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTItemSlotReference& ItemSlot)
 {
 	if (!IsValidItemSlot(ItemSlot))
 	{
@@ -67,7 +67,7 @@ bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTInve
 	return MakeItemEquipped_Internal(ItemSlot, ItemStack);
 }
 
-bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTInventoryItemSlotReference& ItemSlot, UARTItemStack* ItemStack)
+bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack)
 {
 	if (!IsValid(ItemStack))
 	{
@@ -102,7 +102,7 @@ bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTInve
 	return 	bSuccess;
 }
 
-bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTInventoryItemSlotReference& ItemSlot)
+bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTItemSlotReference& ItemSlot)
 {
 	if (!IsValidItemSlot(ItemSlot))
 	{
@@ -113,7 +113,7 @@ bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTIn
 	return MakeItemUnequipped_Internal(ItemSlot, ItemStack);
 }
 
-bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTInventoryItemSlotReference& ItemSlot, UARTItemStack* ItemStack)
+bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack)
 {
 	//Ensure we have valid data for this item
 	if (!IsValid(ItemStack))
@@ -333,7 +333,7 @@ bool UARTInventoryComponent_Equippable::ClearAbilityInfo_Internal(const FARTItem
 	return true;
 }
 
-void UARTInventoryComponent_Equippable::ApplyMods(UARTItemStack* ItemStack, const FARTInventoryItemSlotReference& ItemSlot)
+void UARTInventoryComponent_Equippable::ApplyMods(UARTItemStack* ItemStack, const FARTItemSlotReference& ItemSlot)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 	{
@@ -378,7 +378,7 @@ void UARTInventoryComponent_Equippable::ApplyMods(UARTItemStack* ItemStack, cons
 	
 }
 
-void UARTInventoryComponent_Equippable::RemoveMods(UARTItemStack* ItemStack, const FARTInventoryItemSlotReference& ItemSlot)
+void UARTInventoryComponent_Equippable::RemoveMods(UARTItemStack* ItemStack, const FARTItemSlotReference& ItemSlot)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 	{
@@ -452,13 +452,13 @@ void UARTInventoryComponent_Equippable::Debug_Internal(struct FInventoryComponen
 		FGameplayTag EquipSlotTag = GetDefault<UARTInventoryDeveloperSettings>()->EquippedSlotTag;
 
 		DebugLine(Info, FString::Printf(TEXT("Equipment Slots (Slots: %d)"), GetInventorySize()), 0.0f, 0.0f);
-		TArray< FARTInventoryItemSlotReference> QueriedEquipmentSlots;
+		TArray< FARTItemSlotReference> QueriedEquipmentSlots;
 
 		Query_GetAllSlots(FARTItemQuery::QuerySlotMatchingTag(EquipSlotTag), QueriedEquipmentSlots);
 
 		for (auto InventorySlot : QueriedEquipmentSlots)
 		{
-			FARTInventoryItemSlot Slot = this->GetItemSlot(InventorySlot);
+			FARTItemSlot Slot = this->GetItemSlot(InventorySlot);
 			TArray<FString> DebugStrings;
 			Slot.ToDebugStrings(DebugStrings, false);
 			if (Info.Canvas)
@@ -480,7 +480,7 @@ void UARTInventoryComponent_Equippable::Debug_Internal(struct FInventoryComponen
 	*/
 }
 
-bool UARTInventoryComponent_Equippable::Query_GetAllEquippableSlots(TArray<FARTInventoryItemSlotReference>& OutSlotRefs)
+bool UARTInventoryComponent_Equippable::Query_GetAllEquippableSlots(TArray<FARTItemSlotReference>& OutSlotRefs)
 {
 	return Query_GetAllSlots(FARTItemQuery::QuerySlotMatchingTag(InvEquipSlotTag), OutSlotRefs);
 }

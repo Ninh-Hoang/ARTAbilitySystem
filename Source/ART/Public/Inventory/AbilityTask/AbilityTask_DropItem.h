@@ -18,7 +18,7 @@ struct ART_API FGameplayAbilityTargetData_DropItem : public FGameplayAbilityTarg
 public:
 
 	UPROPERTY()
-	FARTInventoryItemSlotReference FromSlot;
+	FARTItemSlotReference FromSlot;
 	
 
 	// -------------------------------------
@@ -45,7 +45,7 @@ struct TStructOpsTypeTraits<FGameplayAbilityTargetData_DropItem> : public TStruc
 	};
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FARTDropItemRecieved, const FARTInventoryItemSlotReference&, FromSlot);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FARTDropItemRecieved, const FARTItemSlotReference&, FromSlot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FARTDropItemCancelled);
 
 UCLASS()
@@ -57,7 +57,7 @@ public:
 	UAbilityTask_DropItem(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "true", HideSpawnParms = "Instigator"), Category = "Ability|Tasks")
-	static UAbilityTask_DropItem* DropItemFromInventory(UGameplayAbility* OwningAbility, const FARTInventoryItemSlotReference& FromSlot);
+	static UAbilityTask_DropItem* DropItemFromInventory(UGameplayAbility* OwningAbility, const FARTItemSlotReference& FromSlot);
 
 
 	virtual FGameplayAbilityTargetDataHandle GenerateTargetHandle() override;
@@ -70,5 +70,5 @@ public:
 	FARTDropItemCancelled OnDataCancelled;
 
 protected:
-	FARTInventoryItemSlotReference SlotReference;
+	FARTItemSlotReference SlotReference;
 };
