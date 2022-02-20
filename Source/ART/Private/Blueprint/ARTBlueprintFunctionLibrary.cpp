@@ -7,8 +7,7 @@
 #include "Ability/ARTGameplayEffectTypes.h"
 #include "Ability/ARTGameplayAbilityTypes.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include <Ability/ARTGameplayEffectUIData.h>
-
+#include "Ability/ARTGameplayEffectUIData.h"
 #include "Ability/ARTGlobalTags.h"
 #include "ARTCharacter/AI/ARTAIController.h"
 #include "Blueprint/SlateBlueprintLibrary.h"
@@ -379,7 +378,7 @@ bool UARTBlueprintFunctionLibrary::ProjectWorldToScreenBidirectional(APlayerCont
 	{
 		// get the projection data
 		FSceneViewProjectionData ProjectionData;
-		if (LP->GetProjectionData(LP->ViewportClient->Viewport, eSSP_FULL, /*out*/ ProjectionData))
+		if (LP->GetProjectionData(LP->ViewportClient->Viewport, /*eSSP_FULL*/  /*out*/ ProjectionData))
 		{
 			const FMatrix ViewProjectionMatrix = ProjectionData.ComputeViewProjectionMatrix();
 			const FIntRect ViewRectangle = ProjectionData.GetConstrainedViewRect();

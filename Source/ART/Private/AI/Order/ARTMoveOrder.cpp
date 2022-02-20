@@ -101,7 +101,7 @@ void UARTMoveOrder::CalculateFormation(int32 UnitCount, const FVector2D Directio
 	//
 
 	// The formation is a square and this is its edge length in units.
-	const int32 EdgeLengthX = FMath::CeilToInt(FMath::Square(UnitCount));
+	const int32 EdgeLengthX = FMath::Square(UnitCount);
 	const int32 EdgeLengthY = FMath::CeilToInt(UnitCount / static_cast<float>(EdgeLengthX));
 
 	// TODO: Remove this magic numbers.

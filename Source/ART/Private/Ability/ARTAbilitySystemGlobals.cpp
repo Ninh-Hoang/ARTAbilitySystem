@@ -2,6 +2,8 @@
 
 
 #include "Ability/ARTAbilitySystemGlobals.h"
+
+#include "Ability/ARTAbilitySystemComponent.h"
 #include "Ability/ARTGameplayEffectTypes.h"
 #include "Ability/ARTGameplayAbilityTypes.h"
 

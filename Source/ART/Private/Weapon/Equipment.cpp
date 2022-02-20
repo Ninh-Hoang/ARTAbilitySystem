@@ -169,7 +169,7 @@ void AEquipment::AddAbilities()
 	if (!ASC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s %s Role: %s ASC is null"), *FString(__FUNCTION__), *GetName(),
-		       GET_ACTOR_ROLE_FSTRING(OwningCharacter));
+		       GET_ACTOR_ROLE_STRING(OwningCharacter));
 		return;
 	}
 

@@ -30,7 +30,6 @@ public class ART : ModuleRules
 			new string[]
 			{
 				"Core",
-				"Navmesh",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -47,14 +46,17 @@ public class ART : ModuleRules
 				"InputCore",
 				"AIModule",
 				"PhysicsCore",
+				"Navmesh",
 				"GameplayAbilities",
 				"GameplayTags",
 				"GameplayTasks",
 				"Paper2D",
+				"NetCore",
 				"NavigationSystem",
 				"OnlineSubsystem",
 				"OnlineSubsystemUtils",
 				"Networking",
+				"DeveloperSettings",
 				"TheCurviestCurve",
 				// ... add private dependencies that you statically link with here ...	
 			}

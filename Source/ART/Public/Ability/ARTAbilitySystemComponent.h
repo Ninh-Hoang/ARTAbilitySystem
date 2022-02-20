@@ -74,7 +74,7 @@ public:
 };
 
 
-UCLASS()
+UCLASS(ClassGroup=AbilitySystem, hidecategories=(Object,LOD,Lighting,Transform,Sockets,TextureStreaming), editinlinenew, meta=(BlueprintSpawnableComponent))
 class ART_API UARTAbilitySystemComponent : public UAbilitySystemComponent, public IARTAutoOrderProvider
 {
 	GENERATED_BODY()
@@ -106,15 +106,19 @@ public:
 	/** Get an outgoing GameplayEffectSpec that is ready to be applied to other things. */
 	virtual FGameplayEffectSpecHandle MakeOutgoingSpec(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level,
 													   FGameplayEffectContextHandle Context) const override;
-	//expose cancel ability to BP
-	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "CancelAbilityWithTag"))
-	void CancelAbilitiesWithTag(const FGameplayTagContainer WithTags, const FGameplayTagContainer WithoutTags,
-	                            UGameplayAbility* Ignore);
 
 	// Version of function in AbilitySystemGlobals that returns correct type
 	static UARTAbilitySystemComponent* GetAbilitySystemComponentFromActor(
 		const AActor* Actor, bool LookForComponent = false);
-
+	
+	UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+	void BP_InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor);
+	
+	//expose cancel ability to BP
+	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "CancelAbilityWithTag"))
+	void CancelAbilitiesWithTag(const FGameplayTagContainer WithTags, const FGameplayTagContainer WithoutTags,
+	                            UGameplayAbility* Ignore);
+	
 	// Input bound to an ability is pressed
 	virtual void AbilityLocalInputPressed(int32 InputID) override;
 

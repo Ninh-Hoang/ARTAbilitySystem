@@ -132,18 +132,23 @@ FGameplayEffectSpecHandle UARTAbilitySystemComponent::MakeOutgoingSpec(TSubclass
 	return FGameplayEffectSpecHandle(nullptr);
 }
 
-void UARTAbilitySystemComponent::CancelAbilitiesWithTag(const FGameplayTagContainer WithTags,
-                                                        const FGameplayTagContainer WithoutTags,
-                                                        UGameplayAbility* Ignore)
-{
-	CancelAbilities(&WithTags, &WithoutTags, Ignore);
-}
-
 UARTAbilitySystemComponent* UARTAbilitySystemComponent::GetAbilitySystemComponentFromActor(
 	const AActor* Actor, bool LookForComponent)
 {
 	return Cast<UARTAbilitySystemComponent>(
 		UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor, LookForComponent));
+}
+
+void UARTAbilitySystemComponent::BP_InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
+{
+	InitAbilityActorInfo(InOwnerActor, InAvatarActor);
+}
+
+void UARTAbilitySystemComponent::CancelAbilitiesWithTag(const FGameplayTagContainer WithTags,
+                                                        const FGameplayTagContainer WithoutTags,
+                                                        UGameplayAbility* Ignore)
+{
+	CancelAbilities(&WithTags, &WithoutTags, Ignore);
 }
 
 void UARTAbilitySystemComponent::AbilityLocalInputPressed(int32 InputID)
@@ -309,7 +314,7 @@ float UARTAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimati
 
 			AnimMontageInfo.LocalMontageInfo.AnimMontage = NewAnimMontage;
 			AnimMontageInfo.LocalMontageInfo.AnimatingAbility = InAnimatingAbility;
-			AnimMontageInfo.LocalMontageInfo.PlayBit = !AnimMontageInfo.LocalMontageInfo.PlayBit;
+			AnimMontageInfo.LocalMontageInfo.PlayInstanceId = !AnimMontageInfo.LocalMontageInfo.PlayInstanceId;
 
 			if (InAbility)
 			{
@@ -331,8 +336,8 @@ float UARTAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimati
 					FGameplayAbilityRepAnimMontageForMesh& AbilityRepMontageInfo =
 						GetGameplayAbilityRepAnimMontageForMesh(InMesh);
 					AbilityRepMontageInfo.RepMontageInfo.AnimMontage = NewAnimMontage;
-					AbilityRepMontageInfo.RepMontageInfo.ForcePlayBit = !static_cast<bool>(AbilityRepMontageInfo.
-						RepMontageInfo.ForcePlayBit);
+					AbilityRepMontageInfo.RepMontageInfo.PlayInstanceId = !static_cast<bool>(AbilityRepMontageInfo.
+						RepMontageInfo.PlayInstanceId);
 
 					// Update parameters that change during Montage life time.
 					AnimMontage_UpdateReplicatedDataForMesh(InMesh);
@@ -800,7 +805,7 @@ void UARTAbilitySystemComponent::AnimMontage_UpdateForcedPlayFlagsForMesh(
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(
 		OutRepAnimMontageInfo.Mesh);
 
-	OutRepAnimMontageInfo.RepMontageInfo.ForcePlayBit = AnimMontageInfo.LocalMontageInfo.PlayBit;
+	OutRepAnimMontageInfo.RepMontageInfo.PlayInstanceId= AnimMontageInfo.LocalMontageInfo.PlayInstanceId;
 }
 
 void UARTAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
@@ -854,7 +859,7 @@ void UARTAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
 					NewRepMontageInfoForMesh.RepMontageInfo.BlendTime,
 					NewRepMontageInfoForMesh.RepMontageInfo.NextSectionID,
 					NewRepMontageInfoForMesh.RepMontageInfo.IsStopped,
-					NewRepMontageInfoForMesh.RepMontageInfo.ForcePlayBit);
+					NewRepMontageInfoForMesh.RepMontageInfo.PlayInstanceId);
 				ABILITY_LOG(Warning, TEXT("\tLocalAnimMontageInfo.AnimMontage: %s\n\tPosition: %f"),
 				            *GetNameSafe(AnimMontageInfo.LocalMontageInfo.AnimMontage),
 				            AnimInstance->Montage_GetPosition(AnimMontageInfo.LocalMontageInfo.AnimMontage));
@@ -863,11 +868,10 @@ void UARTAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
 			if (NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage)
 			{
 				// New Montage to play
-				const bool ReplicatedPlayBit = static_cast<bool>(NewRepMontageInfoForMesh.RepMontageInfo.ForcePlayBit);
-				if ((AnimMontageInfo.LocalMontageInfo.AnimMontage != NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage
-				) || (AnimMontageInfo.LocalMontageInfo.PlayBit != ReplicatedPlayBit))
+				if ((AnimMontageInfo.LocalMontageInfo.AnimMontage != NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage)
+					|| (AnimMontageInfo.LocalMontageInfo.PlayInstanceId != NewRepMontageInfoForMesh.RepMontageInfo.PlayInstanceId))
 				{
-					AnimMontageInfo.LocalMontageInfo.PlayBit = ReplicatedPlayBit;
+					AnimMontageInfo.LocalMontageInfo.PlayInstanceId = NewRepMontageInfoForMesh.RepMontageInfo.PlayInstanceId;
 					PlayMontageSimulatedForMesh(NewRepMontageInfoForMesh.Mesh,
 					                            NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage,
 					                            NewRepMontageInfoForMesh.RepMontageInfo.PlayRate);
@@ -1533,8 +1537,9 @@ FOnAutoOrderUpdate* UARTAbilitySystemComponent::GetAutoOrderRemoveDelegate()
 void UARTAbilitySystemComponent::OnGiveAbility(FGameplayAbilitySpec& AbilitySpec)
 {
 	Super::OnGiveAbility(AbilitySpec);
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitySpec.Ability);
-	if (Ability->GetTargetType() != EARTTargetType::PASSIVE)
+	
+	const UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitySpec.Ability);
+	if (Ability && Ability->GetTargetType() != EARTTargetType::PASSIVE)
 	{
 		OnAutoOrderAdded.Broadcast((FARTOrderTypeWithIndex(UseAbilityOrder, Ability->GetAutoOrderPriority(), Ability->AbilityTags)));
 	}
@@ -1544,7 +1549,7 @@ void UARTAbilitySystemComponent::OnRemoveAbility(FGameplayAbilitySpec& AbilitySp
 {
 	Super::OnRemoveAbility(AbilitySpec);
 	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitySpec.Ability);
-	if (Ability->GetTargetType() != EARTTargetType::PASSIVE)
+	if (Ability && Ability->GetTargetType() != EARTTargetType::PASSIVE)
 	{
 		OnAutoOrderRemove.Broadcast((FARTOrderTypeWithIndex(UseAbilityOrder, Ability->GetAutoOrderPriority(), Ability->AbilityTags)));
 	}

@@ -3,7 +3,6 @@
 
 #include "World/ItemSpawn.h"
 #include "World/Pickup.h"
-#include "Item/Item.h"
 
 AItemSpawn::AItemSpawn()
 {
@@ -41,7 +40,7 @@ void AItemSpawn::SpawnItem()
 			ProbabilityRoll = FMath::FRandRange(0.f, 1.f);
 		}
 
-		if (LootRow && LootRow->Items.Num() && PickupClass)
+		/*if (LootRow && LootRow->Items.Num() && PickupClass)
 		{
 			float Angle = 0.f;
 
@@ -67,7 +66,7 @@ void AItemSpawn::SpawnItem()
 
 				Angle += (PI * 2.f) / LootRow->Items.Num();
 			}
-		}
+		}*/
 	}
 }
 

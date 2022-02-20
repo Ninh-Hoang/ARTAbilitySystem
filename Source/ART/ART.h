@@ -4,26 +4,33 @@
 
 #include "CoreMinimal.h"
 #include "Engine.h"
+#include "NativeGameplayTags.h"
 #include "Networking.h"
 #include "UObject/ObjectMacros.h"
 
 #if WITH_EDITOR
 DECLARE_LOG_CATEGORY_EXTERN(LogOrder, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogInventory, Display, All);
 #endif
 
 DECLARE_STATS_GROUP(TEXT("Order"), STATGROUP_Order, STATCAT_Advanced);
 
-#define SURFACE_FLESHDEFAULT SurfaceType1
-#define SURFACE_FLESHVULNERABLE SurfaceType2
-
-#define ACTOR_ROLE_FSTRING *(FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true)->GetNameStringByValue(GetLocalRole()))
-#define GET_ACTOR_ROLE_FSTRING(Actor) *(FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true)->GetNameStringByValue(Actor->GetLocalRole()))
+#define ACTOR_ROLE_STRING *(FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true)->GetNameStringByValue(GetLocalRole()))
+#define GET_ACTOR_ROLE_STRING(Actor) *(FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true)->GetNameStringByValue(Actor->GetLocalRole()))
 
 #define COLLISION_ABILITY						ECollisionChannel::ECC_GameTraceChannel1
 #define COLLISION_PROJECTILE					ECollisionChannel::ECC_GameTraceChannel2
-#define COLLISION_ABILITYOVERLAPPROJECTILE		ECollisionChannel::ECC_GameTraceChannel3
+#define COLLISION_ABILITY_OVERLAP_PROJECTILE		ECollisionChannel::ECC_GameTraceChannel3
 #define COLLISION_PICKUP						ECollisionChannel::ECC_GameTraceChannel4
 #define COLLISION_INTERACTABLE					ECollisionChannel::ECC_GameTraceChannel5
+
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(InvStorageSlotTag);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(InvEquipSlotTag);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(InvActiveSlotTag);
+
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(InvDropItemAbilityTag);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(InvSwapItemSlotsAbilityTag);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(InvSwapPendingAbilityTag);
 
 UENUM(BlueprintType)
 enum class EARTHitReactDirection : uint8

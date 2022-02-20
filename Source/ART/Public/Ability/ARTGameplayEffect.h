@@ -99,7 +99,7 @@ public:
 
 protected:
 	/** Direction of GameplayEvent */
-	UPROPERTY(EditDefaultsOnly, Category = Category = "ART|GameplayEvent")
+	UPROPERTY(EditDefaultsOnly, Category = "ART|GameplayEvent")
 	EGameplayEffectEventDirection GameplayEventDirection;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ART|GameplayEvent")

@@ -35,11 +35,11 @@ public:
 	const FInfQueryFilter* GetAsDetourQueryFilter() const { return this; }
 
 protected:
-	// �o�H�Ԃ̈ړ��R�X�g�����ۂɌv�Z����.
-	virtual float getVirtualCost(const float* pa, const float* pb,
-								 const dtPolyRef prevRef, const dtMeshTile* prevTile, const dtPoly* prevPoly,
-								 const dtPolyRef curRef, const dtMeshTile* curTile, const dtPoly* curPoly,
-								 const dtPolyRef nextRef, const dtMeshTile* nextTile, const dtPoly* nextPoly) const override;
+
+	virtual dtReal getVirtualCost(const dtReal* pa, const dtReal* pb,
+		const dtPolyRef prevRef, const dtMeshTile* prevTile, const dtPoly* prevPoly,
+		const dtPolyRef curRef, const dtMeshTile* curTile, const dtPoly* curPoly,
+		const dtPolyRef nextRef, const dtMeshTile* nextTile, const dtPoly* nextPoly) const override;
 
 };
 

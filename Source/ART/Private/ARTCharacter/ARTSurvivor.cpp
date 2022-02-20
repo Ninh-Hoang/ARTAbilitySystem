@@ -4,23 +4,22 @@
 #include "ARTCharacter/ARTSurvivor.h"
 #include "ARTCharacter/ARTPlayerState.h"
 #include "Ability/ARTAbilitySystemComponent.h"
-#include <Kismet/KismetMathLibrary.h>
+#include "Kismet/KismetMathLibrary.h"
 #include "ARTCharacter/ARTCharacterBase.h"
-#include <Camera/CameraComponent.h>
+#include "Camera/CameraComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon/Weapon.h"
-#include <Engine/World.h>
-#include "Item/InventoryComponent.h"
-#include "Item/Item.h"
+#include "Engine/World.h"
+#include "Inventory/Component/ARTInventoryComponent.h"
 #include "World/Pickup.h"
 #include "ARTCharacter/ARTPlayerState.h"
-#include <GameFramework/PlayerState.h>
-#include <GameplayEffect.h>
-#include <ARTCharacter/ARTPlayerController.h>
-#include <Blueprint/UserWidget.h>
-#include <Components/WidgetComponent.h>
-#include <Widget/ARTFloatingStatusBarWidget.h>
-#include "Item/InventorySet.h"
+#include "GameFramework/PlayerState.h"
+#include "GameplayEffect.h"
+#include "ARTCharacter/ARTPlayerController.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/WidgetComponent.h"
+#include "Widget/ARTFloatingStatusBarWidget.h"
+#include "Inventory/InventorySet.h"
 
 AARTSurvivor::AARTSurvivor(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -51,7 +50,7 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 		ASC = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 
 		// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
-		InventoryComponent = Cast<UInventoryComponent>(PS->GetInventoryComponent());
+		//InventoryComponent = Cast<UInventoryComponent>(PS->GetInventoryComponent());
 
 		// AI won't have PlayerControllers so we can init again here just to be sure. No harm in initing twice for heroes that have PlayerControllers.
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
@@ -97,7 +96,6 @@ void AARTSurvivor::PossessedBy(AController* NewController)
 	}
 }
 
-
 void AARTSurvivor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -116,7 +114,7 @@ void AARTSurvivor::OnRep_PlayerState()
 		ASC = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 
 		// Set the inventory for clients. Server does this in PossessedBy.
-		InventoryComponent = Cast<UInventoryComponent>(PS->GetInventoryComponent());
+		//InventoryComponent = Cast<UInventoryComponent>(PS->GetInventoryComponent());
 
 		// Init ASC Actor Info for clients. Server will init its ASC when it possesses a new Actor.
 		ASC->InitAbilityActorInfo(PS, this);
@@ -521,87 +519,6 @@ void AARTSurvivor::ServerAddEquipmentToEquipmentList_Implementation(TSubclassOf<
 }
 
 bool AARTSurvivor::ServerAddEquipmentToEquipmentList_Validate(TSubclassOf<AEquipment> EquipmentClass)
-{
-	return true;
-}
-
-//ITEM USING / INVENTORY
-void AARTSurvivor::UseItem(UItem* Item)
-{
-	//if is client, run on server
-	if (!HasAuthority() && Item)
-	{
-		ServerUseItem(Item);
-	}
-
-	//if is server, check if the wanted item is in inventory, if not return
-	if (HasAuthority())
-	{
-		/*if (InventoryComponent && !InventoryComponent->FindItem(Item))
-		{
-			return;
-		}*/
-	}
-
-	if (Item)
-	{
-		Item->OnUse(this);
-		Item->Use(this);
-	}
-}
-
-void AARTSurvivor::ServerUseItem_Implementation(UItem* Item)
-{
-	UseItem(Item);
-}
-
-bool AARTSurvivor::ServerUseItem_Validate(UItem* Item)
-{
-	return true;
-}
-
-void AARTSurvivor::DropItem(UItem* Item, int32 Quantity)
-{
-	if (Quantity <= 0)
-	{
-		return;
-	}
-	//if is client, run on server 
-	if (!HasAuthority())
-	{
-		ServerDropItem(Item, Quantity);
-		return;
-	}
-
-	if (HasAuthority())
-	{
-		//const int32 ItemQuantity = Item->GetQuantity();
-		//const int32 DroppedQuantity = InventoryComponent->ConsumeItem(Item, Quantity);
-
-		//spawn pickup
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		SpawnParams.bNoFail = true;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-		FVector SpawnLocation = GetActorLocation();
-		//SpawnLocation.Z -= GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
-		FTransform SpawnTransform(GetActorRotation(), SpawnLocation);
-
-		ensure(PickupClass);
-
-		APickup* Pickup = GetWorld()->SpawnActor<APickup>(PickupClass, SpawnTransform, SpawnParams);
-		//Pickup->InitializePickup(Item->GetClass(), DroppedQuantity);
-	}
-}
-
-void AARTSurvivor::ServerDropItem_Implementation(UItem* Item, int32 Quantity)
-{
-	DropItem(Item, Quantity);
-}
-
-bool AARTSurvivor::ServerDropItem_Validate(UItem* Item, int32 Quantity)
 {
 	return true;
 }

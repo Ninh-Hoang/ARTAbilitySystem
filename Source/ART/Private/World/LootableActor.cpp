@@ -4,8 +4,7 @@
 #include "World/LootableActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "World/ItemSpawn.h"
-#include "Item/Item.h"
-#include "Item/InventoryComponent.h"
+#include "Inventory/Component/ARTInventoryComponent.h"
 #include "Engine/DataTable.h"
 #include "ARTCharacter/ARTSurvivor.h"
 
@@ -21,9 +20,9 @@ ALootableActor::ALootableActor()
 	SetRootComponent(LootContainerMesh);
 
 	//setup inventory
-	Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
-	Inventory->SetCapacity(20);
-	Inventory->SetWeightCapacity(80.0f);
+	//Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
+	//Inventory->SetCapacity(20);
+	//Inventory->SetWeightCapacity(80.0f);
 
 	LootRolls = FIntPoint(2, 8);
 
@@ -57,7 +56,7 @@ void ALootableActor::BeginPlay()
 				ProbabilityRoll = FMath::FRandRange(0.f, 1.f);
 			}
 
-			if (LootRow && LootRow->Items.Num())
+			/*if (LootRow && LootRow->Items.Num())
 			{
 				for (auto& ItemClass : LootRow->Items)
 				{
@@ -67,7 +66,7 @@ void ALootableActor::BeginPlay()
 						//Inventory->TryAddItemFromClass(ItemClass, Quantity);
 					}
 				}
-			}
+			}*/
 		}
 	}
 }

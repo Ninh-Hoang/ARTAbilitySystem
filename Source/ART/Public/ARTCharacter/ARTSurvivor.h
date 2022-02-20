@@ -12,7 +12,6 @@
 
 class AWeapon;
 class AEquipment;
-class UItem;
 
 USTRUCT()
 struct ART_API FSurvivorEquipment
@@ -62,11 +61,7 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class USceneComponent* AzimuthComponent;
-
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Components")
-	class UInventoryComponent* InventoryComponent;
-
-
+	
 	//INITIALIZATION
 
 	// Only called on the Server. Calls before Server's AcknowledgePossession.
@@ -169,16 +164,4 @@ protected:
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TSubclassOf<class APickup> PickupClass;
-
-	UFUNCTION(BlueprintCallable, Category = "Item")
-	void UseItem(UItem* Item);
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerUseItem(UItem* Item);
-
-	UFUNCTION(BlueprintCallable, Category = "Item")
-	void DropItem(UItem* Item, int32 Quantity);
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerDropItem(UItem* Item, int32 Quantity);
 };

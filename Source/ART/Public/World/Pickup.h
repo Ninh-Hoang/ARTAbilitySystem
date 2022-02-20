@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Pickup.generated.h"
 
-class UItem;
 class UActorChannel;
 class UStaticMeshComponent;
 
@@ -18,28 +17,18 @@ class ART_API APickup : public AActor
 public:
 	// Sets default values for this actor's properties
 	APickup();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	UItem* ItemTemplate;
-
-	void InitializePickup(const TSubclassOf<UItem> ItemClass, const int32 Quantity);
-
+	
 	UFUNCTION(BlueprintImplementableEvent)
 	void AlignWithGround();
 
 protected:
-
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, ReplicatedUsing = OnRep_Item)
-	UItem* Item;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	UStaticMeshComponent* PickupMesh;
 
 	UFUNCTION()
 	void OnTakePickup(class AARTSurvivor* Taker);
-
-	UFUNCTION()
-	void OnRep_Item();
+	
 
 	//refresh UI/Notification
 	UFUNCTION()

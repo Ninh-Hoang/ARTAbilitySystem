@@ -25,9 +25,6 @@ public:
 	UStaticMeshComponent* LootContainerMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
-	UInventoryComponent* Inventory;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
 	UDataTable* LootTable;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")

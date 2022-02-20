@@ -20,8 +20,6 @@ struct FLootTableRow : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Loot")
-	TArray<TSubclassOf<UItem>> Items;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Loot", meta = (ClampMin = 0.001, ClampMax = 1.))
 	float Probability;

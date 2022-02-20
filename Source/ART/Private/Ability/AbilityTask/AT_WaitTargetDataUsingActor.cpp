@@ -25,7 +25,7 @@ UAT_WaitTargetDataUsingActor* UAT_WaitTargetDataUsingActor::WaitTargetDataWithRe
 
 void UAT_WaitTargetDataUsingActor::Activate()
 {
-	if (IsPendingKill())
+	if (IsValid(this))
 	{
 		return;
 	}
@@ -222,7 +222,7 @@ void UAT_WaitTargetDataUsingActor::FinalizeTargetActor() const
 
 void UAT_WaitTargetDataUsingActor::RegisterTargetDataCallbacks()
 {
-	if (!ensure(IsPendingKill() == false))
+	if (!ensure(IsValidChecked(this) == false))
 	{
 		return;
 	}

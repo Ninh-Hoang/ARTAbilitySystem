@@ -4,9 +4,18 @@
 
 #if WITH_EDITOR
 DEFINE_LOG_CATEGORY(LogOrder)
+DEFINE_LOG_CATEGORY(LogInventory);
 #endif
 
-#define LOCTEXT_NAMESPACE "FARTModule"
+UE_DEFINE_GAMEPLAY_TAG(InvStorageSlotTag, TEXT("Inventory.Slot.Storage"));
+UE_DEFINE_GAMEPLAY_TAG(InvEquipSlotTag, TEXT("Inventory.Slot.Equipped"));
+UE_DEFINE_GAMEPLAY_TAG(InvActiveSlotTag, TEXT("Inventory.Slot.Active"));
+
+UE_DEFINE_GAMEPLAY_TAG(InvDropItemAbilityTag, TEXT("Ability.Inventory.DropItem"));
+UE_DEFINE_GAMEPLAY_TAG(InvSwapItemSlotsAbilityTag, TEXT("Ability.Inventory.SwapItems"));
+UE_DEFINE_GAMEPLAY_TAG(InvSwapPendingAbilityTag, TEXT("Ability.Inventory.SwapPending"));
+
+#define LOCTEXT_NAMESPACE "ARTModule"
 
 void FARTModule::StartupModule()
 {

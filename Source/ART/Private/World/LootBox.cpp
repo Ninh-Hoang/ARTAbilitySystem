@@ -3,7 +3,6 @@
 
 #include "World/LootBox.h"
 #include "Net/UnrealNetwork.h"
-#include "Item/Item.h"
 
 // Sets default values
 ALootBox::ALootBox()

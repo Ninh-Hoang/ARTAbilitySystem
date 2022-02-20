@@ -7,16 +7,18 @@
 #include "ARTCharacter/ARTPlayerController.h"
 #include "Widget/ARTHUDWidget.h"
 
-#include "Item/InventoryComponent.h"
-#include "Item/InventorySet.h"
+#include "Inventory/Component/ARTInventoryComponent.h"
+#include "Inventory/InventorySet.h"
 
 #include "ARTCharacter/ARTCharacterBase.h"
 #include "Ability/AttributeSet/ARTAttributeSet_Health.h"
 
+FName AARTPlayerState::AbilitySystemComponentName(TEXT("AbilitySystemComponent"));
+
 AARTPlayerState::AARTPlayerState()
 {
 	// Create ability system component, and set it to be explicitly replicated
-	AbilitySystemComponent = CreateDefaultSubobject<UARTAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent = CreateDefaultSubobject<UARTAbilitySystemComponent>(AbilitySystemComponentName);
 	AbilitySystemComponent->SetIsReplicated(true);
 
 	// Mixed mode means we only are replicated the GEs to ourself, not the GEs to simulated proxies. If another GDPlayerState (Hero) receives a GE,
@@ -25,12 +27,11 @@ AARTPlayerState::AARTPlayerState()
 	
 	AttributeSet = CreateDefaultSubobject<UARTAttributeSetBase>(TEXT("Attribute"));
 
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory Component"));
-	InventoryComponent->SetIsReplicated(true);
+	//InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory Component"));
+	//InventoryComponent->SetIsReplicated(true);
 
 	// Set PlayerState's NetUpdateFrequency to the same as the Character.
 	// Default is very low for PlayerStates and introduces perceived lag in the ability system.
-	// 100 is probably way too high for a shipping game, you can adjust to fit your needs.
 	NetUpdateFrequency = 60.0f;
 
 	// Cache tags
@@ -50,7 +51,7 @@ class UARTAttributeSetBase* AARTPlayerState::GetAttributeSet() const
 
 class UInventoryComponent* AARTPlayerState::GetInventoryComponent() const
 {
-	return InventoryComponent;
+	return nullptr;
 }
 
 bool AARTPlayerState::IsAlive() const
@@ -123,40 +124,6 @@ void AARTPlayerState::StopInteractionTimer()
 	}
 }
 
-bool AARTPlayerState::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float& TimeRemaining,
-                                                 float& CooldownDuration)
-{
-	if (AbilitySystemComponent && CooldownTags.Num() > 0)
-	{
-		TimeRemaining = 0.f;
-		CooldownDuration = 0.f;
-
-		FGameplayEffectQuery const Query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(CooldownTags);
-		TArray<TPair<float, float>> DurationAndTimeRemaining = AbilitySystemComponent->
-			GetActiveEffectsTimeRemainingAndDuration(Query);
-		if (DurationAndTimeRemaining.Num() > 0)
-		{
-			int32 BestIdx = 0;
-			float LongestTime = DurationAndTimeRemaining[0].Key;
-			for (int32 Idx = 1; Idx < DurationAndTimeRemaining.Num(); ++Idx)
-			{
-				if (DurationAndTimeRemaining[Idx].Key > LongestTime)
-				{
-					LongestTime = DurationAndTimeRemaining[Idx].Key;
-					BestIdx = Idx;
-				}
-			}
-
-			TimeRemaining = DurationAndTimeRemaining[BestIdx].Key;
-			CooldownDuration = DurationAndTimeRemaining[BestIdx].Value;
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
 int32 AARTPlayerState::GetCharacterLevel() const
 {
 	return 1;
@@ -172,7 +139,7 @@ float AARTPlayerState::GetHealth() const
 	return -1.f;
 }
 
-void AARTPlayerState::SetHealth(float Health)
+void AARTPlayerState::SetHealth(const float Health)
 {
 	if (AbilitySystemComponent)
 	{
@@ -190,11 +157,6 @@ void AARTPlayerState::BeginPlay()
 		HealthChangedDelegateHandle = AbilitySystemComponent->
 		                              GetGameplayAttributeValueChangeDelegate(UARTAttributeSet_Health::GetHealthAttribute()).
 		                              AddUObject(this, &AARTPlayerState::HealthChanged);
-	}
-
-	if (InventoryComponent)
-	{
-		InitializeStartInventory();
 	}
 }
 
@@ -217,6 +179,6 @@ void AARTPlayerState::InitializeStartInventory()
 {
 	if (InventorySet)
 	{
-		InventorySet->InitInventory(InventoryComponent);
+		//InventorySet->InitInventory(InventoryComponent);
 	}
 }
