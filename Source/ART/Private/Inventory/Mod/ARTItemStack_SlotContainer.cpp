@@ -40,7 +40,7 @@ void UARTItemStack_SlotContainer::CreateContainerSlot(const FGameplayTagContaine
 	PostContainerUpdate();	
 }
 
-void UARTItemStack_SlotContainer::RemoveInventorySlot(const FARTItemSlotReference& Slot)
+void UARTItemStack_SlotContainer::RemoveInventorySlot(const FARTItemSlotRef& Slot)
 {
 	if (!IsValidItemSlot(Slot))
 	{
@@ -87,11 +87,11 @@ void UARTItemStack_SlotContainer::PostContainerUpdate()
 	OnContainerUpdate.Broadcast(this);
 }
 
-void UARTItemStack_SlotContainer::PopulateSlotReferenceArray(TArray<FARTItemSlotReference>& RefArray)
+void UARTItemStack_SlotContainer::PopulateSlotReferenceArray(TArray<FARTItemSlotRef>& RefArray)
 {
 	for (int i = 0; i < ItemContainer.Slots.Num(); i++)
 	{
-		FARTItemSlotReference SlotRef(ItemContainer.Slots[i], this);
+		FARTItemSlotRef SlotRef(ItemContainer.Slots[i], this);
 		RefArray.Emplace(SlotRef);
 	}
 	
@@ -103,7 +103,7 @@ bool UARTItemStack_SlotContainer::LootItem(UARTItemStack* Item)
 	return false;
 }
 
-bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotReference& ItemSlot)
+bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotRef& ItemSlot)
 {
 	if (!AcceptsItem(Item, ItemSlot))
 	{
@@ -140,15 +140,15 @@ bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const F
 
 }
 
-bool UARTItemStack_SlotContainer::RemoveItemFromContainer(const FARTItemSlotReference& ItemSlot)
+bool UARTItemStack_SlotContainer::RemoveItemFromContainer(const FARTItemSlotRef& ItemSlot)
 {
 	return false;
 }
 
-bool UARTItemStack_SlotContainer::IsValidItemSlot(const FARTItemSlotReference& Slot)
+bool UARTItemStack_SlotContainer::IsValidItemSlot(const FARTItemSlotRef& Slot)
 {
 	//Check to see if we contain this reference
-	for (const FARTItemSlotReference& Ref : AllReferences)
+	for (const FARTItemSlotRef& Ref : AllReferences)
 	{
 		if (Slot == Ref)
 		{
@@ -164,7 +164,7 @@ bool UARTItemStack_SlotContainer::IsValidItemSlotRef(const FARTItemSlotRef& Slot
 	return false;
 }
 
-FARTItemSlot& UARTItemStack_SlotContainer::GetItemSlot(const FARTItemSlotReference& RefSlot)
+FARTItemSlot& UARTItemStack_SlotContainer::GetItemSlot(const FARTItemSlotRef& RefSlot)
 {
 	check(IsValidItemSlot(RefSlot));
 
@@ -191,19 +191,19 @@ bool UARTItemStack_SlotContainer::RemoveAllItemsFromContainer(TArray<UARTItemSta
 		}
 
 		OutItemsRemoved.Add(ItemSlot.ItemStack);
-		RemoveItemFromContainer(FARTItemSlotReference(ItemSlot, this));
+		RemoveItemFromContainer(FARTItemSlotRef(ItemSlot, this));
 	}
 
 	return true;
 }
 
-bool UARTItemStack_SlotContainer::SwapItemSlots(const FARTItemSlotReference& FromSlot,
-	const FARTItemSlotReference& ToSlot)
+bool UARTItemStack_SlotContainer::SwapItemSlots(const FARTItemSlotRef& FromSlot,
+	const FARTItemSlotRef& ToSlot)
 {
 	return false;
 }
 
-bool UARTItemStack_SlotContainer::AcceptsItem(UARTItemStack* Item, const FARTItemSlotReference& Slot)
+bool UARTItemStack_SlotContainer::AcceptsItem(UARTItemStack* Item, const FARTItemSlotRef& Slot)
 {
 	if (!AcceptsItem_AssumeEmptySlot(Item, Slot))
 	{
@@ -221,7 +221,7 @@ bool UARTItemStack_SlotContainer::AcceptsItem(UARTItemStack* Item, const FARTIte
 	return true;
 }
 
-bool UARTItemStack_SlotContainer::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotReference& Slot)
+bool UARTItemStack_SlotContainer::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotRef& Slot)
 {
 	//First step, ensure that the slot is valid
 	if (!IsValidItemSlot(Slot))
@@ -241,7 +241,7 @@ bool UARTItemStack_SlotContainer::AcceptsItem_AssumeEmptySlot(UARTItemStack* Ite
 	return true;
 }
 
-UARTItemStack* UARTItemStack_SlotContainer::GetItemInSlot(const FARTItemSlotReference& Reference)
+UARTItemStack* UARTItemStack_SlotContainer::GetItemInSlot(const FARTItemSlotRef& Reference)
 {
 	if (!IsValidItemSlot(Reference))
 	{
@@ -258,32 +258,32 @@ int32 UARTItemStack_SlotContainer::GetContainerSize()
 	return ItemContainer.Slots.Num();
 }
 
-TArray<FARTItemSlotReference> UARTItemStack_SlotContainer::GetAllSlotReferences()
+TArray<FARTItemSlotRef> UARTItemStack_SlotContainer::GetAllSlotReferences()
 {
 	return AllReferences;
 }
 
 bool UARTItemStack_SlotContainer::Query_GetAllSlots(const FARTItemQuery& Query,
-	TArray<FARTItemSlotReference>& OutSlotRefs)
+	TArray<FARTItemSlotRef>& OutSlotRefs)
 {
 	for (FARTItemSlot& ItemSlot : ItemContainer.Slots)
 	{
 		if (Query.MatchesSlot(ItemSlot))
 		{
-			OutSlotRefs.Add(FARTItemSlotReference(ItemSlot, this));
+			OutSlotRefs.Add(FARTItemSlotRef(ItemSlot, this));
 		}
 	}
 	return OutSlotRefs.Num() > 0;
 }
 
-FARTItemSlotReference UARTItemStack_SlotContainer::Query_GetFirstSlot(const FARTItemQuery& Query)
+FARTItemSlotRef UARTItemStack_SlotContainer::Query_GetFirstSlot(const FARTItemQuery& Query)
 {
-	TArray<FARTItemSlotReference> OutSlotRefs;
+	TArray<FARTItemSlotRef> OutSlotRefs;
 	
 	if (!Query_GetAllSlots(Query, OutSlotRefs))
 	{
 		UE_LOG(LogInventory, Warning, TEXT("Tried to query for %s but didn't find it"), *Query.SlotTypeQuery.GetDescription())
-		return FARTItemSlotReference();
+		return FARTItemSlotRef();
 	}
 
 	return OutSlotRefs[0];
