@@ -158,7 +158,7 @@ bool UARTItemBPFunctionLibrary::IsValidItemSlotRef(const FARTItemSlotReference& 
 	return IsValid(ItemSlotRef);
 }
 
-UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTItemSlotReference& ItemSlotRef)
+UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTItemSlotRef& ItemSlotRef)
 {
 	if (!IsValid(ItemSlotRef))
 	{

@@ -61,7 +61,7 @@ void UARTInventoryComponent::CreateInventorySlot(const FGameplayTagContainer& Sl
 	PostInventoryUpdate();	
 }
 
-void UARTInventoryComponent::RemoveInventorySlot(const FARTItemSlotReference& Slot)
+void UARTInventoryComponent::RemoveInventorySlot(const FARTItemSlotRef& Slot)
 {
 	if (!IsValidItemSlot(Slot))
 	{
@@ -111,7 +111,7 @@ bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
 	//Find the first empty item slot
 	for (auto Slot : BagInventory.Slots)
 	{
-		FARTItemSlotReference SlotRef(Slot, this);
+		FARTItemSlotRef SlotRef(Slot, this);
 		if (AcceptsItem(Item, SlotRef) && PlaceItemIntoSlot(Item, SlotRef))
 		{
 			return true;
@@ -121,7 +121,7 @@ bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
 	return false;
 }
 
-bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotReference& ItemSlot)
+bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotRef& ItemSlot)
 {
 	//We can't do this on clients
 	if (GetOwnerRole() != ROLE_Authority)
@@ -157,7 +157,7 @@ bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTIt
 	return true;
 }
 
-bool UARTInventoryComponent::RemoveItemFromInventory(const FARTItemSlotReference& ItemSlot)
+bool UARTInventoryComponent::RemoveItemFromInventory(const FARTItemSlotRef& ItemSlot)
 {
 	//We can't do this on clients
 	if (GetOwnerRole() != ROLE_Authority)
@@ -204,13 +204,13 @@ bool UARTInventoryComponent::RemoveAllItemsFromInventory(TArray<UARTItemStack*>&
 		}
 
 		OutItemsRemoved.Add(ItemSlot.ItemStack);
-		RemoveItemFromInventory(FARTItemSlotReference(ItemSlot, this));
+		RemoveItemFromInventory(FARTItemSlotRef(ItemSlot, this));
 	}
 
 	return true;
 }
 
-bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotReference& SourceSlot, const FARTItemSlotReference& DestSlot)
+bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotRef& SourceSlot, const FARTItemSlotRef& DestSlot)
 {
 	//If we aren't the server, Call the server RPC
 	if (GetOwnerRole() != ROLE_Authority)
@@ -253,7 +253,7 @@ bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotReference& SourceSl
 	return true;
 }
 
-bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTItemSlotReference& Slot)
+bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTItemSlotRef& Slot)
 {
 	
 	if (!AcceptsItem_AssumeEmptySlot(Item, Slot))
@@ -272,7 +272,7 @@ bool UARTInventoryComponent::AcceptsItem(UARTItemStack* Item, const FARTItemSlot
 	return true;
 }
 
-bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotReference& Slot)
+bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotRef& Slot)
 {
 	//First step, ensure that the slot is valid
 	if (!IsValidItemSlot(Slot))
@@ -292,7 +292,7 @@ bool UARTInventoryComponent::AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, co
 	return true;
 }
 
-UARTItemStack* UARTInventoryComponent::GetItemInSlot(const FARTItemSlotReference& Reference)
+UARTItemStack* UARTInventoryComponent::GetItemInSlot(const FARTItemSlotRef& Reference)
 {
 	if (!IsValidItemSlot(Reference))
 	{
@@ -318,10 +318,10 @@ void UARTInventoryComponent::OnRep_BagInventory()
 	OnInventoryUpdate.Broadcast(this);
 }
 
-bool UARTInventoryComponent::IsValidItemSlot(const FARTItemSlotReference& Slot)
+bool UARTInventoryComponent::IsValidItemSlot(const FARTItemSlotRef& Slot)
 {	
 	//Check to see if we contain this reference
-	for (const FARTItemSlotReference& Ref : AllReferences)
+	for (const FARTItemSlotRef& Ref : AllReferences)
 	{
 		if (Slot == Ref)
 		{
@@ -337,7 +337,7 @@ bool UARTInventoryComponent::IsValidItemSlotRef(const FARTItemSlotRef& Slot)
 	return false;
 }
 
-FARTItemSlot& UARTInventoryComponent::GetItemSlot(const FARTItemSlotReference& RefSlot)
+FARTItemSlot& UARTInventoryComponent::GetItemSlot(const FARTItemSlotRef& RefSlot)
 {
 	check(IsValidItemSlot(RefSlot));
 
@@ -360,16 +360,16 @@ int32 UARTInventoryComponent::GetInventorySize()
 }
 
 
-TArray<FARTItemSlotReference> UARTInventoryComponent::GetAllSlotReferences()
+TArray<FARTItemSlotRef> UARTInventoryComponent::GetAllSlotReferences()
 {
 	return AllReferences;
 }
 
-void UARTInventoryComponent::PopulateSlotReferenceArray(TArray<FARTItemSlotReference>& RefArray)
+void UARTInventoryComponent::PopulateSlotReferenceArray(TArray<FARTItemSlotRef>& RefArray)
 {
 	for (int i = 0; i < BagInventory.Slots.Num(); i++)
 	{
-		FARTItemSlotReference SlotRef(BagInventory.Slots[i], this);
+		FARTItemSlotRef SlotRef(BagInventory.Slots[i], this);
 		RefArray.Add(SlotRef);
 	}
 }
@@ -442,7 +442,7 @@ UARTInventoryComponent* GetDebugTarget(FARTInventoryDebugTargetInfo* TargetInfo)
 
 
 
-//FARTOnItemSlotUpdate& UARTInventoryComponent::GetItemSlotUpdateDelegate(const FARTItemSlotReference& ItemSlotRef)
+//FARTOnItemSlotUpdate& UARTInventoryComponent::GetItemSlotUpdateDelegate(const FARTItemSlotRef& ItemSlotRef)
 //{
 //	return ItemSlotUpdates.FindOrAdd(ItemSlotRef);
 //}
@@ -460,26 +460,26 @@ void UARTInventoryComponent::PostInventoryUpdate()
 	OnInventoryUpdate.Broadcast(this);
 }
 
-bool UARTInventoryComponent::Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotReference>& OutSlotRefs)
+bool UARTInventoryComponent::Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotRef>& OutSlotRefs)
 {
 	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 	{
 		if (Query.MatchesSlot(ItemSlot))
 		{
-			OutSlotRefs.Add(FARTItemSlotReference(ItemSlot, this));
+			OutSlotRefs.Add(FARTItemSlotRef(ItemSlot, this));
 		}
 	}
 	return OutSlotRefs.Num() > 0;
 }
 
-FARTItemSlotReference UARTInventoryComponent::Query_GetFirstSlot(const FARTItemQuery& Query)
+FARTItemSlotRef UARTInventoryComponent::Query_GetFirstSlot(const FARTItemQuery& Query)
 {
-	TArray<FARTItemSlotReference> OutSlotRefs;
+	TArray<FARTItemSlotRef> OutSlotRefs;
 	
 	if (!Query_GetAllSlots(Query, OutSlotRefs))
 	{
 		UE_LOG(LogInventory, Warning, TEXT("Tried to query for %s but didn't find it"), *Query.SlotTypeQuery.GetDescription())
-		return FARTItemSlotReference();
+		return FARTItemSlotRef();
 	}
 
 	return OutSlotRefs[0];

@@ -32,10 +32,10 @@ bool IsValid(const FARTItemSlotRef& ItemRef)
 
 	if(ItemRef.ParentStack.IsValid())
 	{
-		return ItemRef.ParentStack.Get()->IsValidItemSlotRef(ItemRef);
+		return ItemRef.ParentStack.Get()->IsValidItemSlot(ItemRef);
 	}
 
-	return ItemRef.ParentInventory.Get()->IsValidItemSlotRef(ItemRef);
+	return ItemRef.ParentInventory.Get()->IsValidItemSlot(ItemRef);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

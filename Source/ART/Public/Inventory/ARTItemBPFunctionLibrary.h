@@ -77,7 +77,7 @@ public:
 	static bool IsValidItemSlotRef(const FARTItemSlotReference& ItemSlotRef);
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static UARTItemStack* GetItemFromSlot(const FARTItemSlotReference& ItemSlotRef);
+	static UARTItemStack* GetItemFromSlot(const FARTItemSlotRef& ItemSlotRef);
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Equal ARTInventoryItemSlotReference", CompactNodeTitle = "==", Keywords = "== equal"), Category = "ART|Inventory")
 	static bool EqualEqual_FARTItemSlotReference(const FARTItemSlotReference& ItemSlotRef, const FARTItemSlotReference& OtherItemSlotRef);

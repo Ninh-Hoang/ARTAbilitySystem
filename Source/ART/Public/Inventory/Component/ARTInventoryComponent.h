@@ -15,7 +15,7 @@ class UARTItemStack;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FARTOnInventoryUpdate, class UARTInventoryComponent*, Inventory);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FARTOnItemSlotUpdate, class UARTInventoryComponent*, Inventory, const FARTItemSlotReference&, ItemSlotRef, UARTItemStack*, ItemStack, UARTItemStack*, PreviousItemStack );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FARTOnItemSlotUpdate, class UARTInventoryComponent*, Inventory, const FARTItemSlotRef&, ItemSlotRef, UARTItemStack*, ItemStack, UARTItemStack*, PreviousItemStack );
 
 UCLASS()
 class ART_API UARTInventoryComponent : public UActorComponent
@@ -35,7 +35,7 @@ protected:
 	//Creates a new slot with given tags
 	virtual void CreateInventorySlot(const FGameplayTagContainer& SlotTags, const FARTItemSlotFilterHandle& Filter);
 
-	virtual void RemoveInventorySlot(const FARTItemSlotReference& Slot);
+	virtual void RemoveInventorySlot(const FARTItemSlotRef& Slot);
 
 public:		
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -43,14 +43,14 @@ public:
 
 	//Returns true if the item slot reference is valid.  Override this if adding additional item slots
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	virtual bool IsValidItemSlot(const FARTItemSlotReference& Slot);
+	virtual bool IsValidItemSlot(const FARTItemSlotRef& Slot);
 
 	//Returns true if the item slot reference is valid.  Override this if adding additional item slots
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
 	virtual bool IsValidItemSlotRef(const FARTItemSlotRef& Slot);
 	
 	//Returns a reference to the item slot.  Call IsValidItemSlot before this to ensure you get a valid item slot
-	virtual FARTItemSlot& GetItemSlot(const FARTItemSlotReference& RefSlot);
+	virtual FARTItemSlot& GetItemSlot(const FARTItemSlotRef& RefSlot);
 		
 	//Returns true if the item has been add to this inventory.  False if the item can't fit. 
 	UFUNCTION(BlueprintCallable, Category="ART|Inventory")
@@ -58,31 +58,31 @@ public:
 
 	//Places the item into the slot.  Returns false if hte item cannot be put there.
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
-	virtual bool PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotReference& ItemSlot);
+	virtual bool PlaceItemIntoSlot(UARTItemStack* Item, const FARTItemSlotRef& ItemSlot);
 
 	//Returns true if the item was in the inventory and is now removed, false if the item could not be removed for whatever reason
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
-	virtual bool RemoveItemFromInventory(const FARTItemSlotReference& ItemSlot);
+	virtual bool RemoveItemFromInventory(const FARTItemSlotRef& ItemSlot);
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
 	virtual bool RemoveAllItemsFromInventory(TArray<UARTItemStack*>& OutItemsRemoved);
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
-	virtual bool SwapItemSlots(const FARTItemSlotReference& FromSlot, const FARTItemSlotReference& ToSlot);
+	virtual bool SwapItemSlots(const FARTItemSlotRef& FromSlot, const FARTItemSlotRef& ToSlot);
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
-	virtual bool AcceptsItem(UARTItemStack* Item, const FARTItemSlotReference& Slot);
+	virtual bool AcceptsItem(UARTItemStack* Item, const FARTItemSlotRef& Slot);
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
-	virtual bool AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotReference& Slot);
+	virtual bool AcceptsItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotRef& Slot);
 
-	virtual UARTItemStack* GetItemInSlot(const FARTItemSlotReference& Reference);
+	virtual UARTItemStack* GetItemInSlot(const FARTItemSlotRef& Reference);
 	  
 	UPROPERTY(BlueprintReadWrite, Category = "Inventory")
-	FARTItemSlotReference SwapFromSlot;
+	FARTItemSlotRef SwapFromSlot;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Inventory")
-	FARTItemSlotReference SwapToSlot;
+	FARTItemSlotRef SwapToSlot;
 
 	UFUNCTION(Category = "ART|Inventory")
 	virtual void OnRep_BagInventory();
@@ -91,9 +91,9 @@ public:
 	virtual int32 GetInventorySize();	    											  
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	virtual TArray<FARTItemSlotReference> GetAllSlotReferences();
+	virtual TArray<FARTItemSlotRef> GetAllSlotReferences();
 
-	void PopulateSlotReferenceArray(TArray<FARTItemSlotReference>& RefArray);
+	void PopulateSlotReferenceArray(TArray<FARTItemSlotRef>& RefArray);
 
 
 	UPROPERTY(BlueprintAssignable, Category = "ART|Inventory")
@@ -103,16 +103,16 @@ public:
 	FARTOnItemSlotUpdate OnItemSlotChange;
 
 	//TODO: item slot delegate implementation
-	//TMap<FARTItemSlotReference, FARTOnItemSlotUpdate> ItemSlotUpdates;
+	//TMap<FARTItemSlotRef, FARTOnItemSlotUpdate> ItemSlotUpdates;
 
-	//FARTOnItemSlotUpdate& GetItemSlotUpdateDelegate(const FARTItemSlotReference& ItemSlotRef);
+	//FARTOnItemSlotUpdate& GetItemSlotUpdateDelegate(const FARTItemSlotRef& ItemSlotRef);
 	 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory Layout")
 	TArray< FARTItemSlotDefinition> CustomInventorySlots;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "Input")
-	FARTItemSlotReference PendingItemDrop;
+	FARTItemSlotRef PendingItemDrop;
 
 	virtual class UAbilitySystemComponent* GetOwnerAbilitySystem();
 
@@ -122,7 +122,7 @@ private:
 	UPROPERTY(Replicated)
 	FARTItemSlotArray BagInventory;
 
-	TArray<FARTItemSlotReference> AllReferences;
+	TArray<FARTItemSlotRef> AllReferences;
 
 	int32 IdCounter;
 
@@ -131,10 +131,10 @@ private:
 	//Inventory Searching
 public:
 	UFUNCTION(BlueprintCallable, Category="Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAll"))
-	bool Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotReference>& OutSlotRefs);
+	bool Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotRef>& OutSlotRefs);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetFirst"))
-	FARTItemSlotReference Query_GetFirstSlot(const FARTItemQuery& Query);
+	FARTItemSlotRef Query_GetFirstSlot(const FARTItemQuery& Query);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAllItems"))
 	void Query_GetAllItems(const FARTItemQuery& Query, TArray<UARTItemStack*>& OutItems);

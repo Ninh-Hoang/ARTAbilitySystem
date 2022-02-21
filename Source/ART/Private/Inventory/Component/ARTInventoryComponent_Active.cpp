@@ -61,7 +61,7 @@ void UARTInventoryComponent_Active::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UARTInventoryComponent_Active::OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTItemSlotReference& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack)
+void UARTInventoryComponent_Active::OnItemEquipped(class UARTInventoryComponent* Inventory, const FARTItemSlotRef& ItemSlotRef, UARTItemStack* ItemStack, UARTItemStack* PreviousItemStack)
 {
 	Super::OnItemEquipped(Inventory, ItemSlotRef, ItemStack, PreviousItemStack);
 
@@ -90,7 +90,7 @@ void UARTInventoryComponent_Active::OnItemEquipped(class UARTInventoryComponent*
 	
 }
 
-FARTItemSlotReference UARTInventoryComponent_Active::GetActiveItemSlot()
+FARTItemSlotRef UARTInventoryComponent_Active::GetActiveItemSlot()
 {
 	return GetActiveItemSlotInSlot(ActiveItemSlot);
 }
@@ -100,20 +100,20 @@ UARTItemStack* UARTInventoryComponent_Active::GetActiveItemStack()
 	return GetActiveItemStackInSlot(ActiveItemSlot);
 }
 
-FARTItemSlotReference UARTInventoryComponent_Active::GetActiveItemSlotInSlot(int32 InActiveItemSlot)
+FARTItemSlotRef UARTInventoryComponent_Active::GetActiveItemSlotInSlot(int32 InActiveItemSlot)
 {
 	if (InActiveItemSlot == INDEX_NONE)
 	{
-		return FARTItemSlotReference();
+		return FARTItemSlotRef();
 	}
 
-	FARTItemSlotReference ItemSlotRef = CachedActiveItemSlots[InActiveItemSlot];
+	FARTItemSlotRef ItemSlotRef = CachedActiveItemSlots[InActiveItemSlot];
 	return ItemSlotRef;
 }
 
 UARTItemStack* UARTInventoryComponent_Active::GetActiveItemStackInSlot(int32 InActiveItemSlot)
 {
-	FARTItemSlotReference ItemSlotRef = GetActiveItemSlotInSlot(InActiveItemSlot);
+	FARTItemSlotRef ItemSlotRef = GetActiveItemSlotInSlot(InActiveItemSlot);
 	return GetItemInSlot(ItemSlotRef);
 }
 
@@ -184,7 +184,7 @@ int32 UARTInventoryComponent_Active::GetNextValidActiveItemSlot()
 	{
 		if (CachedActiveItemSlots.IsValidIndex(TestItemSlot))
 		{
-			FARTItemSlotReference ItemSlotRef = CachedActiveItemSlots[TestItemSlot];
+			FARTItemSlotRef ItemSlotRef = CachedActiveItemSlots[TestItemSlot];
 
 			if (IsValid(GetItemInSlot(ItemSlotRef)))
 			{
@@ -218,7 +218,7 @@ int32 UARTInventoryComponent_Active::GetPreviousValidActiveItemSlot()
 	{
 		if (CachedActiveItemSlots.IsValidIndex(TestItemSlot))
 		{
-			FARTItemSlotReference ItemSlotRef = CachedActiveItemSlots[TestItemSlot];
+			FARTItemSlotRef ItemSlotRef = CachedActiveItemSlots[TestItemSlot];
 
 			if (IsValid(GetItemInSlot(ItemSlotRef)))
 			{
@@ -287,7 +287,7 @@ void UARTInventoryComponent_Active::MakeItemActive(int32 NewActiveItemSlot)
 		return;
 	}
 
-	FARTItemSlotReference ItemSlotRef = CachedActiveItemSlots[NewActiveItemSlot];
+	FARTItemSlotRef ItemSlotRef = CachedActiveItemSlots[NewActiveItemSlot];
 
 	
 
@@ -309,18 +309,18 @@ void UARTInventoryComponent_Active::MakeItemActive(int32 NewActiveItemSlot)
 	}
 }
 
-void UARTInventoryComponent_Active::MakeItemActive(const FARTItemSlotReference& ItemSlotRef)
+void UARTInventoryComponent_Active::MakeItemActive(const FARTItemSlotRef& ItemSlotRef)
 {
 	int32 Slot = GetActiveItemIndexBySlotRef(ItemSlotRef);
 	MakeItemActive(Slot);
 }
 
-bool UARTInventoryComponent_Active::IsActiveItemSlot(const FARTItemSlotReference& ItemSlotRef) const
+bool UARTInventoryComponent_Active::IsActiveItemSlot(const FARTItemSlotRef& ItemSlotRef) const
 {
 	return ItemSlotRef.SlotTags.HasTagExact(InvActiveSlotTag);
 }
 
-int32 UARTInventoryComponent_Active::GetActiveItemIndexBySlotRef(const FARTItemSlotReference& ItemSlotRef)
+int32 UARTInventoryComponent_Active::GetActiveItemIndexBySlotRef(const FARTItemSlotRef& ItemSlotRef)
 {
 	int32 SlotIndex = INDEX_NONE;
 	CachedActiveItemSlots.Find(ItemSlotRef, SlotIndex);
@@ -330,7 +330,7 @@ int32 UARTInventoryComponent_Active::GetActiveItemIndexBySlotRef(const FARTItemS
 
 int32 UARTInventoryComponent_Active::GetActiveItemIndexByTag(FGameplayTag Tag)
 {
-	FARTItemSlotReference Ref = Query_GetFirstSlot(FARTItemQuery::QuerySlotMatchingTag(Tag));
+	FARTItemSlotRef Ref = Query_GetFirstSlot(FARTItemQuery::QuerySlotMatchingTag(Tag));
 	return GetActiveItemIndexBySlotRef(Ref);
 }
 
@@ -383,7 +383,7 @@ int32 UARTInventoryComponent_Active::GetIndexForActiveItemSlotTagQuery(const FGa
 
 
 
-bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlotReference& ItemSlot)
+bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlotRef& ItemSlot)
 {
 	if (!IsActiveItemSlot(ItemSlot))
 	{
@@ -395,7 +395,7 @@ bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlot
 	return MakeItemInactive_Internal(ItemSlot, ItemStack);
 }
 
-bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack)
+bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlotRef& ItemSlot, UARTItemStack* ItemStack)
 {
 	if (!IsValid(ItemStack))
 	{
@@ -431,7 +431,7 @@ bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlot
 	return bSuccess;
 }
 
-bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotReference& ItemSlot)
+bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotRef& ItemSlot)
 {
 	if (!IsActiveItemSlot(ItemSlot))
 	{
@@ -448,7 +448,7 @@ bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotRe
 	return MakeItemActive_Internal(ItemSlot, ItemStack);
 }
 
-bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotReference& ItemSlot, UARTItemStack* ItemStack)
+bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotRef& ItemSlot, UARTItemStack* ItemStack)
 {
 	if (!IsValid(ItemStack))
 	{
