@@ -249,6 +249,9 @@ struct ART_API FARTItemSlot : public FFastArraySerializerItem
 {
 	GENERATED_BODY()
 	
+	friend class UARTInventoryComponent;
+	friend class UARTItemStack_SlotContainer;
+	
 public:
 	FARTItemSlot()
 		:FFastArraySerializerItem(),
@@ -307,8 +310,8 @@ public:
 
 private:
 	UARTInventoryComponent* Owner;
-
-	friend class UARTInventoryComponent;
+	
+	UARTItemStack_SlotContainer* ParentStack;
 };
 
 template<>
@@ -324,7 +327,7 @@ struct TStructOpsTypeTraits<FARTItemSlot> : public TStructOpsTypeTraitsBase2<FAR
 USTRUCT()
 struct FARTItemSlotArray : public FFastArraySerializer
 {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 public:
 
 	UPROPERTY()
@@ -332,6 +335,9 @@ public:
 
 	UPROPERTY()
 	UARTInventoryComponent* Owner;
+
+	UPROPERTY()
+	UARTItemStack_SlotContainer* ParentStack;
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
@@ -354,43 +360,15 @@ struct ART_API FARTItemSlotReference
 	GENERATED_BODY()
 public:
 
-	FARTItemSlotReference()
-		: SlotId(NAMED_ITEM_SLOT)
-		, ParentInventory(nullptr)
-	{
+	FARTItemSlotReference(){}
 		
-	}
-		
-	FARTItemSlotReference(const FARTItemSlotReference& Copy)
-		: SlotId(Copy.SlotId),
-		SlotTags(Copy.SlotTags),
-		ParentInventory(Copy.ParentInventory)
-	{
+	FARTItemSlotReference(const FARTItemSlotReference& Copy);
 
-	}
+	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory);
 
-	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory)
-		: SlotId(FromSlot.SlotId)
-		, SlotTags(FromSlot.SlotTags)
-		, ParentInventory(InParentInventory)
-	{
+	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack);
 
-	}
-
-	FARTItemSlotReference(FGameplayTag InTag, UARTInventoryComponent* InParentInventory)
-		: SlotId(NAMED_ITEM_SLOT)
-		, SlotTags(InTag.GetSingleTagContainer())
-		, ParentInventory(InParentInventory)
-	{
-
-	}
-
-	FARTItemSlotReference(int32 InSlotId, UARTInventoryComponent* InParentInventory)
-		: SlotId(InSlotId)
-		, ParentInventory(InParentInventory)
-	{
-
-	}
+	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory, UARTItemStack_SlotContainer* InParentStack);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
 	int32 SlotId;	
@@ -398,8 +376,11 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
 	FGameplayTagContainer SlotTags;
 	
-	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = Inventory)
-	UARTInventoryComponent* ParentInventory;
+	UPROPERTY(BlueprintReadWrite, Category = Inventory)
+	TWeakObjectPtr<UARTInventoryComponent> ParentInventory;
+
+	UPROPERTY(BlueprintReadWrite, Category = Inventory)
+	TWeakObjectPtr<UARTItemStack_SlotContainer> ParentStack;
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
 
@@ -407,17 +388,17 @@ public:
 
 	static FARTItemSlotReference Invalid;
 
-	/** Comparison operator */
+	// Comparison operator
 	bool operator==(const FARTItemSlotReference& Other) const
 	{
 		const bool bIdsMatch = SlotId == Other.SlotId;
-		const bool bParentsMatch = ParentInventory == Other.ParentInventory;
+		const bool bParentsMatch = (ParentInventory.Get() == Other.ParentInventory.Get() || ParentStack.Get() == Other.ParentStack.Get());;
 		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
 
 		return bParentsMatch && bIdsMatch && TagsMatch;
 	}
 
-	/** Comparison operator */
+	// Comparison operator
 	bool operator!=(const FARTItemSlotReference& Other) const
 	{
 		return !(FARTItemSlotReference::operator==(Other));
@@ -439,6 +420,72 @@ public:
 
 template<>
 struct TStructOpsTypeTraits<FARTItemSlotReference> : public TStructOpsTypeTraitsBase2<FARTItemSlotReference>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
+};
+
+USTRUCT(BlueprintType)
+struct ART_API FARTItemSlotRef
+{
+	GENERATED_BODY()
+	
+public:
+	FARTItemSlotRef(){};
+	FARTItemSlotRef(const FARTItemSlot& Copy, UARTItemStack_SlotContainer* InParentStack);
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
+	int32 SlotId;	
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
+	FGameplayTagContainer SlotTags;
+	
+	UPROPERTY(BlueprintReadWrite, Category = Inventory)
+	TWeakObjectPtr<UARTInventoryComponent> ParentInventory;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	TWeakObjectPtr<UARTItemStack_SlotContainer> ParentStack;
+
+	static FARTItemSlotRef Invalid;
+	
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+
+	FString ToString() const;
+
+	// Comparison operator
+	bool operator==(const FARTItemSlotRef& Other) const
+	{
+		const bool bIdsMatch = SlotId == Other.SlotId;
+		const bool bParentsMatch = (ParentInventory.Get() == Other.ParentInventory.Get() || ParentStack.Get() == Other.ParentStack.Get());;
+		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
+
+		return bParentsMatch && bIdsMatch && TagsMatch;
+	}
+
+	// Comparison operator
+	bool operator!=(const FARTItemSlotRef& Other) const
+	{
+		return !(FARTItemSlotRef::operator==(Other));
+	}
+
+	bool operator==(const FARTItemSlot& Other) const
+	{
+		const bool bIdsMatch = SlotId == Other.SlotId;
+		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
+
+		return bIdsMatch && TagsMatch;
+	}
+
+	bool operator!=(const FARTItemSlot& Other) const
+	{
+		return !(FARTItemSlotRef::operator==(Other));
+	}
+};
+
+template<>
+struct TStructOpsTypeTraits<FARTItemSlotRef> : public TStructOpsTypeTraitsBase2<FARTItemSlotRef>
 {
 	enum
 	{
@@ -663,3 +710,5 @@ ART_API inline bool IsValid(const FARTItemSlotFilterHandle& Handle)
 }
 
 ART_API bool IsValid(const FARTItemSlotReference& ItemRef);
+
+ART_API bool IsValid(const FARTItemSlotRef& ItemRef);

@@ -46,6 +46,7 @@ public:
 		
 protected:
 	virtual UARTItemStack* CreateNewItemStack(TSubclassOf<UARTItemDefinition> ItemDefinition, UARTItemRarity* ItemRarity);
+	virtual void PostCreateNewItemStack(UARTItemStack* ItemStack);
 };
 
 UCLASS()

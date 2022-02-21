@@ -226,8 +226,8 @@ bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotReference& SourceSl
 		return false;
 	}	
 
-	UARTInventoryComponent* SourceInventory = SourceSlot.ParentInventory;
-	UARTInventoryComponent* DestinationInventory = DestSlot.ParentInventory;
+	UARTInventoryComponent* SourceInventory = SourceSlot.ParentInventory.Get();
+	UARTInventoryComponent* DestinationInventory = DestSlot.ParentInventory.Get();
 
 	//If neither the source nor the destination is us... what are we even doing here?
 	if (SourceInventory != this && DestinationInventory != this)
@@ -329,6 +329,11 @@ bool UARTInventoryComponent::IsValidItemSlot(const FARTItemSlotReference& Slot)
 		}
 	}
 
+	return false;
+}
+
+bool UARTInventoryComponent::IsValidItemSlotRef(const FARTItemSlotRef& Slot)
+{
 	return false;
 }
 

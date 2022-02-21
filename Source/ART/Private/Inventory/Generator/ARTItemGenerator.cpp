@@ -5,6 +5,7 @@
 
 #include "Inventory/ARTItemStack.h"
 #include "Inventory/Item/ARTItemDefinition.h"
+#include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 
 UARTItemGenerator::UARTItemGenerator(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -69,10 +70,19 @@ UARTItemStack* UARTItemGenerator::CreateNewItemStack(TSubclassOf<UARTItemDefinit
 	UARTItemStack* NewItemStack = NewObject<UARTItemStack>(GetTransientPackage(), ISC);
 	NewItemStack->ItemDefinition = ItemDefinition;
 	NewItemStack->Rarity = ItemRarity;
-
+	PostCreateNewItemStack(NewItemStack);
+	
 	return NewItemStack;
 }
 
+void UARTItemGenerator::PostCreateNewItemStack(UARTItemStack* ItemStack)
+{
+	if(!ItemStack) return;
+	if(UARTItemStack_SlotContainer* ContainerStack = Cast<UARTItemStack_SlotContainer>(ItemStack))
+	{
+		ContainerStack->InitializeContainer();
+	}
+}
 
 UARTItemGenerator_Static::UARTItemGenerator_Static(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

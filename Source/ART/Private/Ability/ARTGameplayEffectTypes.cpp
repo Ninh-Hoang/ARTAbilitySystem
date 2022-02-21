@@ -53,7 +53,7 @@ bool FARTGameplayEffectContext::NetSerialize(FArchive& Ar, UPackageMap* Map, boo
 		}
 	}
 
-	Ar.SerializeBits(&RepBits, 9);
+	Ar.SerializeBits(&RepBits, 10);
 	
 	if (RepBits & (1 << 0))
    {

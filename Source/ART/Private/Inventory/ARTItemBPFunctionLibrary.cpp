@@ -11,6 +11,7 @@
 #include "Inventory/Item/ARTItemDefinition.h"
 #include "Inventory/Item/ARTItemRarity.h"
 #include "Inventory/Item/ARTItemStackWorldObject.h"
+#include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 #include "Kismet/GameplayStatics.h"
 
 UARTItemBPFunctionLibrary::UARTItemBPFunctionLibrary()
@@ -164,6 +165,15 @@ UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTItemSlotRefe
 		return nullptr;
 	}
 
+	//use slot container instead if parent stack exist
+	if(ItemSlotRef.ParentStack.IsValid())
+	{
+		if(UARTItemStack_SlotContainer* Container = Cast<UARTItemStack_SlotContainer>(ItemSlotRef.ParentStack.Get()))
+		{
+			return Container->GetItemSlot(ItemSlotRef).ItemStack;
+		}
+	}
+
 	return ItemSlotRef.ParentInventory->GetItemSlot(ItemSlotRef).ItemStack;
 }
 
@@ -174,7 +184,7 @@ bool UARTItemBPFunctionLibrary::EqualEqual_FARTItemSlotReference(const FARTItemS
 
 UARTInventoryComponent* UARTItemBPFunctionLibrary::GetInventoryFromSlot(const FARTItemSlotReference& ItemSlotRef)
 {
-	return ItemSlotRef.ParentInventory;
+	return ItemSlotRef.ParentInventory.Get();
 }
 
 bool UARTItemBPFunctionLibrary::IsValidInventoryQuery(const FARTItemQuery& Query)

@@ -45,6 +45,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
 	virtual bool IsValidItemSlot(const FARTItemSlotReference& Slot);
 
+	//Returns true if the item slot reference is valid.  Override this if adding additional item slots
+	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
+	virtual bool IsValidItemSlotRef(const FARTItemSlotRef& Slot);
+	
 	//Returns a reference to the item slot.  Call IsValidItemSlot before this to ensure you get a valid item slot
 	virtual FARTItemSlot& GetItemSlot(const FARTItemSlotReference& RefSlot);
 		
