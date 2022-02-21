@@ -434,7 +434,6 @@ struct ART_API FARTItemSlotRef
 	
 public:
 	FARTItemSlotRef(){};
-	FARTItemSlotRef(const FARTItemSlotReference& Copy);
 	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory);
 	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack);
 	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory, UARTItemStack_SlotContainer* InParentStack);
@@ -713,6 +712,6 @@ ART_API inline bool IsValid(const FARTItemSlotFilterHandle& Handle)
 	return Handle.IsValid();
 }
 
-ART_API bool IsValid(const FARTItemSlotReference& ItemRef);
+//ART_API bool IsValid(const FARTItemSlotReference& ItemRef);
 
 ART_API bool IsValid(const FARTItemSlotRef& ItemRef);

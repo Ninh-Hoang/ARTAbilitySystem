@@ -8,7 +8,7 @@ FARTItemSlot FARTItemSlot::Invalid = FARTItemSlot();
 FARTItemSlotReference FARTItemSlotReference::Invalid = FARTItemSlotReference();
 FARTItemSlotRef FARTItemSlotRef::Invalid = FARTItemSlotRef();
 
-bool IsValid(const FARTItemSlotReference& ItemRef)
+/*bool IsValid(const FARTItemSlotReference& ItemRef)
 {
 	if (!ItemRef.ParentInventory.IsValid() && !ItemRef.ParentStack.IsValid())
 	{
@@ -21,7 +21,7 @@ bool IsValid(const FARTItemSlotReference& ItemRef)
 	}
 
 	return ItemRef.ParentInventory.Get()->IsValidItemSlot(ItemRef);
-}
+}*/
 
 bool IsValid(const FARTItemSlotRef& ItemRef)
 {
@@ -297,8 +297,8 @@ void FARTItemSlot::PreReplicatedRemove(const struct FARTItemSlotArray& InArraySe
 
 	if (IsValid(ItemStack))
 	{
-		if(Owner) Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotReference(*this, Owner), nullptr, ItemStack);
-		if(ParentStack) ParentStack->OnContainerSlotUpdate.Broadcast(ParentStack, FARTItemSlotReference(*this, ParentStack), nullptr, ItemStack);
+		if(Owner) Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotRef(*this, Owner), nullptr, ItemStack);
+		if(ParentStack) ParentStack->OnContainerSlotUpdate.Broadcast(ParentStack, FARTItemSlotRef(*this, ParentStack), nullptr, ItemStack);
 	}
 	OldItemStack = nullptr;
 }
@@ -313,8 +313,8 @@ void FARTItemSlot::PostReplicatedAdd(const struct FARTItemSlotArray& InArraySeri
 
 	if (IsValid(ItemStack))
 	{
-		if(Owner) Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotReference(*this, Owner), ItemStack, nullptr);
-		if(ParentStack) ParentStack->OnContainerSlotUpdate.Broadcast(ParentStack, FARTItemSlotReference(*this, ParentStack), ItemStack, nullptr);
+		if(Owner) Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotRef(*this, Owner), ItemStack, nullptr);
+		if(ParentStack) ParentStack->OnContainerSlotUpdate.Broadcast(ParentStack, FARTItemSlotRef(*this, ParentStack), ItemStack, nullptr);
 	}
 	OldItemStack = ItemStack;
 }
@@ -327,8 +327,8 @@ void FARTItemSlot::PostReplicatedChange(const struct FARTItemSlotArray& InArrayS
 	Owner = InArraySerializer.Owner;
 	if(Owner)Owner->PostInventoryUpdate();
 	
-	if(Owner) Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotReference(*this, Owner), ItemStack, OldItemStack.Get());
-	if(ParentStack) ParentStack->OnContainerSlotUpdate.Broadcast(ParentStack, FARTItemSlotReference(*this, ParentStack), ItemStack, OldItemStack.Get());
+	if(Owner) Owner->OnItemSlotChange.Broadcast(Owner, FARTItemSlotRef(*this, Owner), ItemStack, OldItemStack.Get());
+	if(ParentStack) ParentStack->OnContainerSlotUpdate.Broadcast(ParentStack, FARTItemSlotRef(*this, ParentStack), ItemStack, OldItemStack.Get());
 		
 	OldItemStack = ItemStack;	
 }
@@ -390,13 +390,6 @@ void FARTContainerItemSlot::PostReplicatedAdd(const FARTContainerItemSlotArray& 
 void FARTContainerItemSlot::PostReplicatedChange(const FARTContainerItemSlotArray& InArraySerializer)
 {
 }*/
-
-FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlotReference& Copy)
-{
-	SlotId = Copy.SlotId;
-	SlotTags = Copy.SlotTags;
-	ParentInventory = Copy.ParentInventory;
-}
 
 FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory)
 {
