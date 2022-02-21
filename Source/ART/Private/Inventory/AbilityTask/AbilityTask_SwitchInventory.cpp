@@ -9,7 +9,7 @@ UAbilityTask_SwitchInventory::UAbilityTask_SwitchInventory(const FObjectInitiali
 
 }
 
-UAbilityTask_SwitchInventory* UAbilityTask_SwitchInventory::SwitchInventorySlots(UGameplayAbility* OwningAbility, const FARTItemSlotReference& FromSlot, const FARTItemSlotReference& ToSlot)
+UAbilityTask_SwitchInventory* UAbilityTask_SwitchInventory::SwitchInventorySlots(UGameplayAbility* OwningAbility, const FARTItemSlotRef& FromSlot, const FARTItemSlotRef& ToSlot)
 {
 	UAbilityTask_SwitchInventory* Task = NewAbilityTask<UAbilityTask_SwitchInventory>(OwningAbility);
 	Task->FromSlot = FromSlot;
