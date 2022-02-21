@@ -434,7 +434,11 @@ struct ART_API FARTItemSlotRef
 	
 public:
 	FARTItemSlotRef(){};
-	FARTItemSlotRef(const FARTItemSlot& Copy, UARTItemStack_SlotContainer* InParentStack);
+	FARTItemSlotRef(const FARTItemSlotReference& Copy);
+	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory);
+	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack);
+	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory, UARTItemStack_SlotContainer* InParentStack);
+
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
 	int32 SlotId;	

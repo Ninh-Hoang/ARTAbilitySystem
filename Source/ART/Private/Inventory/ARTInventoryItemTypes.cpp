@@ -391,11 +391,34 @@ void FARTContainerItemSlot::PostReplicatedChange(const FARTContainerItemSlotArra
 {
 }*/
 
-FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlot& Copy, UARTItemStack_SlotContainer* Pointer)
+FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlotReference& Copy)
 {
 	SlotId = Copy.SlotId;
 	SlotTags = Copy.SlotTags;
-	ParentStack = Pointer;
+	ParentInventory = Copy.ParentInventory;
+}
+
+FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory)
+{
+	SlotId = FromSlot.SlotId;
+	SlotTags = FromSlot.SlotTags;
+	ParentInventory = InParentInventory;
+}
+
+FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack)
+{
+	SlotId = FromSlot.SlotId;
+	SlotTags = FromSlot.SlotTags;
+	ParentStack = InParentStack;
+}
+
+FARTItemSlotRef::FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory,
+	UARTItemStack_SlotContainer* InParentStack)
+{
+	SlotId = FromSlot.SlotId;
+	SlotTags = FromSlot.SlotTags;
+	ParentInventory = InParentInventory;
+	ParentStack = InParentStack;
 }
 
 bool FARTItemSlotRef::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
