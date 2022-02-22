@@ -117,11 +117,11 @@ public:
 	virtual class UAbilitySystemComponent* GetOwnerAbilitySystem();
 
 
-
-private:
-	UPROPERTY(Replicated)
+protected:
+	UPROPERTY(BlueprintReadOnly,Replicated)
 	FARTItemSlotArray BagInventory;
-
+	
+private:
 	TArray<FARTItemSlotRef> AllReferences;
 
 	int32 IdCounter;
@@ -131,26 +131,29 @@ private:
 	//Inventory Searching
 public:
 	UFUNCTION(BlueprintCallable, Category="Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAll"))
-	bool Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotRef>& OutSlotRefs);
+	bool Query_GetAllSlots(const FARTSlotQueryHandle& Query, TArray<FARTItemSlotRef>& OutSlotRefs);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetFirst"))
-	FARTItemSlotRef Query_GetFirstSlot(const FARTItemQuery& Query);
+	FARTItemSlotRef Query_GetFirstSlot(const FARTSlotQueryHandle& Query);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAllItems"))
-	void Query_GetAllItems(const FARTItemQuery& Query, TArray<UARTItemStack*>& OutItems);
+	void Query_GetAllItems(const FARTSlotQueryHandle& Query, TArray<UARTItemStack*>& OutItems);
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetFirstItem"))
+	UARTItemStack* Query_GetFirstItem(const FARTSlotQueryHandle& Query);
+	
 	//Iterate through each item slot.
 	//Lambda looks like this: [](const FARTItemSlot& Slot) { }
 	template<typename PRED>
 	void ForEachItemSlot_ReadOnly(PRED Predicate) const
 	{
-		ForEachItemSlot_ReadOnly(FARTItemQuery(), Predicate);
+		ForEachItemSlot_ReadOnly(FARTSlotQueryHandle(), Predicate);
 	}
 
 	//Iterate through each item slot, matching a slot query.
 	//Lambda looks like this: [](const FARTItemSlot& Slot) { }
 	template<typename PRED>
-	void ForEachItemSlot_ReadOnly(const FARTItemQuery& Query, PRED Predicate) const
+	void ForEachItemSlot_ReadOnly(const FARTSlotQueryHandle& Query, PRED Predicate) const
 	{
 		for (const FARTItemSlot& ItemSlot : BagInventory.Slots)
 		{
@@ -168,7 +171,7 @@ public:
 	template<typename PRED>
 	void ForEachItemSlot_Mutable(PRED Predicate)
 	{
-		ForEachItemSlot_Mutable(FARTItemQuery(), Predicate);
+		ForEachItemSlot_Mutable(FARTSlotQueryHandle(), Predicate);
 	}
 
 	//Iterate through each item slot, matching a slot query.
@@ -176,7 +179,7 @@ public:
 	//Use the _ReadOnly version if you are just trying to read the slots
 	//Lambda looks like this: [](FARTItemSlot& Slot) { }
 	template<typename PRED>
-	void ForEachItemSlot_Mutable(const FARTItemQuery& Query, PRED Predicate)
+	void ForEachItemSlot_Mutable(const FARTSlotQueryHandle& Query, PRED Predicate)
 	{
 		for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 		{

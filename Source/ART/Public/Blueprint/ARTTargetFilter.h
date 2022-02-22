@@ -32,11 +32,11 @@ namespace EARTTargetSelectionFilter
 
 //Filter with target type
 USTRUCT(BlueprintType)
-struct ART_API FARTTargetFilter : public FGameplayTargetDataFilter
+struct ART_API FARTTargetDataFilter_TargetType : public FGameplayTargetDataFilter
 {
 	GENERATED_USTRUCT_BODY()
 
-	virtual ~FARTTargetFilter() override
+	virtual ~FARTTargetDataFilter_TargetType() override
 	{
 	}
 
@@ -56,64 +56,64 @@ struct ART_API FARTTargetFilter : public FGameplayTargetDataFilter
 			return false;
 		}
 
-		bool bPassFilter = true;
-
 		if (RequiredActorClass != nullptr)
 		{
-			bPassFilter = RequiredActorClass == TargetActor->GetClass();
+			if(RequiredActorClass != TargetActor->GetClass())
+			{
+				return bReverseFilter ^ false;
+			}
 		}
-
+		
 		switch (ActorTypeFilter)
 		{
 		case EARTTargetSelectionFilter::Everything:
 			break;
 		case EARTTargetSelectionFilter::Damageable:
-			bPassFilter = TargetActor->CanBeDamaged();
+			if(!TargetActor->CanBeDamaged()) return bReverseFilter ^ false;
 			break;
 		case EARTTargetSelectionFilter::Players:
-			bPassFilter = bPassFilter && TargetActor->IsA<AARTSurvivor>();
+			if(!TargetActor->IsA<AARTSurvivor>()) return bReverseFilter ^ false;
 			break;
 		case EARTTargetSelectionFilter::AIPawns:
-			bPassFilter = bPassFilter && TargetActor->IsA<AARTCharacterAI>();
+			if(!TargetActor->IsA<AARTCharacterAI>()) return bReverseFilter ^ false;
 			break;
 		case EARTTargetSelectionFilter::Instigator:
-			bPassFilter = bPassFilter && TargetActor == SelfActor;
+			if(TargetActor != SelfActor) return bReverseFilter ^ false;
 			break;
 		default:
 			break;
 		}
-
+		
 		switch (SelfFilter.GetValue())
 		{
 		case ETargetDataFilterSelf::Type::TDFS_NoOthers:
 			if (TargetActor != SelfActor)
 			{
-				bPassFilter = false;
+				return bReverseFilter ^ false;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_NoSelf:
 			if (TargetActor == SelfActor)
 			{
-				bPassFilter = false;
+				return bReverseFilter ^ false;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_Any:
 		default:
 			break;
 		}
-
-		return bReverseFilter ^ bPassFilter;
+		return bReverseFilter ^ true;
 	}
 };
 
 
 //filter with team attitude
 USTRUCT(BlueprintType)
-struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
+struct ART_API FARTTargetDataFilter_TeamAttitude : public FGameplayTargetDataFilter
 {
 	GENERATED_USTRUCT_BODY()
 
-	virtual ~FARTTargetFilterTeamID() override
+	virtual ~FARTTargetDataFilter_TeamAttitude() override
 	{
 	}
 
@@ -134,17 +134,16 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 	/** Returns true if the actor passes the filter and will be targeted */
 	bool TargetPassesFilter(const AActor* TargetActor) const
 	{
-		bool bPassFilter = true;
-	
+		if (!SelfActor || !TargetActor)
+		{
+			return false;
+		}
 		if (RequiredActorClass != nullptr)
 		{
-			bPassFilter = RequiredActorClass == TargetActor->GetClass();
-		}
-
-		if (!TargetActor)
-		{
-			bPassFilter = false;
-			return bReverseFilter ^ bPassFilter;
+			if(RequiredActorClass != TargetActor->GetClass())
+			{
+				return bReverseFilter ^ false;
+			}
 		}
 		else
 		{
@@ -152,8 +151,7 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 			{
 				if(!GetTeamAttitudeTags(SelfActor, TargetActor).HasAll(BehaviourTags))
 				{
-					bPassFilter = false;
-					return bReverseFilter ^ bPassFilter;
+					return bReverseFilter ^ false;
 				}
 			}
 
@@ -164,13 +162,11 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 				{
 					if(!ASC->HasAllMatchingGameplayTags(RequiredTags))
 					{
-						bPassFilter = false;
-						return bReverseFilter ^ bPassFilter;
+						return bReverseFilter ^ false;
 					}
 					if(ASC->HasAnyMatchingGameplayTags(BlockedTags))
 					{
-						bPassFilter = false;
-						return bReverseFilter ^ bPassFilter;
+						return bReverseFilter ^ false;
 					}
 				}
 			}
@@ -181,15 +177,13 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 		case ETargetDataFilterSelf::Type::TDFS_NoOthers:
 			if (TargetActor != SelfActor)
 			{
-				bPassFilter = false;
-				return bReverseFilter ^ bPassFilter;
+				return bReverseFilter ^ false;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_NoSelf:
 			if (TargetActor == SelfActor)
 			{
-				bPassFilter = false;
-				return bReverseFilter ^ bPassFilter;
+				return bReverseFilter ^ false;
 			}
 			break;
 		case ETargetDataFilterSelf::Type::TDFS_Any:
@@ -197,7 +191,7 @@ struct ART_API FARTTargetFilterTeamID : public FGameplayTargetDataFilter
 			break;
 		}
 
-		return bReverseFilter ^ bPassFilter;
+		return bReverseFilter ^ true;
 	}
 
 	FGameplayTagContainer GetTeamAttitudeTags(const AActor* Actor, const AActor* Other) const

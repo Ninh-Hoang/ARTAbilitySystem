@@ -99,13 +99,16 @@ protected:
 	UPROPERTY(Replicated)
 	FARTSubItemStackArray SubItemStacks;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UARTItemStack* ParentItemStack;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Item", ReplicatedUsing=OnRep_StackSize)
 	int32 StackSize;
 
 public:
+
+	void SetParentStack(UARTItemStack* ItemStack);
+	
 	UFUNCTION()
 	virtual void OnRep_Rarity(UARTItemRarity* PreviousRarity);
 	UFUNCTION()
@@ -118,14 +121,14 @@ public:
 	virtual TSubclassOf<UARTItemDefinition> GetItemDefinition() const;
 	virtual int32 GetStackSize() const;
 
+	UFUNCTION(BlueprintPure, Category = "ART|Inventory|ItemStack")
+	virtual bool CanStackWith(UARTItemStack* OtherStack) const;
+
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory|ItemStack")
 	virtual void SetStackSize(int32 NewStackSize);
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory|ItemStack")
 	virtual bool HasValidItemData() const;
-
-	UFUNCTION(BlueprintPure, Category = "ART|Inventory|ItemStack")
-	virtual bool CanStackWith(UARTItemStack* OtherStack) const;
 
 	//Returns true if merged completely.  False if OtherStack has elements remaining.   
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory|ItemStack")

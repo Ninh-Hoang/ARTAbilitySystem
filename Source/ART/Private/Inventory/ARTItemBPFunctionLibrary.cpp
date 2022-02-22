@@ -152,10 +152,98 @@ UARTInventoryComponent_Active* UARTItemBPFunctionLibrary::GetActiveInventoryComp
 	return Cast<UARTInventoryComponent_Active>(GetInventoryComponent(Actor, bSearchComponents));
 }
 
+bool UARTItemBPFunctionLibrary::TwoItemCanStack(UARTItemStack* TargetStack, UARTItemStack* SourceStack)
+{
+	if(!TargetStack || !SourceStack) return false;
+	if(TargetStack->GetItemDefinition() != SourceStack->GetItemDefinition()) return false;
+	if(TargetStack->GetStackSize() >= TargetStack->GetItemDefinition().GetDefaultObject()->MaxStackSize) return false;
+	return true;
+}
 
-bool UARTItemBPFunctionLibrary::IsValidItemSlotRef(const FARTItemSlotRef& ItemSlotRef)
+bool UARTItemBPFunctionLibrary::RemoveItemInSlot(const FARTItemSlotRef& ItemSlot)
+{
+	if(!IsValid(ItemSlot)) return false;
+
+	if(UARTItemStack_SlotContainer* Container = ItemSlot.ParentStack.Get())
+	{
+		return Container->RemoveItemFromContainer(ItemSlot);
+	}
+	if(UARTInventoryComponent* Inventory = ItemSlot.ParentInventory.Get())
+	{
+		return Inventory->RemoveItemFromInventory(ItemSlot);
+	}
+	//we should never touch here
+	check(0);
+	return false;
+}
+
+bool UARTItemBPFunctionLibrary::CanAcceptSlotItem_AssumeEmptySlot(const FARTItemSlotRef& FromSlot, const FARTItemSlotRef& ToSlot)
+{
+	if(!IsValid(ToSlot)) return false;
+	if(UARTItemStack_SlotContainer* Container = ToSlot.ParentStack.Get())
+	{
+		return Container->AcceptsItem_AssumeEmptySlot(GetItemFromSlot(FromSlot), ToSlot);
+	}
+	if(UARTInventoryComponent* Inventory = ToSlot.ParentInventory.Get())
+	{
+		return Inventory->AcceptsItem_AssumeEmptySlot(GetItemFromSlot(FromSlot), ToSlot);
+	}
+	//we should never touch here
+	check(0);
+	return false;
+}
+
+bool UARTItemBPFunctionLibrary::CanAcceptItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotRef& ToSlot)
+{
+	if(!IsValid(ToSlot)) return false;
+	if(UARTItemStack_SlotContainer* Container = ToSlot.ParentStack.Get())
+	{
+		return Container->AcceptsItem_AssumeEmptySlot(Item, ToSlot);
+	}
+	if(UARTInventoryComponent* Inventory = ToSlot.ParentInventory.Get())
+	{
+		return Inventory->AcceptsItem_AssumeEmptySlot(Item, ToSlot);
+	}
+	//we should never touch here
+	check(0);
+	return false;
+}
+
+bool UARTItemBPFunctionLibrary::DoesItemContainSlot(UARTItemStack* Item, const FARTItemSlotRef& Slot)
+{
+	if(!IsValid(Slot) || !Item) return false;
+	UARTItemStack* ParentStack = Slot.ParentStack.Get();
+	while(ParentStack)
+	{
+		if(ParentStack == Item) return true;
+	}
+	return false;
+}
+
+bool UARTItemBPFunctionLibrary::IsValidItemSlot(const FARTItemSlotRef& ItemSlotRef)
 {
 	return IsValid(ItemSlotRef);
+}
+
+bool UARTItemBPFunctionLibrary::SwapItemSlot(const FARTItemSlotRef& FromSlot, const FARTItemSlotRef& ToSlot)
+{
+	if(!IsValid(FromSlot) || !IsValid(ToSlot)) return false;
+
+	/*if(FromSlot.ParentInventory.IsValid() && FromSlot.ParentInventory.Get() == ToSlot.ParentInventory.Get())
+	{
+		return FromSlot.ParentInventory.Get()->SwapItemSlots(FromSlot, ToSlot);
+	}
+	if(FromSlot.ParentStack.IsValid() && FromSlot.ParentStack.Get() == ToSlot.ParentStack.Get())
+	{
+		return FromSlot.ParentStack.Get()->SwapItemSlots(FromSlot, ToSlot);
+	}*/
+
+	if(FromSlot.ParentInventory.IsValid()) return FromSlot.ParentInventory.Get()->SwapItemSlots(FromSlot, ToSlot);
+	if(ToSlot.ParentInventory.IsValid()) return ToSlot.ParentInventory.Get()->SwapItemSlots(FromSlot, ToSlot);
+	if(FromSlot.ParentStack.IsValid()) return FromSlot.ParentStack.Get()->SwapItemSlots(FromSlot, ToSlot);
+	if(ToSlot.ParentStack.IsValid()) return ToSlot.ParentStack.Get()->SwapItemSlots(FromSlot, ToSlot);
+	check(0);
+	return false;
 }
 
 UARTItemStack* UARTItemBPFunctionLibrary::GetItemFromSlot(const FARTItemSlotRef& ItemSlotRef)
@@ -182,19 +270,64 @@ bool UARTItemBPFunctionLibrary::EqualEqual_FARTItemSlotRef(const FARTItemSlotRef
 	return ItemSlotRef == OtherItemSlotRef;
 }
 
+bool UARTItemBPFunctionLibrary::NotEqual_FARTItemSlotRef(const FARTItemSlotRef& ItemSlotRef,
+	const FARTItemSlotRef& OtherItemSlotRef)
+{
+	return ItemSlotRef != OtherItemSlotRef;
+}
+
 UARTInventoryComponent* UARTItemBPFunctionLibrary::GetInventoryFromSlot(const FARTItemSlotRef& ItemSlotRef)
 {
 	return ItemSlotRef.ParentInventory.Get();
 }
 
-bool UARTItemBPFunctionLibrary::IsValidInventoryQuery(const FARTItemQuery& Query)
+bool UARTItemBPFunctionLibrary::IsValidInventoryQuery(const FARTSlotQueryHandle& Query)
 {
-	return Query.IsValid();
+	return Query.Query.IsValid();
 }
 
-FGameplayTagQuery UARTItemBPFunctionLibrary::MakeGameplayTagQuery_AnyTag(const FGameplayTagContainer& TagContainer)
+FARTSlotQueryHandle UARTItemBPFunctionLibrary::MakeSlotQueryHandle_GameplayTagQuery(const FGameplayTagQuery& SlotQuery,
+	const FGameplayTagQuery& ItemQuery)
 {
-	return FGameplayTagQuery::MakeQuery_MatchAnyTags(TagContainer);
+	FARTSlotQuery Query;
+	Query.SlotTypeQuery = SlotQuery;
+	Query.ItemTypeQuery = ItemQuery;
+
+	FARTSlotQuery* NewQuery = new FARTSlotQuery(Query);
+
+	FARTSlotQueryHandle QueryHandle;
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
+	return QueryHandle;
+}
+
+FARTSlotQueryHandle UARTItemBPFunctionLibrary::MakeSlotQueryHandle_SlotWithItem(
+	const TSubclassOf<UARTItemDefinition> ItemDefinition, const TEnumAsByte<EItemStackCount::Type> StackCount,
+	const FGameplayTagContainer& ItemRequiredTags, const FGameplayTagContainer& ItemBlockedTags)
+{
+	FARTSlotQuery_SlotWithItem Query;
+	Query.ItemDefinition = ItemDefinition;
+	Query.StackCount = StackCount;
+	Query.ItemRequiredTags = ItemRequiredTags;
+	Query.ItemBlockedTags = ItemBlockedTags;
+
+	FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);
+	FARTSlotQueryHandle QueryHandle;
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
+	return QueryHandle;
+}
+
+FARTSlotQueryHandle UARTItemBPFunctionLibrary::MakeSlotQueryHandle_SlotCanAcceptItem(
+	const TEnumAsByte< EItemExistence::Type> ItemExist,
+	UARTItemStack* ContextItemStack)
+{
+	FARTSlotQuery_SlotCanAcceptItem Query;
+	Query.ItemExist = ItemExist;
+	Query.ContextItemStack = ContextItemStack;
+
+	FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotCanAcceptItem(Query);
+	FARTSlotQueryHandle QueryHandle;
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
+	return QueryHandle;
 }
 
 void UARTItemBPFunctionLibrary::CopyAttributeSet(UAttributeSet* Src, UAttributeSet* Destination)

@@ -128,29 +128,56 @@ public:
 	* FARTTargetFilterHandle filter by type
 	*/
 	UFUNCTION(BlueprintPure, Category = "Ability|TargetData", Meta = (DisplayName =
+		"Filter Target Data by Target Type"))
+	static FGameplayAbilityTargetDataHandle FilterTargetDataByActorType(
+	   const FGameplayAbilityTargetDataHandle& TargetDataHandle,
+	   AActor* InContextActor,
+       TEnumAsByte<EARTTargetSelectionFilter::Type>
+       InTargetTypeFilter,
+       TEnumAsByte<ETargetDataFilterSelf::Type>
+       InSelfFilter,
+       TSubclassOf<AActor> InRequiredActorClass,
+       bool InReverseFilter);
+
+	UFUNCTION(BlueprintPure, Category = "Ability|TargetData", Meta = (DisplayName =
 		"Make Target Data Filter by Target Type"))
-	static FGameplayTargetDataFilterHandle MakeTargetDataFilterByActorType(AActor* FilterActor, AActor* InSourceActor,
-	                                                                       TEnumAsByte<EARTTargetSelectionFilter::Type>
-	                                                                       InTargetTypeFilter,
-	                                                                       TEnumAsByte<ETargetDataFilterSelf::Type>
-	                                                                       InSelfFilter,
-	                                                                       TSubclassOf<AActor> InRequiredActorClass,
-	                                                                       bool InReverseFilter);
+	static FGameplayTargetDataFilterHandle MakeTargetDataFilterByActorType(
+	   AActor* InContextActor,
+	   TEnumAsByte<EARTTargetSelectionFilter::Type>
+	   InTargetTypeFilter,
+	   TEnumAsByte<ETargetDataFilterSelf::Type>
+	   InSelfFilter,
+	   TSubclassOf<AActor> InRequiredActorClass,
+	   bool InReverseFilter);
 
 	/*
 	* FARTTargetFilterHandle filter by TeamAttitude
 	*/
 	UFUNCTION(BlueprintPure, Category = "Ability|TargetData", Meta = (DisplayName =
-	"Make Target Data Filter by Team Attitude", AutoCreateRefTerm =
+	"Filter Target Data by Team Attitude", AutoCreateRefTerm =
 	"RequiredTags, BlockedTags, BehaviourTags"))
-	static FGameplayTargetDataFilterHandle MakeTargetDataFilterByTeamAttitude(
-		AActor* FilterActor,
+	static FGameplayAbilityTargetDataHandle FilterTargetDataByTeamAttitude(
+		const FGameplayAbilityTargetDataHandle& TargetDataHandle,
+		AActor* InContextActor,
 		const FGameplayTagContainer& RequiredTags,
 		const FGameplayTagContainer& BlockedTags,
 		const FGameplayTagContainer& BehaviourTags,
 		TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter,
 		TSubclassOf<AActor> InRequiredActorClass,
 		bool InReverseFilter);
+
+	UFUNCTION(BlueprintPure, Category = "Ability|TargetData", Meta = (DisplayName =
+	"Make Target Data Filter by Team Attitude", AutoCreateRefTerm =
+	"RequiredTags, BlockedTags, BehaviourTags"))
+	static FGameplayTargetDataFilterHandle MakeTargetDataFilterByTeamAttitude(
+		AActor* InContextActor,
+		const FGameplayTagContainer& RequiredTags,
+		const FGameplayTagContainer& BlockedTags,
+		const FGameplayTagContainer& BehaviourTags,
+		TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter,
+		TSubclassOf<AActor> InRequiredActorClass,
+		bool InReverseFilter);
+	
 	/*
 	* Filter Bulk TargetData
 	*/
@@ -218,6 +245,15 @@ public:
 													FGameplayTagContainer& OutMissingTags,
 													FGameplayTagContainer& OutBlockingTags);
 
+	UFUNCTION(BlueprintPure, Category = "ART|TagQuery", Meta = (AutoCreateRefTerm = "AnyTags"))
+	static FGameplayTagQuery MakeGameplayTagQuery_AnyTag(const FGameplayTagContainer& AnyTags);
+
+	UFUNCTION(BlueprintPure, Category = "ART|TagQuery", Meta = (AutoCreateRefTerm = "AllTags"))
+	static FGameplayTagQuery MakeQuery_MatchAllTags(FGameplayTagContainer const& AllTags);
+	
+	UFUNCTION(BlueprintPure, Category = "ART|TagQuery", Meta = (AutoCreateRefTerm = "NoneOfTags"))
+	static FGameplayTagQuery MakeQuery_MatchNoTags(FGameplayTagContainer const& NoneOfTags);
+	
 	/** Gets the gameplay tags of the specified actor. */
 	UFUNCTION(Category = "Order|Tags", BlueprintPure)
 	static void GetTags(const AActor* Actor, FGameplayTagContainer& OutGameplayTags);

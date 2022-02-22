@@ -100,6 +100,33 @@ void UARTItemStack_SlotContainer::PopulateSlotReferenceArray(TArray<FARTItemSlot
 
 bool UARTItemStack_SlotContainer::LootItem(UARTItemStack* Item)
 {
+	TArray<UARTItemStack*> NotFullItemStacks;
+	
+	FARTSlotQuery_SlotWithItem Query;
+	Query.ItemDefinition = Item->GetItemDefinition();
+	Query.StackCount = EItemStackCount::ISC_NotMaxStack;
+
+	FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);
+	FARTSlotQueryHandle QueryHandle;
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
+
+	Query_GetAllItems(QueryHandle, NotFullItemStacks);
+
+	for(UARTItemStack* NotFullItem : NotFullItemStacks)
+	{
+		if(NotFullItem->MergeItemStacks(Item)) return true;
+	}
+
+	//Find the first empty item slot
+	for (auto Slot : ItemContainer.Slots)
+	{
+		FARTItemSlotRef SlotRef(Slot, this);
+		if (PlaceItemIntoSlot(Item, SlotRef))
+		{
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -113,7 +140,7 @@ bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const F
 	//Kinda Hack: The Item must be owned by our owning actor for it to be replicated as part of that actor.
 	//We can't change ownership over the network (UE4 issue), so instead we duplicate it under the hood.  
 	//Only do this if the item owner is not the owner of our component.
-	if (Cast<AActor>(GetOuter()))
+	if (IsValid(Item) && Cast<AActor>(GetOuter()))
 	{
 		if (Item->GetOuter() != GetOuter())
 		{
@@ -125,11 +152,11 @@ bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const F
 	FARTItemSlot& Slot = GetItemSlot(ItemSlot);
 	UARTItemStack* PreviousItem = Slot.ItemStack;
 	Slot.ItemStack = Item;
+	Item->SetParentStack(this);
 
 	ItemContainer.MarkItemDirty(Slot);
 
 	//Inform the world that we have placed this item here
-	OnContainerUpdate.Broadcast(this);
 	OnContainerSlotUpdate.Broadcast(this, ItemSlot, Item, PreviousItem);
 	
 	if (AActor* OwningActor = Cast<AActor>(GetOuter()))
@@ -142,7 +169,36 @@ bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const F
 
 bool UARTItemStack_SlotContainer::RemoveItemFromContainer(const FARTItemSlotRef& ItemSlot)
 {
-	return false;
+	//Check if we have a valid item slot
+	if (!IsValid(ItemSlot))
+	{
+		return false;
+	}
+
+	FARTItemSlot& Item = GetItemSlot(ItemSlot);
+	UARTItemStack* PreviousItem = Item.ItemStack;
+
+	//Check to make sure we have a valid item in this slot
+	if (!IsValid(Item.ItemStack))
+	{
+		return false;
+	}
+
+	//then remove the item
+	Item.ItemStack = nullptr;
+
+	ItemContainer.MarkItemDirty(Item);
+	ItemContainer.MarkArrayDirty();
+	
+	OnContainerSlotUpdate.Broadcast(this, ItemSlot, Item.ItemStack, PreviousItem);
+	PreviousItem->SetParentStack(nullptr);
+	
+	if (AActor* OwningActor = Cast<AActor>(GetOuter()))
+	{
+		OwningActor->ForceNetUpdate();
+	}
+
+	return true;
 }
 
 bool UARTItemStack_SlotContainer::IsValidItemSlot(const FARTItemSlotRef& Slot)
@@ -156,11 +212,6 @@ bool UARTItemStack_SlotContainer::IsValidItemSlot(const FARTItemSlotRef& Slot)
 		}
 	}
 
-	return false;
-}
-
-bool UARTItemStack_SlotContainer::IsValidItemSlotRef(const FARTItemSlotRef& Slot)
-{
 	return false;
 }
 
@@ -197,10 +248,41 @@ bool UARTItemStack_SlotContainer::RemoveAllItemsFromContainer(TArray<UARTItemSta
 	return true;
 }
 
-bool UARTItemStack_SlotContainer::SwapItemSlots(const FARTItemSlotRef& FromSlot,
-	const FARTItemSlotRef& ToSlot)
+bool UARTItemStack_SlotContainer::SwapItemSlots(const FARTItemSlotRef& SourceSlot,
+	const FARTItemSlotRef& DestSlot)
 {
-	return false;
+	//Make sure both slots are valid
+	//This checks if ParentInventory is valid, which is important later.  
+	if (!IsValid(SourceSlot) || !IsValid(DestSlot))
+	{
+		return false;
+	}	
+
+	UARTItemStack_SlotContainer* SourceParentStack = SourceSlot.ParentStack.Get();
+	UARTItemStack_SlotContainer* DestinationParentStack = SourceSlot.ParentStack.Get();
+
+	//If neither the source nor the destination is us... what are we even doing here?
+	if (SourceParentStack  != this && DestinationParentStack != this)
+	{
+		return false;
+	}
+
+	UARTItemStack* SourceItem = SourceParentStack->GetItemInSlot(SourceSlot);
+	UARTItemStack* DestItem = DestinationParentStack->GetItemInSlot(DestSlot);
+														 	
+	//Ensure that the two slots can hold these items
+	if (!DestinationParentStack->AcceptsItem_AssumeEmptySlot(SourceItem, DestSlot) || !SourceParentStack ->AcceptsItem_AssumeEmptySlot(DestItem, SourceSlot))
+	{
+		return false;
+	}
+
+	SourceParentStack->RemoveItemFromContainer(SourceSlot);
+	DestinationParentStack->RemoveItemFromContainer(DestSlot);
+
+	SourceParentStack->PlaceItemIntoSlot(DestItem, SourceSlot);
+	DestinationParentStack->PlaceItemIntoSlot(SourceItem, DestSlot);
+
+	return true;
 }
 
 bool UARTItemStack_SlotContainer::AcceptsItem(UARTItemStack* Item, const FARTItemSlotRef& Slot)
@@ -258,12 +340,25 @@ int32 UARTItemStack_SlotContainer::GetContainerSize()
 	return ItemContainer.Slots.Num();
 }
 
+int32 UARTItemStack_SlotContainer::GetItemCount()
+{
+	int32 ItemCount = 0;
+	for (FARTItemSlot& ItemSlot : ItemContainer.Slots)
+	{
+		if (IsValid(ItemSlot.ItemStack))
+		{
+			ItemCount++;
+		}
+	}
+	return ItemCount;
+}
+
 TArray<FARTItemSlotRef> UARTItemStack_SlotContainer::GetAllSlotReferences()
 {
 	return AllReferences;
 }
 
-bool UARTItemStack_SlotContainer::Query_GetAllSlots(const FARTItemQuery& Query,
+bool UARTItemStack_SlotContainer::Query_GetAllSlots(const FARTSlotQueryHandle& Query,
 	TArray<FARTItemSlotRef>& OutSlotRefs)
 {
 	for (FARTItemSlot& ItemSlot : ItemContainer.Slots)
@@ -276,20 +371,19 @@ bool UARTItemStack_SlotContainer::Query_GetAllSlots(const FARTItemQuery& Query,
 	return OutSlotRefs.Num() > 0;
 }
 
-FARTItemSlotRef UARTItemStack_SlotContainer::Query_GetFirstSlot(const FARTItemQuery& Query)
+FARTItemSlotRef UARTItemStack_SlotContainer::Query_GetFirstSlot(const FARTSlotQueryHandle& Query)
 {
-	TArray<FARTItemSlotRef> OutSlotRefs;
-	
-	if (!Query_GetAllSlots(Query, OutSlotRefs))
+	for (FARTItemSlot& ItemSlot : ItemContainer.Slots)
 	{
-		UE_LOG(LogInventory, Warning, TEXT("Tried to query for %s but didn't find it"), *Query.SlotTypeQuery.GetDescription())
-		return FARTItemSlotRef();
+		if (Query.MatchesSlot(ItemSlot))
+		{
+			return (FARTItemSlotRef(ItemSlot, this));
+		}
 	}
-
-	return OutSlotRefs[0];
+	return FARTItemSlotRef();
 }
 
-void UARTItemStack_SlotContainer::Query_GetAllItems(const FARTItemQuery& Query, TArray<UARTItemStack*>& OutItems)
+void UARTItemStack_SlotContainer::Query_GetAllItems(const FARTSlotQueryHandle& Query, TArray<UARTItemStack*>& OutItems)
 {
 	for (FARTItemSlot& ItemSlot : ItemContainer.Slots)
 	{
@@ -303,6 +397,23 @@ void UARTItemStack_SlotContainer::Query_GetAllItems(const FARTItemQuery& Query, 
 			OutItems.Add(ItemSlot.ItemStack);
 		}
 	}
+}
+
+UARTItemStack* UARTItemStack_SlotContainer::Query_GetFirstItem(const FARTSlotQueryHandle& Query)
+{
+	for (FARTItemSlot& ItemSlot : ItemContainer.Slots)
+	{
+		if (!IsValid(ItemSlot.ItemStack))
+		{
+			continue;
+		}
+
+		if (Query.MatchesSlot(ItemSlot))
+		{
+			return ItemSlot.ItemStack;
+		}
+	}
+	return nullptr;
 }
 
 void UARTItemStack_SlotContainer::OnRep_ItemContainer()

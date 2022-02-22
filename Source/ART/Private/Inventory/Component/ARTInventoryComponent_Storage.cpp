@@ -87,5 +87,9 @@ void UARTInventoryComponent_Storage::OnInventorySizeAttributeChange(const FOnAtt
 
 bool UARTInventoryComponent_Storage::Query_GetAllStorageSlots(TArray<FARTItemSlotRef>& OutSlotRefs)
 {
-	return Query_GetAllSlots(FARTItemQuery::QuerySlotMatchingTag(InvStorageSlotTag), OutSlotRefs);
+	FARTSlotQueryHandle QueryHandle;
+	FARTSlotQuery* Query = new FARTSlotQuery(FARTSlotQuery::QuerySlotMatchingTag(InvStorageSlotTag));
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(Query);
+	
+	return Query_GetAllSlots(QueryHandle, OutSlotRefs);
 }

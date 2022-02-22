@@ -1,11 +1,11 @@
 ﻿#include "Inventory/ARTInventoryItemTypes.h"
 #include "Inventory/Component/ARTInventoryComponent.h"
+#include "Inventory/Item/ARTItemDefinition.h"
 #include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 
 const int32 NAMED_ITEM_SLOT = -1;
 
 FARTItemSlot FARTItemSlot::Invalid = FARTItemSlot();
-FARTItemSlotReference FARTItemSlotReference::Invalid = FARTItemSlotReference();
 FARTItemSlotRef FARTItemSlotRef::Invalid = FARTItemSlotRef();
 
 /*bool IsValid(const FARTItemSlotReference& ItemRef)
@@ -25,6 +25,8 @@ FARTItemSlotRef FARTItemSlotRef::Invalid = FARTItemSlotRef();
 
 bool IsValid(const FARTItemSlotRef& ItemRef)
 {
+	if(ItemRef.SlotId < 0) return false;
+	
 	if (!ItemRef.ParentInventory.IsValid() && !ItemRef.ParentStack.IsValid())
 	{
 		return false;
@@ -111,151 +113,128 @@ bool FARTItemSlotFilterHandle::NetSerialize(FArchive& Ar, UPackageMap* Map, bool
 	return true;
 }
 
-bool FARTItemQuery::MatchesSlot(const FARTItemSlot& ItemSlot)	const
-{
-	//Slot Tag Matching
-	bool Matches = true;
+/////////////////////////////////////////////////////////////////
 
+bool FARTSlotQuery::MatchesSlot(const FARTItemSlot& ItemSlot)	const
+{
 	//Check to see if we have a matching slot type
 	if (!SlotTypeQuery.IsEmpty())
 	{
-		Matches &= SlotTypeQuery.Matches(ItemSlot.SlotTags); 						 		
+		if(!SlotTypeQuery.Matches(ItemSlot.SlotTags)) return false;						 		
 	}	
 
 	if (!ItemTypeQuery.IsEmpty())
 	{
 		//If we are looking for a specific item and this slot doesn't have any item, it's a failed match
-		if (!::IsValid(ItemSlot.ItemStack))
-		{
-			return false;
-		}
+		if (!::IsValid(ItemSlot.ItemStack)) return false;
 
 		FGameplayTagContainer StackContainer;
 		ItemSlot.ItemStack->GetOwnedGameplayTags(StackContainer);
 
-		Matches &= ItemTypeQuery.Matches(StackContainer);
+		if(!ItemTypeQuery.Matches(StackContainer)) return false;
 	}
-
-	return Matches;
+	return true;
 }
 
-FARTItemQuery FARTItemQuery::QuerySlotMatchingTag(FGameplayTag Tag)
+FARTSlotQuery FARTSlotQuery::QuerySlotMatchingTag(FGameplayTag Tag)
 {
-	FARTItemQuery Query;
+	FARTSlotQuery Query;
 	Query.SlotTypeQuery = FGameplayTagQuery::MakeQuery_MatchTag(Tag);
 
 	return Query;
 }
 
-FARTItemQuery FARTItemQuery::QueryForMatchingItemTag(FGameplayTag Tag)
+FARTSlotQuery FARTSlotQuery::QueryForMatchingItemTag(FGameplayTag Tag)
 {
-	FARTItemQuery Query;
+	FARTSlotQuery Query;
 	Query.ItemTypeQuery = FGameplayTagQuery::MakeQuery_MatchTag(Tag);
 
 	return Query;
 }
 
-FARTItemQuery FARTItemQuery::QueryForSlot(const FGameplayTagQuery& SlotQuery)
+FARTSlotQuery FARTSlotQuery::QueryForSlot(const FGameplayTagQuery& SlotQuery)
 {
-	FARTItemQuery Query;
+	FARTSlotQuery Query;
 	Query.SlotTypeQuery = SlotQuery;
 
 	return Query;
 }
 
-FARTItemQuery FARTItemQuery::QueryForItemType(const FGameplayTagQuery& ItemQuery)
+FARTSlotQuery FARTSlotQuery::QueryForItemType(const FGameplayTagQuery& ItemQuery)
 {
-	FARTItemQuery Query;
+	FARTSlotQuery Query;
 	Query.ItemTypeQuery = ItemQuery;
 
 	return Query;
 }
 
-bool FARTItemQuery::IsValid() const
+bool FARTSlotQuery::IsValid() const
 {
 	return !SlotTypeQuery.IsEmpty() || !ItemTypeQuery.IsEmpty();
 }
 
-/////////////////////////////////////////////////////////////////
-
-FARTItemSlotReference::FARTItemSlotReference(const FARTItemSlotReference& Copy)
+bool FARTSlotQuery_SlotWithItem::MatchesSlot(const FARTItemSlot& ItemSlot) const
 {
-	SlotId = Copy.SlotId;
-	SlotTags = Copy.SlotTags;
-	ParentInventory = Copy.ParentInventory;
-}
-
-FARTItemSlotReference::FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory)
-{
-	SlotId = FromSlot.SlotId;
-	SlotTags = FromSlot.SlotTags;
-	ParentInventory = InParentInventory;
-}
-
-FARTItemSlotReference::FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack)
-{
-	SlotId = FromSlot.SlotId;
-	SlotTags = FromSlot.SlotTags;
-	ParentStack = InParentStack;
-}
-
-FARTItemSlotReference::FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory,
-	UARTItemStack_SlotContainer* InParentStack)
-{
-	SlotId = FromSlot.SlotId;
-	SlotTags = FromSlot.SlotTags;
-	ParentInventory = InParentInventory;
-	ParentStack = InParentStack;
-}
-
-bool FARTItemSlotReference::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
-{
-	uint32 RepBits = 0;
-
-	if (Ar.IsSaving())
-	{
-		if(SlotId > -1)
-		{
-			RepBits |= 1 << 0;
-		}
-		if(ParentInventory.IsValid())
-		{
-			RepBits |= 1 << 1;
-		}
-		if(ParentStack.IsValid())
-		{
-			RepBits |= 1 << 2;
-		}
-	}
-
-	Ar.SerializeBits(&RepBits, 3);
-	SlotTags.NetSerialize(Ar, Map, bOutSuccess);
+	// do not accept empty slot
+	UARTItemStack* ItemStack = ItemSlot.ItemStack;
 	
-	if (RepBits & (1 << 0))
-	{
-		Ar << SlotId;
-	}
-	if (RepBits & (1 << 1))
-	{
-		Ar << ParentInventory;
-	}
-	if (RepBits & (1 << 2))
-	{
-		Ar << ParentStack;
-	}
+	if(!ItemStack) return false;
 	
-	bOutSuccess = true;
+	if(ItemDefinition)
+	{
+		if(ItemDefinition != ItemStack->GetItemDefinition()) return false;
+	}
+
+	switch (StackCount.GetValue())
+	{
+	case EItemStackCount::Type::ISC_NotMaxStack:
+		if(ItemStack->GetStackSize() >= ItemStack->GetItemDefinition().GetDefaultObject()->MaxStackSize) return false;
+		break;
+	case EItemStackCount::Type::ISC_MaxStack:
+		if(ItemStack->GetStackSize() != ItemStack->GetItemDefinition().GetDefaultObject()->MaxStackSize) return false;
+		break;
+	case EItemStackCount::Type::ISC_Ignore:
+		break;
+	}
+
+	if(!ItemRequiredTags.IsEmpty() || !ItemBlockedTags.IsEmpty())
+	{
+		FGameplayTagContainer ItemTags;
+		ItemStack->GetOwnedGameplayTags(ItemTags);
+		if(!ItemRequiredTags.IsEmpty())
+		{
+			if(!ItemTags.HasAll(ItemRequiredTags)) return false;
+		}
+		if(!ItemBlockedTags.IsEmpty())
+		{
+			if(!ItemTags.HasAny(ItemBlockedTags)) return false;
+		}
+	}
 	return true;
 }
 
-FString FARTItemSlotReference::ToString() const
+bool FARTSlotQuery_SlotCanAcceptItem::MatchesSlot(const FARTItemSlot& ItemSlot) const
 {
-	return FString::Printf(TEXT("Slot(%d)(%s)-%s-%s"),
-		SlotId,
-		*SlotTags.ToString(),
-		ParentInventory.IsValid() ? *ParentInventory.Get()->GetName() : TEXT("nullptr"),
-		ParentStack.IsValid() ? *ParentStack.Get()->GetName() : TEXT("nullptr"));
+	UARTItemStack* ItemStack = ItemSlot.ItemStack;
+	switch(ItemExist.GetValue())
+	{
+	case EItemExistence::Type::IE_Empty:
+		if(ItemStack) return false;
+		break;
+	case EItemExistence::Type::IE_HasItem:
+		if(!ItemStack) return false;
+		break;
+	case EItemExistence::Type::IE_Any:
+		break;
+	}
+	if(ContextItemStack)
+	{
+		if(!ItemSlot.ItemSlotFilter.AcceptsItem(ContextItemStack)) return false;
+	}
+	return true;
 }
+
+/////////////////////////////////////////////////////////////////
 
 void FARTItemSlot::ToDebugStrings(TArray<FString>& OutStrings, bool Detailed) const
 {

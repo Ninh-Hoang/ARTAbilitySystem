@@ -28,8 +28,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(class UActorChannel *Channel, class FOutBunch *Bunch, FReplicationFlags *RepFlags) override;
 
+	UPROPERTY(BlueprintAssignable)
 	FARTOnContainerUpdate OnContainerUpdate;
 
+	UPROPERTY(BlueprintAssignable)
 	FARTOnContainerSlotUpdate OnContainerSlotUpdate;
 
 	void PostContainerUpdate();
@@ -38,10 +40,6 @@ public:
 	//Returns true if the item slot reference is valid.  Override this if adding additional item slots
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
 	virtual bool IsValidItemSlot(const FARTItemSlotRef& Slot);
-
-	//Returns true if the item slot reference is valid.  Override this if adding additional item slots
-	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	virtual bool IsValidItemSlotRef(const FARTItemSlotRef& Slot);
 	
 	//Returns a reference to the item slot.  Call IsValidItemSlot before this to ensure you get a valid item slot
 	virtual FARTItemSlot& GetItemSlot(const FARTItemSlotRef& RefSlot);
@@ -75,6 +73,9 @@ public:
 	virtual int32 GetContainerSize();
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
+	virtual int32 GetItemCount();
+
+	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
 	virtual TArray<FARTItemSlotRef> GetAllSlotReferences();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory Layout")
@@ -82,14 +83,17 @@ public:
 
 	//CONTAINER QUERYING
 
-	UFUNCTION(BlueprintCallable, Category="Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAll"))
-	bool Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotRef>& OutSlotRefs);
+	UFUNCTION(BlueprintCallable, Category="Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAllSlots"))
+	bool Query_GetAllSlots(const FARTSlotQueryHandle& Query, TArray<FARTItemSlotRef>& OutSlotRefs);
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetFirst"))
-	FARTItemSlotRef Query_GetFirstSlot(const FARTItemQuery& Query);
+	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetFirstSlot"))
+	FARTItemSlotRef Query_GetFirstSlot(const FARTSlotQueryHandle& Query);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetAllItems"))
-	void Query_GetAllItems(const FARTItemQuery& Query, TArray<UARTItemStack*>& OutItems);
+	void Query_GetAllItems(const FARTSlotQueryHandle& Query, TArray<UARTItemStack*>& OutItems);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory | Item Queries", meta = (ScriptName = "ItemQuery_GetFirstItem"))
+	UARTItemStack* Query_GetFirstItem(const FARTSlotQueryHandle& Query);
 
 	//replication code
 	UFUNCTION()
@@ -98,11 +102,11 @@ protected:
 	virtual void CreateContainerSlot(const FGameplayTagContainer& SlotTags, const FARTItemSlotFilterHandle& Filter);
 
 	virtual void RemoveInventorySlot(const FARTItemSlotRef& Slot);
-	
-private:
-	UPROPERTY(ReplicatedUsing=OnRep_ItemContainer)
-	FARTItemSlotArray ItemContainer;
 
+protected:
+	UPROPERTY(BlueprintReadOnly,ReplicatedUsing=OnRep_ItemContainer)
+	FARTItemSlotArray ItemContainer;
+private:
 	UPROPERTY()
 	TArray<FARTItemSlotRef> AllReferences;
 

@@ -482,5 +482,9 @@ void UARTInventoryComponent_Equippable::Debug_Internal(struct FInventoryComponen
 
 bool UARTInventoryComponent_Equippable::Query_GetAllEquippableSlots(TArray<FARTItemSlotRef>& OutSlotRefs)
 {
-	return Query_GetAllSlots(FARTItemQuery::QuerySlotMatchingTag(InvEquipSlotTag), OutSlotRefs);
+	FARTSlotQueryHandle QueryHandle;
+	FARTSlotQuery* Query = new FARTSlotQuery(FARTSlotQuery::QuerySlotMatchingTag(InvEquipSlotTag));
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(Query);
+	
+	return Query_GetAllSlots(QueryHandle, OutSlotRefs);
 }

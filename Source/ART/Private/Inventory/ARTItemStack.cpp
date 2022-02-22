@@ -107,6 +107,11 @@ AActor* UARTItemStack::GetOwner() const
 	return GetTypedOuter<AActor>();
 }
 
+void UARTItemStack::SetParentStack(UARTItemStack* ItemStack)
+{
+	ParentItemStack = ItemStack;
+}
+
 void UARTItemStack::OnRep_Rarity(UARTItemRarity* PreviousRarity)
 {
 	//Blank, so that subclasses can override this function
@@ -164,7 +169,7 @@ bool UARTItemStack::CanStackWith(UARTItemStack* OtherStack) const
 		return false;
 	}
 
-	bool bCanStack = ItemDefinition.GetDefaultObject()->MaxStackSize > 1;
+	bool bCanStack = (ItemDefinition.GetDefaultObject()->MaxStackSize > 1 && GetStackSize() < ItemDefinition.GetDefaultObject()->MaxStackSize);
 	return bCanStack && ItemDefinition == OtherStack->ItemDefinition;
 }
 
@@ -178,16 +183,16 @@ bool UARTItemStack::MergeItemStacks(UARTItemStack* OtherStack)
 	{
 		return false;
 	}
-
+	
 	const int32 OldStackSize = StackSize;
 	const int32 MaxStacks = ItemDefinition.GetDefaultObject()->MaxStackSize;
 
 	if (StackSize + OtherStack->StackSize > MaxStacks)
 	{
-		const int32 Diff = (MaxStacks + OtherStack->StackSize) - StackSize;
-		StackSize = MaxStacks;
+		const int32 Diff = OtherStack->StackSize + StackSize - MaxStacks;
+		
+		SetStackSize(MaxStacks);
 		OtherStack->SetStackSize(Diff);
-		OnStackSizeChanged.Broadcast(this, OldStackSize, StackSize);
 		return false;
 	}
 	else
@@ -266,7 +271,7 @@ bool UARTItemStack::AddSubItemStack(UARTItemStack* SubItemStack)
 	}
 	
 
-	SubItemStack->ParentItemStack = this;
+	SubItemStack->SetParentStack(this);
 	FARTSubItemArrayEntry Entry;
 	Entry.SubItemStack = SubItemStack;
 	SubItemStacks.Items.Add(Entry);
@@ -284,7 +289,7 @@ bool UARTItemStack::RemoveSubItemStack(UARTItemStack* SubItemStack)
 		SubItemStacks.MarkArrayDirty();
 		OnSubStackRemoved.Broadcast(this, SubItemStack);
 
-		SubItemStack->ParentItemStack = nullptr;
+		SubItemStack->SetParentStack(nullptr);
 		return true;
 	}
 	return false;

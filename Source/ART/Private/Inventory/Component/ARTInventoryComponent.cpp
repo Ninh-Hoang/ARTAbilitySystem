@@ -9,6 +9,7 @@
 #include "Engine/Canvas.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/ActorChannel.h"
+#include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 
 // Sets default values for this component's properties
 UARTInventoryComponent::UARTInventoryComponent(const FObjectInitializer& ObjectInitializer)
@@ -101,18 +102,35 @@ bool UARTInventoryComponent::ReplicateSubobjects(class UActorChannel *Channel, c
 }
 
 bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
-{
+	{
 	//We can't do this on clients
 	if (GetOwnerRole() != ROLE_Authority)
 	{
 		return false;
 	}
 
+	TArray<UARTItemStack*> NotFullItemStacks;
+	
+	FARTSlotQuery_SlotWithItem Query;
+	Query.ItemDefinition = Item->GetItemDefinition();
+	Query.StackCount = EItemStackCount::ISC_NotMaxStack;
+
+	FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);
+	FARTSlotQueryHandle QueryHandle;
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
+
+	Query_GetAllItems(QueryHandle, NotFullItemStacks);
+
+	for(UARTItemStack* NotFullItem : NotFullItemStacks)
+	{
+		if(NotFullItem->MergeItemStacks(Item)) return true;
+	}
+
 	//Find the first empty item slot
 	for (auto Slot : BagInventory.Slots)
 	{
 		FARTItemSlotRef SlotRef(Slot, this);
-		if (AcceptsItem(Item, SlotRef) && PlaceItemIntoSlot(Item, SlotRef))
+		if (PlaceItemIntoSlot(Item, SlotRef))
 		{
 			return true;
 		}
@@ -150,7 +168,7 @@ bool UARTInventoryComponent::PlaceItemIntoSlot(UARTItemStack* Item, const FARTIt
 	BagInventory.MarkItemDirty(Slot);
 
 	//Inform the world that we have placed this item here
-	OnInventoryUpdate.Broadcast(this);
+	//OnInventoryUpdate.Broadcast(this);
 	OnItemSlotChange.Broadcast(this, ItemSlot, Item, PreviousItem);
 	
 	GetOwner()->ForceNetUpdate();
@@ -186,7 +204,7 @@ bool UARTInventoryComponent::RemoveItemFromInventory(const FARTItemSlotRef& Item
 	BagInventory.MarkItemDirty(Item);
 	BagInventory.MarkArrayDirty();
 
-	OnInventoryUpdate.Broadcast(this);
+	//OnInventoryUpdate.Broadcast(this);
 	OnItemSlotChange.Broadcast(this, ItemSlot, Item.ItemStack, PreviousItem);
 
 	GetOwner()->ForceNetUpdate();
@@ -217,8 +235,7 @@ bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotRef& SourceSlot, co
 	{
 		return false;
 	}
-
-
+	
 	//Make sure both slots are valid
 	//This checks if ParentInventory is valid, which is important later.  
 	if (!IsValid(SourceSlot) || !IsValid(DestSlot))
@@ -227,29 +244,62 @@ bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotRef& SourceSlot, co
 	}	
 
 	UARTInventoryComponent* SourceInventory = SourceSlot.ParentInventory.Get();
+	UARTItemStack_SlotContainer* SourceParentStack = SourceSlot.ParentStack.Get();
+	bool SourceUseInventory = false;
+	if(SourceInventory) SourceUseInventory = true;
+	
 	UARTInventoryComponent* DestinationInventory = DestSlot.ParentInventory.Get();
+	UARTItemStack_SlotContainer* DestinationParentStack = DestSlot.ParentStack.Get();
+	bool DesUseInventory = false;
+	if(DestinationInventory) DesUseInventory = true;
 
 	//If neither the source nor the destination is us... what are we even doing here?
-	if (SourceInventory != this && DestinationInventory != this)
+	/*if (SourceInventory != this && DestinationInventory != this)
 	{
 		return false;
-	}
+	}*/
 
-	UARTItemStack* SourceItem = SourceInventory->GetItemInSlot(SourceSlot);
-	UARTItemStack* DestItem = DestinationInventory->GetItemInSlot(DestSlot);
+	UARTItemStack* SourceItem = SourceUseInventory ? SourceInventory->GetItemInSlot(SourceSlot) : SourceParentStack->GetItemInSlot(SourceSlot);
+	UARTItemStack* DestItem = DesUseInventory ? DestinationInventory->GetItemInSlot(DestSlot) : DestinationParentStack->GetItemInSlot(DestSlot);
 														 	
 	//Ensure that the two slots can hold these items
-	if (!DestinationInventory->AcceptsItem_AssumeEmptySlot(SourceItem, DestSlot) || !SourceInventory->AcceptsItem_AssumeEmptySlot(DestItem, SourceSlot))
+	/*if (!DestinationInventory->AcceptsItem_AssumeEmptySlot(SourceItem, DestSlot) || !SourceInventory->AcceptsItem_AssumeEmptySlot(DestItem, SourceSlot))
 	{
 		return false;
+	}*/
+	
+	if(SourceUseInventory)
+	{
+		if(!SourceInventory->AcceptsItem_AssumeEmptySlot(DestItem, SourceSlot)) return false;
+	}
+	else
+	{
+		if(!SourceParentStack->AcceptsItem_AssumeEmptySlot(DestItem, SourceSlot)) return false;
 	}
 
-	SourceInventory->RemoveItemFromInventory(SourceSlot);
-	DestinationInventory->RemoveItemFromInventory(DestSlot);
+	if(DesUseInventory)
+	{
+		if(!DestinationInventory->AcceptsItem_AssumeEmptySlot(SourceItem, DestSlot)) return false;
+	}
+	else
+	{
+		if(!DestinationParentStack->AcceptsItem_AssumeEmptySlot(SourceItem, DestSlot)) return false;
+	}
+	
+	if(SourceUseInventory)SourceInventory->RemoveItemFromInventory(SourceSlot);
+	else SourceParentStack->RemoveItemFromContainer(SourceSlot);
+	
 
-	SourceInventory->PlaceItemIntoSlot(DestItem, SourceSlot);
-	DestinationInventory->PlaceItemIntoSlot(SourceItem, DestSlot);
+	if(DesUseInventory)DestinationInventory->RemoveItemFromInventory(DestSlot);
+	else DestinationParentStack->RemoveItemFromContainer(DestSlot);
 
+
+	if(SourceUseInventory) SourceInventory->PlaceItemIntoSlot(DestItem, SourceSlot);
+	else SourceParentStack->PlaceItemIntoSlot(DestItem, SourceSlot);
+	
+	if(DesUseInventory) DestinationInventory->PlaceItemIntoSlot(SourceItem, DestSlot);
+	else DestinationParentStack->PlaceItemIntoSlot(SourceItem, DestSlot);
+	
 	return true;
 }
 
@@ -460,7 +510,7 @@ void UARTInventoryComponent::PostInventoryUpdate()
 	OnInventoryUpdate.Broadcast(this);
 }
 
-bool UARTInventoryComponent::Query_GetAllSlots(const FARTItemQuery& Query, TArray<FARTItemSlotRef>& OutSlotRefs)
+bool UARTInventoryComponent::Query_GetAllSlots(const FARTSlotQueryHandle& Query, TArray<FARTItemSlotRef>& OutSlotRefs)
 {
 	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 	{
@@ -472,13 +522,13 @@ bool UARTInventoryComponent::Query_GetAllSlots(const FARTItemQuery& Query, TArra
 	return OutSlotRefs.Num() > 0;
 }
 
-FARTItemSlotRef UARTInventoryComponent::Query_GetFirstSlot(const FARTItemQuery& Query)
+FARTItemSlotRef UARTInventoryComponent::Query_GetFirstSlot(const FARTSlotQueryHandle& Query)
 {
 	TArray<FARTItemSlotRef> OutSlotRefs;
 	
 	if (!Query_GetAllSlots(Query, OutSlotRefs))
 	{
-		UE_LOG(LogInventory, Warning, TEXT("Tried to query for %s but didn't find it"), *Query.SlotTypeQuery.GetDescription())
+		UE_LOG(LogInventory, Warning, TEXT("Tried to query for %s but didn't find it"), *Query.Query.Get()->SlotTypeQuery.GetDescription())
 		return FARTItemSlotRef();
 	}
 
@@ -487,7 +537,7 @@ FARTItemSlotRef UARTInventoryComponent::Query_GetFirstSlot(const FARTItemQuery& 
 
 
 
-void UARTInventoryComponent::Query_GetAllItems(const FARTItemQuery& Query, TArray<UARTItemStack*>& OutItems)
+void UARTInventoryComponent::Query_GetAllItems(const FARTSlotQueryHandle& Query, TArray<UARTItemStack*>& OutItems)
 {
 	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
 	{
@@ -501,6 +551,23 @@ void UARTInventoryComponent::Query_GetAllItems(const FARTItemQuery& Query, TArra
 			OutItems.Add(ItemSlot.ItemStack);
 		}
 	}
+}
+
+UARTItemStack* UARTInventoryComponent::Query_GetFirstItem(const FARTSlotQueryHandle& Query)
+{
+	for (FARTItemSlot& ItemSlot : BagInventory.Slots)
+	{
+		if (!IsValid(ItemSlot.ItemStack))
+		{
+			continue;
+		}
+
+		if (Query.MatchesSlot(ItemSlot))
+		{
+			return ItemSlot.ItemStack;
+		}
+	}
+	return nullptr;
 }
 
 static TAutoConsoleVariable<int32> DetailedItemStackInfo(TEXT("ARTInventory.DebugDetailedItemInfo"), 0, TEXT(""), ECVF_Default);

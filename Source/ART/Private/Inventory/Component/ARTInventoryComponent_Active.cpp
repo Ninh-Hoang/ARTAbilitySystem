@@ -330,7 +330,10 @@ int32 UARTInventoryComponent_Active::GetActiveItemIndexBySlotRef(const FARTItemS
 
 int32 UARTInventoryComponent_Active::GetActiveItemIndexByTag(FGameplayTag Tag)
 {
-	FARTItemSlotRef Ref = Query_GetFirstSlot(FARTItemQuery::QuerySlotMatchingTag(Tag));
+	FARTSlotQueryHandle QueryHandle;
+	FARTSlotQuery* Query = new FARTSlotQuery(FARTSlotQuery::QuerySlotMatchingTag(Tag));
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(Query);
+	FARTItemSlotRef Ref = Query_GetFirstSlot(QueryHandle);
 	return GetActiveItemIndexBySlotRef(Ref);
 }
 
@@ -356,8 +359,12 @@ void UARTInventoryComponent_Active::SwitchToPendingItemSlot()
 void UARTInventoryComponent_Active::UpdateActiveItemSlots(UARTInventoryComponent* InventoryComp)
 {
 	//Cache the Active Item Slots
+	FARTSlotQueryHandle QueryHandle;
+	FARTSlotQuery* Query = new FARTSlotQuery(FARTSlotQuery::QuerySlotMatchingTag(InvActiveSlotTag));
+	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(Query);
+	
 	CachedActiveItemSlots.Empty(CachedActiveItemSlots.Num());
-	Query_GetAllSlots(FARTItemQuery::QuerySlotMatchingTag(InvActiveSlotTag), CachedActiveItemSlots);
+	Query_GetAllSlots(QueryHandle, CachedActiveItemSlots);
 }
 
 void UARTInventoryComponent_Active::SwapActiveItems(int32 NewItemSlot)

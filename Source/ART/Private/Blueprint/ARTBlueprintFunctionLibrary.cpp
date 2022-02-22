@@ -249,27 +249,37 @@ void UARTBlueprintFunctionLibrary::ClearTargetData(FGameplayAbilityTargetDataHan
 	TargetData.Clear();
 }
 
-FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByActorType(AActor* FilterActor,
-	AActor* InSourceActor, TEnumAsByte<EARTTargetSelectionFilter::Type> InTargetTypeFilter,
+FGameplayAbilityTargetDataHandle UARTBlueprintFunctionLibrary::FilterTargetDataByActorType(
+    const FGameplayAbilityTargetDataHandle& TargetDataHandle,
+	AActor* InContextActor, TEnumAsByte<EARTTargetSelectionFilter::Type> InTargetTypeFilter,
 	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
 	bool InReverseFilter)
 {
-	FARTTargetFilter Filter;
+	return FilterTargetData(TargetDataHandle, MakeTargetDataFilterByActorType(InContextActor, InTargetTypeFilter, InSelfFilter, InRequiredActorClass, InReverseFilter));
+}
+
+FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByActorType(AActor* InContextActor,
+	TEnumAsByte<EARTTargetSelectionFilter::Type> InTargetTypeFilter,
+	TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter, TSubclassOf<AActor> InRequiredActorClass,
+	bool InReverseFilter)
+{
+	FARTTargetDataFilter_TargetType Filter;
 	Filter.ActorTypeFilter = InTargetTypeFilter;
 	Filter.SelfFilter = InSelfFilter;
 	Filter.RequiredActorClass = InRequiredActorClass;
 	Filter.bReverseFilter = InReverseFilter;
 
-	FGameplayTargetDataFilter* NewFilter = new FARTTargetFilter(Filter);
-	NewFilter->InitializeFilterContext(FilterActor);
+	FGameplayTargetDataFilter* NewFilter = new FARTTargetDataFilter_TargetType(Filter);
+	NewFilter->InitializeFilterContext(InContextActor);
 
 	FGameplayTargetDataFilterHandle FilterHandle;
 	FilterHandle.Filter = TSharedPtr<FGameplayTargetDataFilter>(NewFilter);
 	return FilterHandle;
 }
 
-FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByTeamAttitude(
-	AActor* FilterActor,
+FGameplayAbilityTargetDataHandle UARTBlueprintFunctionLibrary::FilterTargetDataByTeamAttitude(
+	const FGameplayAbilityTargetDataHandle& TargetDataHandle,
+	AActor* InContextActor,
 	const FGameplayTagContainer& RequiredTags,
 	const FGameplayTagContainer& BlockedTags,
 	const FGameplayTagContainer& BehaviourTags,
@@ -277,7 +287,15 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 	TSubclassOf<AActor> InRequiredActorClass,
 	bool InReverseFilter)
 {
-	FARTTargetFilterTeamID Filter;
+	return FilterTargetData(TargetDataHandle, MakeTargetDataFilterByTeamAttitude(InContextActor, RequiredTags, BlockedTags, BehaviourTags, InSelfFilter, InRequiredActorClass, InReverseFilter));
+}
+
+FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilterByTeamAttitude(
+	AActor* InContextActor, const FGameplayTagContainer& RequiredTags, const FGameplayTagContainer& BlockedTags,
+	const FGameplayTagContainer& BehaviourTags, TEnumAsByte<ETargetDataFilterSelf::Type> InSelfFilter,
+	TSubclassOf<AActor> InRequiredActorClass, bool InReverseFilter)
+{
+	FARTTargetDataFilter_TeamAttitude Filter;
 	Filter.RequiredTags = RequiredTags;
 	Filter.BlockedTags = BlockedTags;
 	Filter.BehaviourTags = BehaviourTags;
@@ -285,8 +303,8 @@ FGameplayTargetDataFilterHandle UARTBlueprintFunctionLibrary::MakeTargetDataFilt
 	Filter.RequiredActorClass = InRequiredActorClass;
 	Filter.bReverseFilter = InReverseFilter;
 
-	FGameplayTargetDataFilter* NewFilter = new FARTTargetFilterTeamID(Filter);
-	NewFilter->InitializeFilterContext(FilterActor);
+	FGameplayTargetDataFilter* NewFilter = new FARTTargetDataFilter_TeamAttitude(Filter);
+	NewFilter->InitializeFilterContext(InContextActor);
 
 	FGameplayTargetDataFilterHandle FilterHandle;
 	FilterHandle.Filter = TSharedPtr<FGameplayTargetDataFilter>(NewFilter);
@@ -300,7 +318,7 @@ TArray<FGameplayAbilityTargetDataHandle> UARTBlueprintFunctionLibrary::FilterTar
 
 	for (int i = 0; i < TargetDataArray.Num(); i++)
 	{
-		OutTargetDataArray.Add(UAbilitySystemBlueprintLibrary::FilterTargetData(TargetDataArray[i], FilterHandle));
+		OutTargetDataArray.Add(FilterTargetData(TargetDataArray[i], FilterHandle));
 	}
 
 	return OutTargetDataArray;
@@ -490,6 +508,21 @@ bool UARTBlueprintFunctionLibrary::DoesSatisfyTagRequirementsWithResult(const FG
 	}
 
 	return bSuccess;
+}
+
+FGameplayTagQuery UARTBlueprintFunctionLibrary::MakeGameplayTagQuery_AnyTag(const FGameplayTagContainer& AnyTags)
+{
+	return FGameplayTagQuery::MakeQuery_MatchAnyTags(AnyTags);
+}
+
+FGameplayTagQuery UARTBlueprintFunctionLibrary::MakeQuery_MatchAllTags(FGameplayTagContainer const& AllTags)
+{
+	return FGameplayTagQuery::MakeQuery_MatchAllTags(AllTags);
+}
+
+FGameplayTagQuery UARTBlueprintFunctionLibrary::MakeQuery_MatchNoTags(FGameplayTagContainer const& NoneOfTags)
+{
+	return FGameplayTagQuery::MakeQuery_MatchNoTags(NoneOfTags);
 }
 
 void UARTBlueprintFunctionLibrary::GetTags(const AActor* Actor, FGameplayTagContainer& OutGameplayTags)

@@ -16,7 +16,7 @@ class UGameplayEffect;
 class UARTItemInputBinder;
 class UARTInventoryComponent;
 class UARTItemGenerator;
-class UARTItemStack_SlotContainer;
+class UARTItemDefinition;
 
 //starting item, useful for init inventory
 USTRUCT(BlueprintType)
@@ -184,32 +184,112 @@ struct TStructOpsTypeTraits<FARTItemSlotFilterHandle> : public TStructOpsTypeTra
 	};
 };
 
+UENUM(BlueprintType)
+namespace EItemStackCount
+{
+	enum Type
+	{
+		ISC_Ignore 			UMETA(DisplayName = "Ignore Stack Count"),
+		ISC_MaxStack 		UMETA(DisplayName = "Max Stack"),
+		ISC_NotMaxStack		UMETA(DisplayName = "Not Max Stack")
+	};
+}
+
+UENUM(BlueprintType)
+namespace EItemExistence
+{
+	enum Type
+	{
+		IE_Any 			UMETA(DisplayName = "Ignore Item"),
+		IE_Empty		UMETA(DisplayName = "Empty Slot"),
+		IE_HasItem		UMETA(DisplayName = "Has Item")
+	};
+}
+
 USTRUCT(BlueprintType)
-struct ART_API FARTItemQuery
+struct ART_API FARTSlotQuery
 {
 	GENERATED_BODY()
 public:
-	FARTItemQuery()
-	{
+	FARTSlotQuery(){}
+	virtual ~FARTSlotQuery(){}
 
-	}
-	  		 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Filter")
-	FGameplayTagQuery ItemTypeQuery;
+	virtual bool MatchesSlot(const FARTItemSlot& ItemSlot) const;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Filter")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
 	FGameplayTagQuery SlotTypeQuery;
 
-	bool MatchesSlot(const FARTItemSlot& ItemSlot) const;
-
-	static FARTItemQuery QuerySlotMatchingTag(FGameplayTag Tag);
-	static FARTItemQuery QueryForMatchingItemTag(FGameplayTag Tag);
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	FGameplayTagQuery ItemTypeQuery;
 	
-	static FARTItemQuery QueryForSlot(const FGameplayTagQuery& SlotQuery);
-	static FARTItemQuery QueryForItemType(const FGameplayTagQuery& ItemQuery);
+	static FARTSlotQuery QuerySlotMatchingTag(FGameplayTag Tag);
+	static FARTSlotQuery QueryForMatchingItemTag(FGameplayTag Tag);
+	
+	static FARTSlotQuery QueryForSlot(const FGameplayTagQuery& SlotQuery);
+	static FARTSlotQuery QueryForItemType(const FGameplayTagQuery& ItemQuery);
 
 	bool IsValid() const;
 };
+
+USTRUCT(BlueprintType)
+struct ART_API FARTSlotQuery_SlotWithItem : public FARTSlotQuery
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	TSubclassOf<UARTItemDefinition> ItemDefinition;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	TEnumAsByte< EItemStackCount::Type> StackCount =  EItemStackCount::ISC_Ignore;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	FGameplayTagContainer ItemRequiredTags;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	FGameplayTagContainer ItemBlockedTags;
+
+	virtual bool MatchesSlot(const FARTItemSlot& ItemSlot) const override;
+};
+
+USTRUCT(BlueprintType)
+struct ART_API FARTSlotQuery_SlotCanAcceptItem : public FARTSlotQuery
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	TEnumAsByte< EItemExistence::Type> ItemExist =  EItemExistence::IE_Empty;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Query")
+	UARTItemStack* ContextItemStack;
+
+	virtual bool MatchesSlot(const FARTItemSlot& ItemSlot) const override;
+};
+
+USTRUCT(BlueprintType)
+struct ART_API FARTSlotQueryHandle
+{
+	GENERATED_BODY()
+
+	TSharedPtr<FARTSlotQuery> Query;
+	bool MatchesSlot(const FARTItemSlot& ItemSlot) const
+	{
+		if(Query.IsValid())
+		{
+			if(!Query.Get()->MatchesSlot(ItemSlot))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool operator()(const FARTItemSlot& ItemSlot) const
+	{
+		return MatchesSlot(ItemSlot);
+	}
+};
+
+
 
 USTRUCT(BlueprintType)
 struct ART_API FARTEquippedItemInfo
@@ -324,13 +404,13 @@ struct TStructOpsTypeTraits<FARTItemSlot> : public TStructOpsTypeTraitsBase2<FAR
 	};
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FARTItemSlotArray : public FFastArraySerializer
 {
 	GENERATED_BODY()
 public:
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	TArray<FARTItemSlot> Slots;
 
 	UPROPERTY()
@@ -354,78 +434,6 @@ struct TStructOpsTypeTraits< FARTItemSlotArray > : public TStructOpsTypeTraitsBa
 	};
 };
 
-USTRUCT(BlueprintType)
-struct ART_API FARTItemSlotReference
-{
-	GENERATED_BODY()
-public:
-
-	FARTItemSlotReference(){}
-		
-	FARTItemSlotReference(const FARTItemSlotReference& Copy);
-
-	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory);
-
-	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack);
-
-	FARTItemSlotReference(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory, UARTItemStack_SlotContainer* InParentStack);
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
-	int32 SlotId;	
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Inventory)
-	FGameplayTagContainer SlotTags;
-	
-	UPROPERTY(BlueprintReadWrite, Category = Inventory)
-	TWeakObjectPtr<UARTInventoryComponent> ParentInventory;
-
-	UPROPERTY(BlueprintReadWrite, Category = Inventory)
-	TWeakObjectPtr<UARTItemStack_SlotContainer> ParentStack;
-
-	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
-
-	FString ToString() const;
-
-	static FARTItemSlotReference Invalid;
-
-	// Comparison operator
-	bool operator==(const FARTItemSlotReference& Other) const
-	{
-		const bool bIdsMatch = SlotId == Other.SlotId;
-		const bool bParentsMatch = (ParentInventory.Get() == Other.ParentInventory.Get() || ParentStack.Get() == Other.ParentStack.Get());;
-		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
-
-		return bParentsMatch && bIdsMatch && TagsMatch;
-	}
-
-	// Comparison operator
-	bool operator!=(const FARTItemSlotReference& Other) const
-	{
-		return !(FARTItemSlotReference::operator==(Other));
-	}
-
-	bool operator==(const FARTItemSlot& Other) const
-	{
-		const bool bIdsMatch = SlotId == Other.SlotId;
-		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
-
-		return bIdsMatch && TagsMatch;
-	}
-
-	bool operator!=(const FARTItemSlot& Other) const
-	{
-		return !(FARTItemSlotReference::operator==(Other));
-	}
-};
-
-template<>
-struct TStructOpsTypeTraits<FARTItemSlotReference> : public TStructOpsTypeTraitsBase2<FARTItemSlotReference>
-{
-	enum
-	{
-		WithNetSerializer = true,
-	};
-};
 
 USTRUCT(BlueprintType)
 struct ART_API FARTItemSlotRef
@@ -433,7 +441,7 @@ struct ART_API FARTItemSlotRef
 	GENERATED_BODY()
 	
 public:
-	FARTItemSlotRef(){};
+	FARTItemSlotRef() : SlotId(NAMED_ITEM_SLOT){};
 	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory);
 	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTItemStack_SlotContainer* InParentStack);
 	FARTItemSlotRef(const FARTItemSlot& FromSlot, UARTInventoryComponent* InParentInventory, UARTItemStack_SlotContainer* InParentStack);
