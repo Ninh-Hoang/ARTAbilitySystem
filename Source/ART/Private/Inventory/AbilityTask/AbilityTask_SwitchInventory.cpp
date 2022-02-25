@@ -20,7 +20,7 @@ UAbilityTask_SwitchInventory* UAbilityTask_SwitchInventory::SwitchInventorySlots
 
 FGameplayAbilityTargetDataHandle UAbilityTask_SwitchInventory::GenerateTargetHandle()
 {
-	FGameplayAbilityTargetData_ItemSwitch* ItemSwitchData = new FGameplayAbilityTargetData_ItemSwitch();
+	FTargetData_ItemSwitch* ItemSwitchData = new FTargetData_ItemSwitch();
 	ItemSwitchData->FromSlot = FromSlot;
 	ItemSwitchData->ToSlot = ToSlot;
 
@@ -29,7 +29,7 @@ FGameplayAbilityTargetDataHandle UAbilityTask_SwitchInventory::GenerateTargetHan
 
 void UAbilityTask_SwitchInventory::HandleTargetData(const FGameplayAbilityTargetDataHandle& Data)
 {
-	const FGameplayAbilityTargetData_ItemSwitch* SwitchData = static_cast<const FGameplayAbilityTargetData_ItemSwitch*>(Data.Get(0));
+	const FTargetData_ItemSwitch* SwitchData = static_cast<const FTargetData_ItemSwitch*>(Data.Get(0));
 	if (SwitchData != nullptr)
 	{
 		OnSlotsReceived.Broadcast(SwitchData->FromSlot, SwitchData->ToSlot);
@@ -47,7 +47,7 @@ void UAbilityTask_SwitchInventory::HandleCancelled()
 	EndTask();
 }
 
-bool FGameplayAbilityTargetData_ItemSwitch::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+bool FTargetData_ItemSwitch::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
 	bOutSuccess = true;
 	FromSlot.NetSerialize(Ar, Map, bOutSuccess);

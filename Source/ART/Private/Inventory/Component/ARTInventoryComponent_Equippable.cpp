@@ -171,7 +171,7 @@ bool UARTInventoryComponent_Equippable::ApplyAbilityInfo_Internal(const FARTItem
 			UAttributeSet* NewAttributeSet = NewObject<UAttributeSet>(GetOwner(), AttributeSetClass);
 
 			//and init the attributes
-			for (auto KV : AbilityInfo.AttributeInitalizers)
+			for (auto KV : AbilityInfo.AttributeInitializers)
 			{
 				FGameplayAttribute Attribute = KV.Key;
 				float val = KV.Value;

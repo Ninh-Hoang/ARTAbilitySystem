@@ -108,6 +108,7 @@ protected:
 public:
 
 	void SetParentStack(UARTItemStack* ItemStack);
+	UARTItemStack* GetParentStack() const {return ParentItemStack; }
 	
 	UFUNCTION()
 	virtual void OnRep_Rarity(UARTItemRarity* PreviousRarity);

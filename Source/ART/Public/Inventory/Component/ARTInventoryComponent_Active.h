@@ -96,7 +96,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Inventory")
 	void SwapActiveItems(int32 NewItemSlot);
 
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities", Replicated)
+	UPROPERTY(BlueprintReadOnly, Category = "Abilities", Replicated)
 	TArray< FARTInventoryItemInfoEntry> ActiveItemAbilityInfos;
 
 	UPROPERTY(BlueprintAssignable)

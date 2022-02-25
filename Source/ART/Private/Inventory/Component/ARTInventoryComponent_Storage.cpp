@@ -10,7 +10,7 @@
 UARTInventoryComponent_Storage::UARTInventoryComponent_Storage(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	StorageSlotCount = 12;
+	StorageSlotCount = 10;
 }
 
 

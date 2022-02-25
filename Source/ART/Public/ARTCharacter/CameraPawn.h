@@ -6,6 +6,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Pawn.h"
+#include "Inventory/ARTInventoryItemTypes.h"
 #include "CameraPawn.generated.h"
 
 class AARTCharacterAI;
@@ -19,6 +20,9 @@ public:
 	// Sets default values for this pawn's properties
 	ACameraPawn();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
+	TArray<FARTStartingItemEntry> StartingItems;
+	
 protected:
 	UPROPERTY()
 	TArray<AARTCharacterAI*> SelectedUnits;

@@ -12,7 +12,7 @@
  */
 
 USTRUCT(BlueprintType)
-struct ART_API FGameplayAbilityTargetData_DropItem : public FGameplayAbilityTargetData
+struct ART_API FTargetData_DropItem : public FGameplayAbilityTargetData
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -25,19 +25,19 @@ public:
 
 	virtual UScriptStruct* GetScriptStruct() const override
 	{
-		return FGameplayAbilityTargetData_DropItem::StaticStruct();
+		return  FTargetData_DropItem::StaticStruct();
 	}
 
 	virtual FString ToString() const override
 	{
-		return TEXT("FGameplayAbilityTargetData_DropItem");
+		return TEXT(" FTargetData_DropItem");
 	}
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
 };
 
 template<>
-struct TStructOpsTypeTraits<FGameplayAbilityTargetData_DropItem> : public TStructOpsTypeTraitsBase2<FGameplayAbilityTargetData_DropItem>
+struct TStructOpsTypeTraits< FTargetData_DropItem> : public TStructOpsTypeTraitsBase2< FTargetData_DropItem>
 {
 	enum
 	{

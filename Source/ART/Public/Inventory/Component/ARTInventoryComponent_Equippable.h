@@ -51,7 +51,7 @@ public:
 
 	virtual bool IsEquippedItemSlot(const FARTItemSlotRef& ItemSlotRef);
 
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities", Replicated, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, Category = "Abilities", Replicated, meta = (AllowPrivateAccess = "true"))
 	TArray<FARTInventoryItemInfoEntry> EquippedItemAbilityInfos;
 
 	UPROPERTY(BlueprintAssignable)

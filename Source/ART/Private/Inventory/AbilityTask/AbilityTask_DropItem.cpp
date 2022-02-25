@@ -3,7 +3,7 @@
 
 #include "Inventory/AbilityTask/AbilityTask_DropItem.h"
 
-bool FGameplayAbilityTargetData_DropItem::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+bool  FTargetData_DropItem::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
 	bOutSuccess = true;
 	FromSlot.NetSerialize(Ar, Map, bOutSuccess);
@@ -29,7 +29,7 @@ UAbilityTask_DropItem* UAbilityTask_DropItem::DropItemFromInventory(UGameplayAbi
 
 FGameplayAbilityTargetDataHandle UAbilityTask_DropItem::GenerateTargetHandle()
 {
-	FGameplayAbilityTargetData_DropItem* ItemSwitchData = new FGameplayAbilityTargetData_DropItem();
+	 FTargetData_DropItem* ItemSwitchData = new  FTargetData_DropItem();
 	ItemSwitchData->FromSlot = SlotReference;
 	
 
@@ -38,7 +38,7 @@ FGameplayAbilityTargetDataHandle UAbilityTask_DropItem::GenerateTargetHandle()
 
 void UAbilityTask_DropItem::HandleTargetData(const FGameplayAbilityTargetDataHandle& Data)
 {
-	const FGameplayAbilityTargetData_DropItem* SwitchData = static_cast<const FGameplayAbilityTargetData_DropItem*>(Data.Get(0));
+	const  FTargetData_DropItem* SwitchData = static_cast<const  FTargetData_DropItem*>(Data.Get(0));
 	if (SwitchData != nullptr)
 	{
 		OnDataRecieved.Broadcast(SwitchData->FromSlot);

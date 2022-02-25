@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -44,5 +46,4 @@ public:
 	{
 		TagContainer.AppendTags(RarityTags);
 	}
-	
 };

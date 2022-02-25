@@ -19,3 +19,13 @@ void UARTInventoryBaseItemCardWidget::SetItemStack(UARTItemStack* InItemStack)
 	ItemStack = InItemStack;
 	BP_OnItemStackSet(ItemStack);
 }
+
+FARTItemSlotRef& UARTInventoryBaseItemCardWidget::GetItemSlotRef()
+{
+	return ItemSlotRef;
+}
+
+void UARTInventoryBaseItemCardWidget::SetItemSlotRef(FARTItemSlotRef& InSlotRef)
+{
+	ItemSlotRef = InSlotRef;
+}

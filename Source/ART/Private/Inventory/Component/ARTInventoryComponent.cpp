@@ -9,6 +9,7 @@
 #include "Engine/Canvas.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/ActorChannel.h"
+#include "Inventory/Item/ARTItemDefinition.h"
 #include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 
 // Sets default values for this component's properties
@@ -109,21 +110,26 @@ bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
 		return false;
 	}
 
-	TArray<UARTItemStack*> NotFullItemStacks;
-	
-	FARTSlotQuery_SlotWithItem Query;
-	Query.ItemDefinition = Item->GetItemDefinition();
-	Query.StackCount = EItemStackCount::ISC_NotMaxStack;
+	if(!Item) return false;
 
-	FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);
-	FARTSlotQueryHandle QueryHandle;
-	QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
-
-	Query_GetAllItems(QueryHandle, NotFullItemStacks);
-
-	for(UARTItemStack* NotFullItem : NotFullItemStacks)
+	if(Item->GetItemDefinition().GetDefaultObject()->MaxStackSize > 1)
 	{
-		if(NotFullItem->MergeItemStacks(Item)) return true;
+		TArray<UARTItemStack*> NotFullItemStacks;
+	
+		FARTSlotQuery_SlotWithItem Query;
+		Query.ItemDefinition = Item->GetItemDefinition();
+		Query.StackCount = EItemStackCount::ISC_NotMaxStack;
+
+		FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);
+		FARTSlotQueryHandle QueryHandle;
+		QueryHandle.Query = TSharedPtr<FARTSlotQuery>(NewQuery);
+
+		Query_GetAllItems(QueryHandle, NotFullItemStacks);
+
+		for(UARTItemStack* NotFullItem : NotFullItemStacks)
+		{
+			if(NotFullItem->MergeItemStacks(Item)) return true;
+		}
 	}
 
 	//Find the first empty item slot
@@ -231,10 +237,10 @@ bool UARTInventoryComponent::RemoveAllItemsFromInventory(TArray<UARTItemStack*>&
 bool UARTInventoryComponent::SwapItemSlots(const FARTItemSlotRef& SourceSlot, const FARTItemSlotRef& DestSlot)
 {
 	//If we aren't the server, Call the server RPC
-	if (GetOwnerRole() != ROLE_Authority)
+	/*if (GetOwnerRole() != ROLE_Authority)
 	{
 		return false;
-	}
+	}*/
 	
 	//Make sure both slots are valid
 	//This checks if ParentInventory is valid, which is important later.  
@@ -369,7 +375,8 @@ void UARTInventoryComponent::OnRep_BagInventory()
 }
 
 bool UARTInventoryComponent::IsValidItemSlot(const FARTItemSlotRef& Slot)
-{	
+{
+	if(Slot.SlotId < 0) return false;
 	//Check to see if we contain this reference
 	for (const FARTItemSlotRef& Ref : AllReferences)
 	{
@@ -379,11 +386,6 @@ bool UARTInventoryComponent::IsValidItemSlot(const FARTItemSlotRef& Slot)
 		}
 	}
 
-	return false;
-}
-
-bool UARTInventoryComponent::IsValidItemSlotRef(const FARTItemSlotRef& Slot)
-{
 	return false;
 }
 

@@ -13,7 +13,7 @@ UARTItemStack_SlotContainer::UARTItemStack_SlotContainer(const FObjectInitialize
 	StackSize = 1;
 }
 
-void UARTItemStack_SlotContainer::InitializeContainer()
+void UARTItemStack_SlotContainer::InitializeContainer(TArray<FARTItemSlotDefinition>& CustomInventorySlots)
 {
 	//this should only be called by the generator
 	for (FARTItemSlotDefinition& SlotDef : CustomInventorySlots)
@@ -100,6 +100,8 @@ void UARTItemStack_SlotContainer::PopulateSlotReferenceArray(TArray<FARTItemSlot
 
 bool UARTItemStack_SlotContainer::LootItem(UARTItemStack* Item)
 {
+	if(!Item) return false;
+	
 	TArray<UARTItemStack*> NotFullItemStacks;
 	
 	FARTSlotQuery_SlotWithItem Query;
@@ -152,7 +154,7 @@ bool UARTItemStack_SlotContainer::PlaceItemIntoSlot(UARTItemStack* Item, const F
 	FARTItemSlot& Slot = GetItemSlot(ItemSlot);
 	UARTItemStack* PreviousItem = Slot.ItemStack;
 	Slot.ItemStack = Item;
-	Item->SetParentStack(this);
+	if(Item) Item->SetParentStack(this);
 
 	ItemContainer.MarkItemDirty(Slot);
 
@@ -203,6 +205,7 @@ bool UARTItemStack_SlotContainer::RemoveItemFromContainer(const FARTItemSlotRef&
 
 bool UARTItemStack_SlotContainer::IsValidItemSlot(const FARTItemSlotRef& Slot)
 {
+	if(Slot.SlotId < 0) return false;
 	//Check to see if we contain this reference
 	for (const FARTItemSlotRef& Ref : AllReferences)
 	{
@@ -259,7 +262,7 @@ bool UARTItemStack_SlotContainer::SwapItemSlots(const FARTItemSlotRef& SourceSlo
 	}	
 
 	UARTItemStack_SlotContainer* SourceParentStack = SourceSlot.ParentStack.Get();
-	UARTItemStack_SlotContainer* DestinationParentStack = SourceSlot.ParentStack.Get();
+	UARTItemStack_SlotContainer* DestinationParentStack = DestSlot.ParentStack.Get();
 
 	//If neither the source nor the destination is us... what are we even doing here?
 	if (SourceParentStack  != this && DestinationParentStack != this)

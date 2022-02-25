@@ -5,12 +5,12 @@
 
 #include "Inventory/ARTItemStack.h"
 #include "Inventory/Item/ARTItemDefinition.h"
+#include "Inventory/Item/Definition/ARTItemDefinition_Container.h"
 #include "Inventory/Mod/ARTItemStack_SlotContainer.h"
 
 UARTItemGenerator::UARTItemGenerator(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	ItemStackClass = UARTItemStack::StaticClass();
 }
 
 
@@ -61,6 +61,7 @@ UARTItemStack* UARTItemGenerator::CreateNewItemStack(TSubclassOf<UARTItemDefinit
 		//If we don't have a valid item stack class, use the one in the developer settings.
 		//TODO:Inventory developer setting
 		//ISC = GetDefault<UARTInventoryDeveloperSettings>()->DefaultItemStackClass;
+		ISC = ItemDefinition.GetDefaultObject()->DefaultItemStackClass;
 		if (!IsValid(ISC))
 		{
 			//If we still don't have a valid one, use the default item stack class.  That's good enough
@@ -80,7 +81,10 @@ void UARTItemGenerator::PostCreateNewItemStack(UARTItemStack* ItemStack)
 	if(!ItemStack) return;
 	if(UARTItemStack_SlotContainer* ContainerStack = Cast<UARTItemStack_SlotContainer>(ItemStack))
 	{
-		ContainerStack->InitializeContainer();
+		if(UARTItemDefinition_Container* ContainerDefinition = Cast<UARTItemDefinition_Container>(ItemStack->GetItemDefinition().GetDefaultObject()))
+		{
+			ContainerStack->InitializeContainer(ContainerDefinition->CustomInventorySlots);
+		}
 	}
 }
 

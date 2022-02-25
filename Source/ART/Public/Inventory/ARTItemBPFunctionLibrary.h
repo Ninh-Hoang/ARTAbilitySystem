@@ -81,6 +81,7 @@ public:
 	UFUNCTION(BlueprintPure, Category= "ART|Inventory")
 	static bool CanAcceptItem_AssumeEmptySlot(UARTItemStack* Item, const FARTItemSlotRef& ToSlot);
 
+	UFUNCTION(BlueprintPure, Category= "ART|Inventory")
 	static bool DoesItemContainSlot(UARTItemStack* Item, const FARTItemSlotRef& Slot);
 	
 	////INVENTORY SLOTS

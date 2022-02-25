@@ -216,6 +216,7 @@ bool UARTItemBPFunctionLibrary::DoesItemContainSlot(UARTItemStack* Item, const F
 	while(ParentStack)
 	{
 		if(ParentStack == Item) return true;
+		ParentStack = ParentStack->GetParentStack();
 	}
 	return false;
 }

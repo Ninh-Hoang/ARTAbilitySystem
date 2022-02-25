@@ -32,7 +32,7 @@ public:
 	int32 NumberOfMods;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
-		int32 NumberOfModifiers;
+	int32 NumberOfModifiers;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	int32 Weight; 
@@ -111,14 +111,14 @@ public:
 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
-		bool bRequireUniqueModifiers;
+	bool bRequireUniqueModifiers;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	TArray<FARTItemGenerator_DynamicModifier> WeightedPossibleModifiers;
 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Mods")
-		bool bRequireUniqueMods;
+	bool bRequireUniqueMods;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Mods")
 	TArray<FARTItemGenerator_ModSelector> WeightedPossibleMods;

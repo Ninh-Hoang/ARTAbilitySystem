@@ -71,7 +71,7 @@ public:
 	TArray<TSubclassOf<UGameplayEffect>> AddedGameplayEffects;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Item")
-	TMap<FGameplayAttribute, float> AttributeInitalizers;
+	TMap<FGameplayAttribute, float> AttributeInitializers;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Item")
 	TArray<TSubclassOf<UAttributeSet>> AttributeSetsToAdd;
@@ -469,7 +469,7 @@ public:
 	bool operator==(const FARTItemSlotRef& Other) const
 	{
 		const bool bIdsMatch = SlotId == Other.SlotId;
-		const bool bParentsMatch = (ParentInventory.Get() == Other.ParentInventory.Get() || ParentStack.Get() == Other.ParentStack.Get());;
+		const bool bParentsMatch = (ParentInventory.Get() == Other.ParentInventory.Get() && ParentStack.Get() == Other.ParentStack.Get());;
 		const bool TagsMatch = SlotTags.HasAllExact(Other.SlotTags);
 
 		return bParentsMatch && bIdsMatch && TagsMatch;

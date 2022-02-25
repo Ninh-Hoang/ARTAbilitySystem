@@ -2,7 +2,7 @@
 #include "Inventory/Item/ARTItemDefinition.h"
 #include "Inventory/ARTItemStack.h"
 
-const FName ItemDefinitionName = TEXT("ArcItemDefinition");
+const FName ItemDefinitionName = TEXT("ARTItemDefinition");
 
 UARTItemDefinition::UARTItemDefinition(): Super()
 {
@@ -33,3 +33,4 @@ FPrimaryAssetId UARTItemDefinition::GetPrimaryAssetId() const
 
 	return  GetClass()->GetDefaultObject()->GetPrimaryAssetId();
 }
+

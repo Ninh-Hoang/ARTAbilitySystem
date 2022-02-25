@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ARTItemDefinition_Container.h"
 #include "Inventory/ARTInventoryItemTypes.h"
-#include "Inventory/Item/ARTItemDefinition.h"
 #include "ARTItemDefinition_Equipment.generated.h"
 
 /**
  * 
  */
 UCLASS(abstract)
-class ART_API UARTItemDefinition_Equipment : public UARTItemDefinition
+class ART_API UARTItemDefinition_Equipment : public UARTItemDefinition_Container
 {
 	GENERATED_BODY()
 public:

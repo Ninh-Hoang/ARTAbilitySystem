@@ -12,7 +12,7 @@
  */
 
 USTRUCT(BlueprintType)
-struct FGameplayAbilityTargetData_ItemSwitch : public FGameplayAbilityTargetData
+struct FTargetData_ItemSwitch : public FGameplayAbilityTargetData
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -26,19 +26,19 @@ public:
 
 	virtual UScriptStruct* GetScriptStruct() const override
 	{
-		return FGameplayAbilityTargetData_ItemSwitch::StaticStruct();
+		return FTargetData_ItemSwitch::StaticStruct();
 	}
 
 	virtual FString ToString() const override
 	{
-		return TEXT("FGameplayAbilityTargetData_ItemSwitch");
+		return TEXT("FTargetData_ItemSwitch");
 	}
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
 };
 
 template<>
-struct TStructOpsTypeTraits<FGameplayAbilityTargetData_ItemSwitch> : public TStructOpsTypeTraitsBase2<FGameplayAbilityTargetData_ItemSwitch>
+struct TStructOpsTypeTraits<FTargetData_ItemSwitch> : public TStructOpsTypeTraitsBase2<FTargetData_ItemSwitch>
 {
 	enum
 	{

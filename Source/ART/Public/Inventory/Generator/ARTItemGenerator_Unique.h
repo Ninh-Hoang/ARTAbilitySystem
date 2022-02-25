@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS(NotEditInlineNew)
+UCLASS()
 class ART_API UARTItemGenerator_Unique : public UARTItemGenerator
 {
 	

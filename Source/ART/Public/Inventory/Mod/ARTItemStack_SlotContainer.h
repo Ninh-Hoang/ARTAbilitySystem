@@ -23,7 +23,7 @@ class ART_API UARTItemStack_SlotContainer : public UARTItemStack
 public:
 	UARTItemStack_SlotContainer(const FObjectInitializer& ObjectInitializer);
 
-	virtual void InitializeContainer();
+	virtual void InitializeContainer(TArray<FARTItemSlotDefinition>& CustomInventorySlots);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(class UActorChannel *Channel, class FOutBunch *Bunch, FReplicationFlags *RepFlags) override;
@@ -77,9 +77,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
 	virtual TArray<FARTItemSlotRef> GetAllSlotReferences();
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory Layout")
-	TArray< FARTItemSlotDefinition> CustomInventorySlots;
 
 	//CONTAINER QUERYING
 

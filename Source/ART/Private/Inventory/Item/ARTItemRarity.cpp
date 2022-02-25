@@ -1,8 +1,5 @@
 ﻿#include "Inventory/Item/ARTItemRarity.h"
 
-
-
-
 UARTItemRarity::UARTItemRarity(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
