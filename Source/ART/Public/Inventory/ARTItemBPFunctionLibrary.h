@@ -33,10 +33,10 @@ public:
 	static bool QueryMatchingAssets(FGameplayTagQuery Query, TArray<T*>& OutResults);
 
 	template <typename T>
-	static bool QueryMatchingAssetClasses(FGameplayTagQuery Query, TArray<TSubclassOf<T>>& OutResults);
+	static bool QueryMatchingAssetClasses(FGameplayTagQuery Query, TArray<T*>& OutResults);
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Assets")
-	static bool QueryMatchingItemDefinitions(FGameplayTagQuery Query, TArray<TSubclassOf<UARTItemDefinition>>& OutItemDefinitions);
+	static bool QueryMatchingItemDefinitions(FGameplayTagQuery Query, TArray<UARTItemDefinition*>& OutItemDefinitions);
 
 	UFUNCTION(BlueprintCallable, Category = "ART|Inventory")
 	static bool QueryMatchingItemRarities(FGameplayTagQuery Query, TArray<UARTItemRarity*>& OutItemRarities);
@@ -63,7 +63,7 @@ public:
 	static class AARTItemStackWorldObject* SpawnWorldItem(UObject* WorldContextObject,  UARTItemStack* ItemStack, const FTransform& Transform);
 	
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory")
-	static class UARTItemUIData_ItemDefinition* GetUIDataFromItemDefinition(TSubclassOf<UARTItemDefinition> ItemDefinition);
+	static class UARTItemUIData_ItemDefinition* GetUIDataFromItemDefinition(UARTItemDefinition* ItemDefinition);
 
 	//ItemStack Operation
 	UFUNCTION(BlueprintPure, Category= "ART|Inventory")

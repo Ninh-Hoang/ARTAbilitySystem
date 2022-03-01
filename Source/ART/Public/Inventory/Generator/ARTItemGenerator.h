@@ -45,7 +45,7 @@ public:
 	virtual UARTItemStack* GenerateItemStack_Implementation(const FARTItemGeneratorContext& Context);
 		
 protected:
-	virtual UARTItemStack* CreateNewItemStack(TSubclassOf<UARTItemDefinition> ItemDefinition, UARTItemRarity* ItemRarity);
+	virtual UARTItemStack* CreateNewItemStack(UARTItemDefinition* ItemDefinition, UARTItemRarity* ItemRarity);
 	virtual void PostCreateNewItemStack(UARTItemStack* ItemStack);
 };
 

@@ -6,6 +6,7 @@
 #include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
 #include "ART/ART.h"
+#include "Inventory/Item/ARTItemDefinition.h"
 
 UARTItemStack_SlotContainer::UARTItemStack_SlotContainer(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -105,7 +106,7 @@ bool UARTItemStack_SlotContainer::LootItem(UARTItemStack* Item)
 	TArray<UARTItemStack*> NotFullItemStacks;
 	
 	FARTSlotQuery_SlotWithItem Query;
-	Query.ItemDefinition = Item->GetItemDefinition();
+	Query.ItemDefinition = Item->GetItemDefinition()->GetClass();
 	Query.StackCount = EItemStackCount::ISC_NotMaxStack;
 
 	FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);

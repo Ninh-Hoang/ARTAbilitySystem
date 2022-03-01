@@ -415,7 +415,7 @@ bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlot
 		return false;
 	}
 
-	TSubclassOf<UARTItemDefinition_Active> ItemDefinition(ItemStack->GetItemDefinition());
+	UARTItemDefinition_Active* ItemDefinition = Cast<UARTItemDefinition_Active>(ItemStack->GetItemDefinition());
 	if (!IsValid(ItemDefinition))
 	{
 		return false;
@@ -430,7 +430,7 @@ bool UARTInventoryComponent_Active::MakeItemInactive_Internal(const FARTItemSlot
 	}
 
 	RemoveMods(ItemStack, ItemSlot);
-	bool bSuccess = ClearAbilityInfo_Internal(ItemDefinition.GetDefaultObject()->ActiveItemAbilityInfo, (*Entry).EquippedItemInfo);
+	bool bSuccess = ClearAbilityInfo_Internal(ItemDefinition->ActiveItemAbilityInfo, (*Entry).EquippedItemInfo);
 		
 
 	OnItemInactive.Broadcast(this, ItemStack);
@@ -462,7 +462,7 @@ bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotRe
 		return false;
 	}
 
-	TSubclassOf<UARTItemDefinition_Active> ItemDefinition(ItemStack->GetItemDefinition());
+	UARTItemDefinition_Active* ItemDefinition = Cast<UARTItemDefinition_Active>(ItemStack->GetItemDefinition());
 	if (!IsValid(ItemDefinition))
 	{
 		return false;
@@ -477,7 +477,7 @@ bool UARTInventoryComponent_Active::MakeItemActive_Internal(const FARTItemSlotRe
 	}
 
 	//Add this item's Active Abilities
-	bool bSuccess = ApplyAbilityInfo_Internal(ItemDefinition.GetDefaultObject()->ActiveItemAbilityInfo, (*Entry).EquippedItemInfo, ItemStack);
+	bool bSuccess = ApplyAbilityInfo_Internal(ItemDefinition->ActiveItemAbilityInfo, (*Entry).EquippedItemInfo, ItemStack);
 
 	if (bSuccess)
 	{

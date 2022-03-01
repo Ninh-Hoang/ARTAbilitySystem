@@ -19,7 +19,7 @@ UARTItemStack* UARTItemGenerator_Unique::GenerateItemStack_Implementation(const 
 		return nullptr;
 	}
 
-	UARTItemStack* ItemStack = CreateNewItemStack(ItemDefinition, ItemRarity);
+	UARTItemStack* ItemStack = CreateNewItemStack(ItemDefinition.GetDefaultObject(), ItemRarity);
 	ItemStack->ItemName = ItemDisplayName; 
 
 	for (UARTItemGenerator* SubItemGenerator : SubItemGenerators)

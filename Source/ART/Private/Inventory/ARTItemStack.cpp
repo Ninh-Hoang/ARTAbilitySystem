@@ -75,7 +75,7 @@ void UARTItemStack::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) co
 {
 	if (HasValidItemData())
 	{
-		ItemDefinition.GetDefaultObject()->GetOwnedGameplayTags(TagContainer);
+		ItemDefinition->GetOwnedGameplayTags(TagContainer);
 	}
 	if (IsValid(Rarity))
 	{
@@ -122,7 +122,7 @@ void UARTItemStack::OnRep_ItemName(FText PreviousItemName)
 	//Blank, so that subclasses can override this function
 }
 
-void UARTItemStack::OnRep_ItemDefinition(TSubclassOf<UARTItemDefinition> PreviousItemDefinition)
+void UARTItemStack::OnRep_ItemDefinition(UARTItemDefinition* PreviousItemDefinition)
 {
 	//Blank, so that subclasses can override this function
 }
@@ -132,7 +132,7 @@ void UARTItemStack::OnRep_StackSize(int32 PreviousStackSize)
 	//Blank, so that subclasses can override this function
 }
 
-TSubclassOf<UARTItemDefinition> UARTItemStack::GetItemDefinition() const
+UARTItemDefinition* UARTItemStack::GetItemDefinition() const
 {
 	return ItemDefinition;
 }
@@ -149,7 +149,7 @@ void UARTItemStack::SetStackSize(int32 NewStackSize)
 		return;
 	}
 	const int32 OldStackSize = StackSize; 
-	StackSize = FMath::Clamp(NewStackSize, 0, ItemDefinition.GetDefaultObject()->MaxStackSize);
+	StackSize = FMath::Clamp(NewStackSize, 1, ItemDefinition->MaxStackSize);
 	OnStackSizeChanged.Broadcast(this, OldStackSize, StackSize);
 }
 
@@ -169,7 +169,7 @@ bool UARTItemStack::CanStackWith(UARTItemStack* OtherStack) const
 		return false;
 	}
 
-	bool bCanStack = (ItemDefinition.GetDefaultObject()->MaxStackSize > 1 && GetStackSize() < ItemDefinition.GetDefaultObject()->MaxStackSize);
+	bool bCanStack = (ItemDefinition->MaxStackSize > 1 && GetStackSize() < ItemDefinition->MaxStackSize);
 	return bCanStack && ItemDefinition == OtherStack->ItemDefinition;
 }
 
@@ -185,7 +185,7 @@ bool UARTItemStack::MergeItemStacks(UARTItemStack* OtherStack)
 	}
 	
 	const int32 OldStackSize = StackSize;
-	const int32 MaxStacks = ItemDefinition.GetDefaultObject()->MaxStackSize;
+	const int32 MaxStacks = ItemDefinition->MaxStackSize;
 
 	if (StackSize + OtherStack->StackSize > MaxStacks)
 	{
@@ -248,7 +248,7 @@ bool UARTItemStack::AddSubItemStack(UARTItemStack* SubItemStack)
 		return false;
 	}
 	//If an item can stack, then it can't have perks
-	if (ItemDefinition.GetDefaultObject()->MaxStackSize > 1)
+	if (ItemDefinition->MaxStackSize > 1)
 	{
 		return false;
 	}
@@ -297,7 +297,7 @@ bool UARTItemStack::RemoveSubItemStack(UARTItemStack* SubItemStack)
 
 UARTItemUIData_ItemDefinition* UARTItemStack::GetUIData()
 {
-	return ItemDefinition.GetDefaultObject()->UIData;
+	return ItemDefinition->UIData;
 }
 
 UARTItemStack* UARTItemStack::QueryForSubItem(const FGameplayTagQuery& StackQuery)

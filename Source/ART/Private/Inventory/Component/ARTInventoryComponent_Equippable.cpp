@@ -74,7 +74,7 @@ bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTItem
 		return false;
 	}
 	
-	TSubclassOf<UARTItemDefinition_Equipment> ItemDefinition(ItemStack->GetItemDefinition());
+	UARTItemDefinition_Equipment* ItemDefinition = Cast<UARTItemDefinition_Equipment>(ItemStack->GetItemDefinition());
 	if (!IsValid(ItemDefinition))
 	{
 		return false;
@@ -88,7 +88,7 @@ bool UARTInventoryComponent_Equippable::MakeItemEquipped_Internal(const FARTItem
 		Entry = &EquippedItemAbilityInfos.Add_GetRef(FARTInventoryItemInfoEntry(ItemSlot));
 	}
 
-	bool bSuccess = ApplyAbilityInfo_Internal(ItemDefinition.GetDefaultObject()->EquippedItemAbilityInfo, (*Entry).EquippedItemInfo, ItemStack);
+	bool bSuccess = ApplyAbilityInfo_Internal(ItemDefinition->EquippedItemAbilityInfo, (*Entry).EquippedItemInfo, ItemStack);
 
 	if (bSuccess)
 	{
@@ -121,7 +121,7 @@ bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTIt
 		return false;
 	}
 
-	TSubclassOf<UARTItemDefinition_Equipment> ItemDefinition(ItemStack->GetItemDefinition());
+	UARTItemDefinition_Equipment* ItemDefinition = Cast<UARTItemDefinition_Equipment>(ItemStack->GetItemDefinition());
 	if (!IsValid(ItemDefinition))
 	{
 		return false;
@@ -138,7 +138,7 @@ bool UARTInventoryComponent_Equippable::MakeItemUnequipped_Internal(const FARTIt
 
 	RemoveMods(ItemStack, ItemSlot);
 	//Clear the active ability info
-	bool bSuccess = ClearAbilityInfo_Internal(ItemDefinition.GetDefaultObject()->EquippedItemAbilityInfo, (*Entry).EquippedItemInfo);
+	bool bSuccess = ClearAbilityInfo_Internal(ItemDefinition->EquippedItemAbilityInfo, (*Entry).EquippedItemInfo);
 
 	//IF there is more that needs to be done aside from ability info, put it here
 	if (bSuccess)
@@ -233,7 +233,7 @@ bool UARTInventoryComponent_Equippable::ApplyAbilityInfo_Internal(const FARTItem
 				}				
 				
 				int32 InputIndex = InputBinder->GetInputBinding(ASC, AbilityClass);
-				FGameplayAbilitySpec Spec(AbilityClass.GetDefaultObject(), 1, InputIndex, AbilitySource);
+				FGameplayAbilitySpec Spec(AbilityClass, 1, InputIndex, AbilitySource);
 							
 
 				FGameplayAbilitySpecHandle Handle = ASC->GiveAbility(Spec);
@@ -249,7 +249,7 @@ bool UARTInventoryComponent_Equippable::ApplyAbilityInfo_Internal(const FARTItem
 					continue;
 				}
 
-				FGameplayAbilitySpec Spec(ExtraAbility.GetDefaultObject(), 1, INDEX_NONE, AbilitySource);
+				FGameplayAbilitySpec Spec(ExtraAbility, 1, INDEX_NONE, AbilitySource);
 
 				FGameplayAbilitySpecHandle Handle = ASC->GiveAbility(Spec);
 				StoreInto.AddedAbilities.Add(Handle);

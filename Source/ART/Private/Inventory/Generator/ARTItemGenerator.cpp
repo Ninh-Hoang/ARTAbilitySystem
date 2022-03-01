@@ -43,16 +43,16 @@ UARTItemStack* UARTItemGenerator::GenerateItemStack_Implementation(const FARTIte
 	return nullptr;
 }
 
-UARTItemStack* UARTItemGenerator::CreateNewItemStack(TSubclassOf<UARTItemDefinition> ItemDefinition, UARTItemRarity* ItemRarity)
+UARTItemStack* UARTItemGenerator::CreateNewItemStack(UARTItemDefinition* ItemDefinition, UARTItemRarity* ItemRarity)
 {	
 	TSubclassOf<UARTItemStack> ISC = ItemStackClass;
 
 	if (IsValid(ISC))
 	{
 		//Check to see if our ItemStack Class is a child of what the item def wants.  If not, use the item def's class
-		if (IsValid(ItemDefinition.GetDefaultObject()->DefaultItemStackClass) && !ISC->IsChildOf(ItemDefinition.GetDefaultObject()->DefaultItemStackClass))
+		if (IsValid(ItemDefinition->DefaultItemStackClass) && !ISC->IsChildOf(ItemDefinition->DefaultItemStackClass))
 		{
-			ISC = ItemDefinition.GetDefaultObject()->DefaultItemStackClass;
+			ISC = ItemDefinition->DefaultItemStackClass;
 		}
 	}
 
@@ -61,7 +61,7 @@ UARTItemStack* UARTItemGenerator::CreateNewItemStack(TSubclassOf<UARTItemDefinit
 		//If we don't have a valid item stack class, use the one in the developer settings.
 		//TODO:Inventory developer setting
 		//ISC = GetDefault<UARTInventoryDeveloperSettings>()->DefaultItemStackClass;
-		ISC = ItemDefinition.GetDefaultObject()->DefaultItemStackClass;
+		ISC = ItemDefinition->DefaultItemStackClass;
 		if (!IsValid(ISC))
 		{
 			//If we still don't have a valid one, use the default item stack class.  That's good enough
@@ -81,7 +81,7 @@ void UARTItemGenerator::PostCreateNewItemStack(UARTItemStack* ItemStack)
 	if(!ItemStack) return;
 	if(UARTItemStack_SlotContainer* ContainerStack = Cast<UARTItemStack_SlotContainer>(ItemStack))
 	{
-		if(UARTItemDefinition_Container* ContainerDefinition = Cast<UARTItemDefinition_Container>(ItemStack->GetItemDefinition().GetDefaultObject()))
+		if(UARTItemDefinition_Container* ContainerDefinition = Cast<UARTItemDefinition_Container>(ItemStack->GetItemDefinition()))
 		{
 			ContainerStack->InitializeContainer(ContainerDefinition->CustomInventorySlots);
 		}

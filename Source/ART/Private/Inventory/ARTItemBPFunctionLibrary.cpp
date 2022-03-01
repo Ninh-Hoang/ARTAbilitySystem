@@ -86,7 +86,7 @@ bool UARTItemBPFunctionLibrary::QueryMatchingAssets(FGameplayTagQuery Query, TAr
 }
 
 template <typename T>
-bool UARTItemBPFunctionLibrary::QueryMatchingAssetClasses(FGameplayTagQuery Query, TArray<TSubclassOf<T>>& OutResults)
+bool UARTItemBPFunctionLibrary::QueryMatchingAssetClasses(FGameplayTagQuery Query, TArray<T*>& OutResults)
 {
 	TArray<T*> DefaultObjects;
 	bool bSuccess = QueryMatchingAssets<T>(Query, DefaultObjects);
@@ -95,7 +95,7 @@ bool UARTItemBPFunctionLibrary::QueryMatchingAssetClasses(FGameplayTagQuery Quer
 	{
 		for (T* Object : DefaultObjects)
 		{
-			OutResults.Add(Object->GetClass());
+			OutResults.Add(Object);
 		}
 	}
 
@@ -104,7 +104,7 @@ bool UARTItemBPFunctionLibrary::QueryMatchingAssetClasses(FGameplayTagQuery Quer
 
 
 
-bool UARTItemBPFunctionLibrary::QueryMatchingItemDefinitions(FGameplayTagQuery Query, TArray<TSubclassOf<UARTItemDefinition>>& OutItemDefinitions)
+bool UARTItemBPFunctionLibrary::QueryMatchingItemDefinitions(FGameplayTagQuery Query, TArray<UARTItemDefinition*>& OutItemDefinitions)
 {
 	return QueryMatchingAssetClasses<UARTItemDefinition>(Query, OutItemDefinitions);
 }
@@ -156,7 +156,7 @@ bool UARTItemBPFunctionLibrary::TwoItemCanStack(UARTItemStack* TargetStack, UART
 {
 	if(!TargetStack || !SourceStack) return false;
 	if(TargetStack->GetItemDefinition() != SourceStack->GetItemDefinition()) return false;
-	if(TargetStack->GetStackSize() >= TargetStack->GetItemDefinition().GetDefaultObject()->MaxStackSize) return false;
+	if(TargetStack->GetStackSize() >= TargetStack->GetItemDefinition()->MaxStackSize) return false;
 	return true;
 }
 
@@ -490,11 +490,11 @@ class AARTItemStackWorldObject* UARTItemBPFunctionLibrary::SpawnWorldItem(UObjec
 	return nullptr;
 }
 
-UARTItemUIData_ItemDefinition* UARTItemBPFunctionLibrary::GetUIDataFromItemDefinition(TSubclassOf<UARTItemDefinition> ItemDefinition)
+UARTItemUIData_ItemDefinition* UARTItemBPFunctionLibrary::GetUIDataFromItemDefinition(UARTItemDefinition* ItemDefinition)
 {
 	if (IsValid(ItemDefinition))
 	{
-		return ItemDefinition.GetDefaultObject()->UIData;
+		return ItemDefinition->UIData;
 	}
 	return nullptr;	
 }

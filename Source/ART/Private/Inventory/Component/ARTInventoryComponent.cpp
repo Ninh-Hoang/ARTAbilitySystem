@@ -112,12 +112,12 @@ bool UARTInventoryComponent::LootItem(UARTItemStack* Item)
 
 	if(!Item) return false;
 
-	if(Item->GetItemDefinition().GetDefaultObject()->MaxStackSize > 1)
+	if(Item->GetItemDefinition()->MaxStackSize > 1)
 	{
 		TArray<UARTItemStack*> NotFullItemStacks;
 	
 		FARTSlotQuery_SlotWithItem Query;
-		Query.ItemDefinition = Item->GetItemDefinition();
+		Query.ItemDefinition = Item->GetItemDefinition()->GetClass();
 		Query.StackCount = EItemStackCount::ISC_NotMaxStack;
 
 		FARTSlotQuery* NewQuery = new FARTSlotQuery_SlotWithItem(Query);

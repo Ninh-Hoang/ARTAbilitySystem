@@ -182,16 +182,16 @@ bool FARTSlotQuery_SlotWithItem::MatchesSlot(const FARTItemSlot& ItemSlot) const
 	
 	if(ItemDefinition)
 	{
-		if(ItemDefinition != ItemStack->GetItemDefinition()) return false;
+		if(ItemDefinition != ItemStack->GetItemDefinition()->GetClass()) return false;
 	}
 
 	switch (StackCount.GetValue())
 	{
 	case EItemStackCount::Type::ISC_NotMaxStack:
-		if(ItemStack->GetStackSize() >= ItemStack->GetItemDefinition().GetDefaultObject()->MaxStackSize) return false;
+		if(ItemStack->GetStackSize() >= ItemStack->GetItemDefinition()->MaxStackSize) return false;
 		break;
 	case EItemStackCount::Type::ISC_MaxStack:
-		if(ItemStack->GetStackSize() != ItemStack->GetItemDefinition().GetDefaultObject()->MaxStackSize) return false;
+		if(ItemStack->GetStackSize() != ItemStack->GetItemDefinition()->MaxStackSize) return false;
 		break;
 	case EItemStackCount::Type::ISC_Ignore:
 		break;

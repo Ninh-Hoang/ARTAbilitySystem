@@ -76,9 +76,9 @@ void AARTItemStackWorldObject::SetInventoryStack_Implementation(UARTItemStack* I
 
 	if (IsValid(InventoryStack)
 		&& InventoryStack->HasValidItemData()
-		&& IsValid(InventoryStack->GetItemDefinition().GetDefaultObject()->WorldItemModel))
+		&& IsValid(InventoryStack->GetItemDefinition()->WorldItemModel))
 	{
-		StaticMeshComponent->SetStaticMesh(InventoryStack->GetItemDefinition().GetDefaultObject()->WorldItemModel);
+		StaticMeshComponent->SetStaticMesh(InventoryStack->GetItemDefinition()->WorldItemModel);
 	}
 
 	if (GetLocalRole() == ROLE_Authority)

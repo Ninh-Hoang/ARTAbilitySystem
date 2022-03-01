@@ -16,7 +16,7 @@ public:
 	UARTItemDefinition();
 
 	//Max stack size of this item, if it can stack
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Gameplay")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Gameplay", Meta =(ClampMin=1, ClampMax = 999))
 	int32 MaxStackSize;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Gameplay")

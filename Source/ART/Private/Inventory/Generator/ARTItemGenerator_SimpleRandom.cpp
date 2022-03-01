@@ -36,7 +36,7 @@ UARTItemStack* UARTItemGenerator_SimpleRandom::GenerateItemStack_Implementation(
 
 	//Query some item definitions to use, we'll just select one
 	
-	TArray<TSubclassOf<UARTItemDefinition>> ItemDefs;
+	TArray<UARTItemDefinition*> ItemDefs;
 	if (!UARTItemBPFunctionLibrary::QueryMatchingItemDefinitions(ItemTagQuery, ItemDefs))
 	{
 		return nullptr;
@@ -48,7 +48,7 @@ UARTItemStack* UARTItemGenerator_SimpleRandom::GenerateItemStack_Implementation(
 		return nullptr;
 	}
 	
-	TSubclassOf<UARTItemDefinition> ItemDef = ItemDefs[FMath::RandRange(0, ItemDefs.Num() - 1)];
+	UARTItemDefinition* ItemDef = ItemDefs[FMath::RandRange(0, ItemDefs.Num() - 1)];
 
 	if (!IsValid(ItemDef))
 	{

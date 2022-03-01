@@ -94,7 +94,7 @@ public:
 	
 protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Item", ReplicatedUsing=OnRep_ItemDefinition)
-	TSubclassOf<UARTItemDefinition> ItemDefinition;
+	UARTItemDefinition* ItemDefinition;
 	
 	UPROPERTY(Replicated)
 	FARTSubItemStackArray SubItemStacks;
@@ -115,11 +115,11 @@ public:
 	UFUNCTION()
 	virtual void OnRep_ItemName(FText PreviousItemName);
 	UFUNCTION()
-	virtual void OnRep_ItemDefinition(TSubclassOf<UARTItemDefinition> PreviousItemDefinition);
+	virtual void OnRep_ItemDefinition(UARTItemDefinition* PreviousItemDefinition);
 	UFUNCTION()
 	virtual void OnRep_StackSize(int32 PreviousStackSize);
 
-	virtual TSubclassOf<UARTItemDefinition> GetItemDefinition() const;
+	virtual UARTItemDefinition* GetItemDefinition() const;
 	virtual int32 GetStackSize() const;
 
 	UFUNCTION(BlueprintPure, Category = "ART|Inventory|ItemStack")
