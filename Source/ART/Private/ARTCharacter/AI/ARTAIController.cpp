@@ -263,7 +263,7 @@ void AARTAIController::DrawDebugNavigationPath()
     
     TArray<FNavPathPoint> PathPoints = Path->GetPathPoints();
 
-    if(PathPoints.IsEmpty()) return;
+    if(PathPoints.Num() == 0) return;
 	
     UWorld* World = GetWorld();
     for(int32 i = 0; i< PathPoints.Num(); i++)

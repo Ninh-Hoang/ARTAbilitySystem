@@ -33,7 +33,7 @@ void UInfMapFunctionLibrary::DestroyAllButFirstSpawnActor(const UObject* WorldCo
 	for (int i = 1; i < Result.Num(); ++i)
 	{
 
-		Result[i]->MarkAsGarbage();
+		Result[i]->MarkPendingKill();
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("%s : There is an actor marked Pending Kill. Please reopen the level."), *ActorClass.Get()->GetFName().ToString());

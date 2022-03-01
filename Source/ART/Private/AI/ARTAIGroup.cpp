@@ -34,7 +34,7 @@ void UARTAIGroup::SetLeaderID(int32 InLeaderID)
 
 bool UARTAIGroup::GetAgentList(TArray<AARTCharacterAI*>& OutAgentList)
 {
-	if(AgentList.IsEmpty()) return false;
+	if(AgentList.Num() == 0) return false;
 	
 	OutAgentList = AgentList;
 	return true;
@@ -59,7 +59,7 @@ bool UARTAIGroup::RemoveAgent(AARTCharacterAI* InAgent)
 
 bool UARTAIGroup::IsEmpty()
 {
-	return AgentList.IsEmpty()? true : false;
+	return AgentList.Num() == 0? true : false;
 }
 
 bool UARTAIGroup::ShouldBeRemoved()

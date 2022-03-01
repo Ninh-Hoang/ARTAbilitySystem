@@ -32,7 +32,7 @@ void UAsyncTaskEffectStackChanged::EndTask()
 	}
 
 	SetReadyToDestroy();
-	MarkAsGarbage();
+	MarkPendingKill();
 }
 
 void UAsyncTaskEffectStackChanged::OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target,

@@ -55,7 +55,7 @@ protected:
 	FAIInfMapMoveRequest InfluenceMapMoveRequest;
 
 	UPROPERTY(BlueprintReadOnly, Category="AI|Tasks")
-	TObjectPtr<AInfMapAIController> OwnerInfluenceMapAIController;
+	AInfMapAIController* OwnerInfluenceMapAIController;
 
 public:
 	UAITask_InfMapMoveTo(const FObjectInitializer& ObjectInitializer);

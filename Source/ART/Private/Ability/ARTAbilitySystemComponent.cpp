@@ -314,7 +314,7 @@ float UARTAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimati
 
 			AnimMontageInfo.LocalMontageInfo.AnimMontage = NewAnimMontage;
 			AnimMontageInfo.LocalMontageInfo.AnimatingAbility = InAnimatingAbility;
-			AnimMontageInfo.LocalMontageInfo.PlayInstanceId = !AnimMontageInfo.LocalMontageInfo.PlayInstanceId;
+			AnimMontageInfo.LocalMontageInfo.PlayBit = !AnimMontageInfo.LocalMontageInfo.PlayBit;
 
 			if (InAbility)
 			{
@@ -336,8 +336,8 @@ float UARTAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimati
 					FGameplayAbilityRepAnimMontageForMesh& AbilityRepMontageInfo =
 						GetGameplayAbilityRepAnimMontageForMesh(InMesh);
 					AbilityRepMontageInfo.RepMontageInfo.AnimMontage = NewAnimMontage;
-					AbilityRepMontageInfo.RepMontageInfo.PlayInstanceId = !static_cast<bool>(AbilityRepMontageInfo.
-						RepMontageInfo.PlayInstanceId);
+					AbilityRepMontageInfo.RepMontageInfo.ForcePlayBit = !static_cast<bool>(AbilityRepMontageInfo.
+						RepMontageInfo.ForcePlayBit);
 
 					// Update parameters that change during Montage life time.
 					AnimMontage_UpdateReplicatedDataForMesh(InMesh);
@@ -805,7 +805,7 @@ void UARTAbilitySystemComponent::AnimMontage_UpdateForcedPlayFlagsForMesh(
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(
 		OutRepAnimMontageInfo.Mesh);
 
-	OutRepAnimMontageInfo.RepMontageInfo.PlayInstanceId= AnimMontageInfo.LocalMontageInfo.PlayInstanceId;
+	OutRepAnimMontageInfo.RepMontageInfo.AnimMontage = AnimMontageInfo.LocalMontageInfo.AnimMontage;
 }
 
 void UARTAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
@@ -859,7 +859,7 @@ void UARTAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
 					NewRepMontageInfoForMesh.RepMontageInfo.BlendTime,
 					NewRepMontageInfoForMesh.RepMontageInfo.NextSectionID,
 					NewRepMontageInfoForMesh.RepMontageInfo.IsStopped,
-					NewRepMontageInfoForMesh.RepMontageInfo.PlayInstanceId);
+					NewRepMontageInfoForMesh.RepMontageInfo.ForcePlayBit);
 				ABILITY_LOG(Warning, TEXT("\tLocalAnimMontageInfo.AnimMontage: %s\n\tPosition: %f"),
 				            *GetNameSafe(AnimMontageInfo.LocalMontageInfo.AnimMontage),
 				            AnimInstance->Montage_GetPosition(AnimMontageInfo.LocalMontageInfo.AnimMontage));
@@ -868,10 +868,10 @@ void UARTAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
 			if (NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage)
 			{
 				// New Montage to play
-				if ((AnimMontageInfo.LocalMontageInfo.AnimMontage != NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage)
-					|| (AnimMontageInfo.LocalMontageInfo.PlayInstanceId != NewRepMontageInfoForMesh.RepMontageInfo.PlayInstanceId))
+				const bool ReplicatedPlayBit = bool(NewRepMontageInfoForMesh.RepMontageInfo.ForcePlayBit);
+				if ((AnimMontageInfo.LocalMontageInfo.AnimMontage != NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage) || (AnimMontageInfo.LocalMontageInfo.PlayBit != ReplicatedPlayBit))
 				{
-					AnimMontageInfo.LocalMontageInfo.PlayInstanceId = NewRepMontageInfoForMesh.RepMontageInfo.PlayInstanceId;
+					AnimMontageInfo.LocalMontageInfo.PlayBit = ReplicatedPlayBit;
 					PlayMontageSimulatedForMesh(NewRepMontageInfoForMesh.Mesh,
 					                            NewRepMontageInfoForMesh.RepMontageInfo.AnimMontage,
 					                            NewRepMontageInfoForMesh.RepMontageInfo.PlayRate);

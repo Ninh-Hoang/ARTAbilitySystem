@@ -222,7 +222,7 @@ void UAT_WaitTargetDataUsingActor::FinalizeTargetActor() const
 
 void UAT_WaitTargetDataUsingActor::RegisterTargetDataCallbacks()
 {
-	if (!ensure(IsValidChecked(this) == false))
+	if (!ensure(IsValid(this) == false))
 	{
 		return;
 	}
