@@ -41,8 +41,8 @@ public:
 	UARTItemUIData* UIData;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Item Generator")
-	UARTItemStack* GenerateItemStack(const FARTItemGeneratorContext& Context);
-	virtual UARTItemStack* GenerateItemStack_Implementation(const FARTItemGeneratorContext& Context);
+	UARTItemStack* GenerateItemStack(const FARTItemGeneratorContext& Context = FARTItemGeneratorContext());
+	virtual UARTItemStack* GenerateItemStack_Implementation(const FARTItemGeneratorContext& Context = FARTItemGeneratorContext());
 		
 protected:
 	virtual UARTItemStack* CreateNewItemStack(UARTItemDefinition* ItemDefinition, UARTItemRarity* ItemRarity);
