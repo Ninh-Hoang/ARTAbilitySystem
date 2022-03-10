@@ -14,7 +14,7 @@ UAsyncTaskGameplayTagAddedRemoved* UAsyncTaskGameplayTagAddedRemoved::ListenForG
 
 	if (!IsValid(AbilitySystemComponent) || InTags.Num() < 1)
 	{
-		ListenForGameplayTagAddedRemoved->EndTask();
+		ListenForGameplayTagAddedRemoved->EndTask();	
 		return nullptr;
 	}
 

@@ -16,10 +16,14 @@ public:
 	UARTItemDefinition();
 
 	//Max stack size of this item, if it can stack
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Gameplay", Meta =(ClampMin=1, ClampMax = 999))
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ItemData", Meta =(ClampMin=1, ClampMax = 999))
 	int32 MaxStackSize;
 
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Gameplay")
+	//Max stack size of this item, if it can stack
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ItemData", Meta =(ClampMin=0))
+	int32 ItemPrice;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ItemData")
 	TSubclassOf<UARTItemStack> DefaultItemStackClass;
 	
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Display")
