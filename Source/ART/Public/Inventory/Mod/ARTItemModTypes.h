@@ -6,7 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "ARTItemModTypes.generated.h"
 
-class UARTItemPerkDefinition;
+class UARTItemDefinition_Mod;
 
 USTRUCT(BlueprintType)
 struct ART_API FARTModModifierData

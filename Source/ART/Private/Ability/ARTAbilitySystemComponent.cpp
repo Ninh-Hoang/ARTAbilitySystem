@@ -4,7 +4,6 @@
 #include "Ability/ARTAbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Animation/AnimInstance.h"
-#include "Ability/ARTGameplayAbility.h"
 #include "GameplayCueManager.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon/Weapon.h"
@@ -13,6 +12,7 @@
 #include "Ability/ARTGameplayEffectTypes.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "ARTGameplayAbility_Order.h"
 #include "Ability/ARTAbilityTagRelationship.h"
 
 UARTAbilitySystemComponent::UARTAbilitySystemComponent()
@@ -39,6 +39,12 @@ static TAutoConsoleVariable<float> CVarReplayMontageErrorThreshold(
 	0.5f,
 	TEXT("Tolerance level for when montage playback position correction occurs in replays")
 );
+
+void UARTAbilitySystemComponent::NotifyPreCommitCooldownEffect(UARTGameplayAbility* Ability,
+	FGameplayEffectSpecHandle& EffectSpec)
+{
+	PreCommitCooldownEffectCallbacks.Broadcast(Ability, EffectSpec);
+}
 
 void UARTAbilitySystemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -144,6 +150,11 @@ void UARTAbilitySystemComponent::BP_InitAbilityActorInfo(AActor* InOwnerActor, A
 	InitAbilityActorInfo(InOwnerActor, InAvatarActor);
 }
 
+AActor* UARTAbilitySystemComponent::BP_GetAvatarActor() const
+{
+	return GetAvatarActor();
+}
+
 void UARTAbilitySystemComponent::CancelAbilitiesWithTag(const FGameplayTagContainer WithTags,
                                                         const FGameplayTagContainer WithoutTags,
                                                         UGameplayAbility* Ignore)
@@ -197,6 +208,92 @@ void UARTAbilitySystemComponent::AbilityLocalInputPressed(int32 InputID)
 						// Ability is not active, so try to activate it
 						TryActivateAbility(Spec.Handle);
 					}
+				}
+			}
+		}
+	}
+}
+
+void UARTAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& InputTag)
+{
+	if (InputTag.IsValid())
+	{
+		ABILITYLIST_SCOPE_LOCK();
+		for (FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			if (AbilitySpec.Ability && (AbilitySpec.Ability->AbilityTags.HasTagExact(InputTag)))
+			{
+				AbilitySpec.InputPressed = true;
+				if (AbilitySpec.IsActive())
+				{
+					// Ability is active so pass along the input event.
+					AbilitySpecInputPressed(AbilitySpec);
+					InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
+				}
+				else
+				{
+					// Ability is not active, so try to activate it.
+					TryActivateAbility(AbilitySpec.Handle);
+					InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
+				}
+			}
+		}
+	}
+}
+
+void UARTAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& InputTag)
+{
+	if (InputTag.IsValid())
+	{
+		ABILITYLIST_SCOPE_LOCK();
+		for ( FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			if (AbilitySpec.Ability && (AbilitySpec.Ability->AbilityTags.HasTagExact(InputTag)))
+			{
+				AbilitySpec.InputPressed = false;
+				if (AbilitySpec.IsActive())
+				{
+					// Ability is active so pass along the input event.
+					InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
+					AbilitySpecInputReleased(AbilitySpec);
+				}
+			}
+		}
+	}
+}
+
+void UARTAbilitySystemComponent::AbilityInputTagConfirm(const FGameplayTag& InputTag)
+{
+	if (InputTag.IsValid())
+	{
+		ABILITYLIST_SCOPE_LOCK();
+		for ( FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			if (AbilitySpec.Ability && (AbilitySpec.Ability->AbilityTags.HasTagExact(InputTag)))
+			{
+				if (AbilitySpec.IsActive())
+				{
+					// Ability is active so pass along the input event.
+					InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::GenericConfirm, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
+				}
+			}
+		}
+	}
+}
+
+void UARTAbilitySystemComponent::AbilityInputTagCancel(const FGameplayTag& InputTag)
+{
+	if (InputTag.IsValid())
+	{
+		ABILITYLIST_SCOPE_LOCK();
+		for ( FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			if (AbilitySpec.Ability && (AbilitySpec.Ability->AbilityTags.HasTagExact(InputTag)))
+			{
+				if (AbilitySpec.IsActive())
+				{
+					// Ability is active so pass along the input event.
+					InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::GenericCancel, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
 				}
 			}
 		}
@@ -1224,8 +1321,9 @@ bool UARTAbilitySystemComponent::SetGameplayEffectDurationHandle(FActiveGameplay
 	else
 	{
 		AGE->Spec.Duration = 0.01f;
+		AGE->Spec.SetDuration(0.01f, false);
 	}
-
+	
 	AGE->StartServerWorldTime = ActiveGameplayEffects.GetServerWorldTime();
 	AGE->CachedStartServerWorldTime = AGE->StartServerWorldTime;
 	AGE->StartWorldTime = ActiveGameplayEffects.GetWorldTime();
@@ -1259,9 +1357,10 @@ bool UARTAbilitySystemComponent::AddGameplayEffectDurationHandle(FActiveGameplay
 	}
 	if (AddDuration < 0.f)
 	{
-		if (AGE->Spec.Duration + AddDuration > 0.01f)
+		const float NewDuration = AGE->Spec.Duration + AddDuration;
+		if (NewDuration > 0.01f)
 		{
-			AGE->Spec.Duration += AddDuration;
+			AGE->Spec.Duration = NewDuration;
 		}
 		else
 		{
@@ -1497,12 +1596,12 @@ void UARTAbilitySystemComponent::GetAutoOrders_Implementation(TArray<FARTOrderTy
 	{
 		TSubclassOf<UGameplayAbility> AbilityType = ActivatableSpecs[Index].Ability->GetClass();
 
-		if (AbilityType == nullptr)
+		if (AbilityType == nullptr || !AbilityType->IsChildOf(UARTGameplayAbility_Order::StaticClass()))
 		{
 			continue;
 		}
 
-		UARTGameplayAbility* Ability = AbilityType->GetDefaultObject<UARTGameplayAbility>();
+		UARTGameplayAbility_Order* Ability = AbilityType->GetDefaultObject<UARTGameplayAbility_Order>();
 		if (Ability == nullptr)
 		{
 			continue;
@@ -1538,7 +1637,7 @@ void UARTAbilitySystemComponent::OnGiveAbility(FGameplayAbilitySpec& AbilitySpec
 {
 	Super::OnGiveAbility(AbilitySpec);
 	
-	const UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitySpec.Ability);
+	const UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(AbilitySpec.Ability);
 	if (Ability && Ability->GetTargetType() != EARTTargetType::PASSIVE)
 	{
 		OnAutoOrderAdded.Broadcast((FARTOrderTypeWithIndex(UseAbilityOrder, Ability->GetAutoOrderPriority(), Ability->AbilityTags)));
@@ -1548,7 +1647,7 @@ void UARTAbilitySystemComponent::OnGiveAbility(FGameplayAbilitySpec& AbilitySpec
 void UARTAbilitySystemComponent::OnRemoveAbility(FGameplayAbilitySpec& AbilitySpec)
 {
 	Super::OnRemoveAbility(AbilitySpec);
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(AbilitySpec.Ability);
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(AbilitySpec.Ability);
 	if (Ability && Ability->GetTargetType() != EARTTargetType::PASSIVE)
 	{
 		OnAutoOrderRemove.Broadcast((FARTOrderTypeWithIndex(UseAbilityOrder, Ability->GetAutoOrderPriority(), Ability->AbilityTags)));

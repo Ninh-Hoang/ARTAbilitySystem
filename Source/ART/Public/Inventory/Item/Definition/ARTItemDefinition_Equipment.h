@@ -19,5 +19,4 @@ public:
 		
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Equipped Item")
 	FARTItemDefinition_AbilityInfo EquippedItemAbilityInfo;
-	
 };

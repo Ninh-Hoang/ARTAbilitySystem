@@ -117,6 +117,13 @@ public:
 	// Returns SourceLevel
 	UFUNCTION(BlueprintPure, Category = "Ability|EffectContext", Meta = (DisplayName = "GetSourceLevel"))
     static float EffectContextGetSourceLevel(FGameplayEffectContextHandle EffectContext);
+
+	/** Gets the instigating ability (that make this effect) of the EffectContext */
+	UFUNCTION(BlueprintPure, Category = "Ability|EffectContext", Meta = (DisplayName = "GetAbility"))
+	static UGameplayAbility* EffectContextGetAbility(FGameplayEffectContextHandle EffectContext);
+
+	UFUNCTION(BlueprintPure, Category = Ability)
+	static void GetAbilityTags(const UGameplayAbility* Ability, FGameplayTagContainer& AbilityTags);
 	
 	/**
 	* FGameplayAbilityTargetDataHandle
@@ -202,14 +209,26 @@ public:
 	                                  UAbilitySystemComponent* ASC);
 
 	/*
-	* Get Tag caller Mag
+	* EffectSpechandle
 	*/
 	UFUNCTION(BlueprintPure, Category = "Ability|ActiveEffect")
 	static float GetTagCallerMag(UAbilitySystemComponent* InASC, FActiveGameplayEffectHandle& InActiveHandle,
 	                             FGameplayTag CallerTag);
 
 	UFUNCTION(BlueprintPure, Category = "Ability|GameplayEffect")
-	static const FGameplayTagContainer& GetAssetTagFromSpec(FGameplayEffectSpecHandle SpecHandle);
+	static FGameplayTagContainer& GetAssetTagFromSpec(const FGameplayEffectSpecHandle& SpecHandle);
+
+	UFUNCTION(BlueprintPure, Category = "Ability|GameplayEffect")
+	static FGameplayTagContainer& GetGrantedTagFromSpec(const FGameplayEffectSpecHandle& SpecHandle);
+	
+	UFUNCTION(BlueprintPure, Category = "Ability|GameplayEffect")
+	static float GetDuration(const FGameplayEffectSpecHandle& SpecHandle);
+
+	/** Manually sets the duration on a specific effect */
+	UFUNCTION(BlueprintCallable, Category = "Ability|GameplayEffect")
+	static FGameplayEffectSpecHandle AddDuration(FGameplayEffectSpecHandle SpecHandle, float AddDuration);
+
+	
 	/*
 	* Get UI information from GameplayEffect Handle, or Spec?
 	*/

@@ -2,8 +2,8 @@
 
 
 #include "AI/Order/ARTAttackOrder.h"
+#include "ARTGameplayAbility_Order.h"
 #include "Ability/ARTAbilitySystemComponent.h"
-#include "Ability/ARTGameplayAbility.h"
 
 UARTAttackOrder::UARTAttackOrder()
 {
@@ -37,7 +37,7 @@ bool UARTAttackOrder::AreAutoOrdersAllowedDuringOrder(const AActor* OrderedActor
 									int32 Index) const 
 {
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));	
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));	
 	if(Ability->AbilityTags.HasAll(OrderTags))
 	{
 		return false;

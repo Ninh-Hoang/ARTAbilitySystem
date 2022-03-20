@@ -12,6 +12,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FReceivedDamageDelegate, UARTAbilitySystemComponent*, SourceASC, float,
                                                UnmitigatedDamage, float, MitigatedDamage);
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FGenericAbilityEffectSpecDelegate, UARTGameplayAbility*, FGameplayEffectSpecHandle&);
 /**
 * Data about montages that were played locally (all montages in case of server. predictive montages in case of client). Never replicated directly.
 */
@@ -88,9 +89,13 @@ public:
 
 	FReceivedDamageDelegate ReceivedDamage;
 
-	// Called from GDDamageExecCalculation. Broadcasts on ReceivedDamage whenever this ASC receives damage.
+	// Called from ARTDamageExecCalculation. Broadcasts on ReceivedDamage whenever this ASC receives damage.
 	virtual void ReceiveDamage(UARTAbilitySystemComponent* SourceASC, float UnmitigatedDamage, float MitigatedDamage);
 
+	FGenericAbilityEffectSpecDelegate PreCommitCooldownEffectCallbacks;
+
+	virtual void NotifyPreCommitCooldownEffect(UARTGameplayAbility* Ability, FGameplayEffectSpecHandle& EffectSpec);
+	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual bool GetShouldTick() const override;
@@ -113,6 +118,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
 	void BP_InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor);
+
+	UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+	AActor* BP_GetAvatarActor() const;
 	
 	//expose cancel ability to BP
 	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "CancelAbilityWithTag"))
@@ -121,6 +129,18 @@ public:
 	
 	// Input bound to an ability is pressed
 	virtual void AbilityLocalInputPressed(int32 InputID) override;
+
+	UFUNCTION(BlueprintCallable, Category="Abilities", meta = (AutoCreateRefTerm = "InputTag"))
+	void AbilityInputTagPressed(const FGameplayTag& InputTag);
+
+	UFUNCTION(BlueprintCallable, Category="Abilities", meta = (AutoCreateRefTerm = "InputTag"))
+	void AbilityInputTagReleased(const FGameplayTag& InputTag);
+
+	UFUNCTION(BlueprintCallable, Category="Abilities", meta = (AutoCreateRefTerm = "InputTag"))
+	void AbilityInputTagConfirm(const FGameplayTag& InputTag);
+
+	UFUNCTION(BlueprintCallable, Category="Abilities", meta = (AutoCreateRefTerm = "InputTag"))
+	void AbilityInputTagCancel(const FGameplayTag& InputTag);
 
 	// Exposes GetTagCount to Blueprint
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities", Meta = (DisplayName = "GetTagCount", ScriptName

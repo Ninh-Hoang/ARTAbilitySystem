@@ -38,7 +38,10 @@ void UARTInventoryComponent::InitializeComponent()
 	{
 		for (FARTItemSlotDefinition& SlotDef : CustomInventorySlots)
 		{
-			CreateInventorySlot(SlotDef.Tags, FARTItemSlotFilterHandle(new FARTItemSlotFilter(SlotDef.Filter)));
+			for(int32 i = 0; i < SlotDef.NumberOfSlot; i++)
+			{
+				CreateInventorySlot(SlotDef.Tags, FARTItemSlotFilterHandle(new FARTItemSlotFilter(SlotDef.Filter)));
+			}
 		}
 	}
 	

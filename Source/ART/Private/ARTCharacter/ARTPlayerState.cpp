@@ -12,8 +12,10 @@
 
 #include "ARTCharacter/ARTCharacterBase.h"
 #include "Ability/AttributeSet/ARTAttributeSet_Health.h"
+#include "Inventory/Component/ARTInventoryComponent_Active.h"
 
 FName AARTPlayerState::AbilitySystemComponentName(TEXT("AbilitySystemComponent"));
+FName AARTPlayerState::InventoryComponentName(TEXT("InventoryComponent"));
 
 AARTPlayerState::AARTPlayerState()
 {
@@ -25,11 +27,9 @@ AARTPlayerState::AARTPlayerState()
 	// we won't be told about it by the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	
-	AttributeSet = CreateDefaultSubobject<UARTAttributeSetBase>(TEXT("Attribute"));
-
-	//InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory Component"));
-	//InventoryComponent->SetIsReplicated(true);
-
+	InventoryComponent = CreateDefaultSubobject<UARTInventoryComponent_Active>(InventoryComponentName);
+	InventoryComponent->SetIsReplicated(true);
+	
 	// Set PlayerState's NetUpdateFrequency to the same as the Character.
 	// Default is very low for PlayerStates and introduces perceived lag in the ability system.
 	NetUpdateFrequency = 60.0f;
@@ -44,14 +44,10 @@ class UAbilitySystemComponent* AARTPlayerState::GetAbilitySystemComponent() cons
 	return AbilitySystemComponent;
 }
 
-class UARTAttributeSetBase* AARTPlayerState::GetAttributeSet() const
-{
-	return AttributeSet;
-}
 
-class UInventoryComponent* AARTPlayerState::GetInventoryComponent() const
+class UARTInventoryComponent* AARTPlayerState::GetInventoryComponent() const
 {
-	return nullptr;
+	return InventoryComponent;
 }
 
 bool AARTPlayerState::IsAlive() const
@@ -157,6 +153,7 @@ void AARTPlayerState::BeginPlay()
 		HealthChangedDelegateHandle = AbilitySystemComponent->
 		                              GetGameplayAttributeValueChangeDelegate(UARTAttributeSet_Health::GetHealthAttribute()).
 		                              AddUObject(this, &AARTPlayerState::HealthChanged);
+		
 	}
 }
 

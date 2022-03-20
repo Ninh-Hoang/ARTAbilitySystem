@@ -5,14 +5,17 @@
 #include "CoreMinimal.h"
 
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "ARTGameplayAbilitySet.h"
 #include "GameFramework/Pawn.h"
 #include "Inventory/ARTInventoryItemTypes.h"
+#include "Inventory/Interfaces/ARTInventoryInterface.h"
 #include "CameraPawn.generated.h"
 
 class AARTCharacterAI;
 
 UCLASS()
-class ART_API ACameraPawn : public APawn
+class ART_API ACameraPawn : public APawn, public IAbilitySystemInterface, public IARTInventoryInterface
 {
 	GENERATED_BODY()
 
@@ -22,8 +25,48 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
 	TArray<FARTStartingItemEntry> StartingItems;
+
+	virtual void PossessedBy(AController* NewController) override;
 	
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UARTAbilitySystemComponent* ASC;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UARTInventoryComponent_Active* InventoryComponent;
+
+	virtual void OnRep_PlayerState() override;
+	
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+	virtual void MoveForward(float AxisValue);
+
+	virtual void MoveRight(float AxisValue);
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual UARTInventoryComponent* GetInventoryComponent() const override;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
+	TArray<TSoftObjectPtr<UARTAbilitySet>> AbilitySets;
+
+	TArray<FARTAbilitySetHandle> AbilitySetHandles;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Abilities & Atrtibutes")
+	TSubclassOf<class UGameplayEffect> DefaultAttributes;
+
+	UPROPERTY(EditAnywhere, Category = "ART|Delegate")
+	FGameplayTagBlueprintPropertyMap TagDelegateMap;
+
+	//Tag Response Table
+	UPROPERTY(EditAnywhere, Category = "ART|Delegate")
+	class UGameplayTagReponseTable* TagReponseTable;
+
+	virtual void InitializeAbilitySet();
+	virtual void InitializeAttributes();
+	virtual void InitializeTagPropertyMap();
+	virtual void InitializeTagResponseTable();
+
 	UPROPERTY()
 	TArray<AARTCharacterAI*> SelectedUnits;
 	
@@ -33,13 +76,6 @@ protected:
 	UFUNCTION(BlueprintPure, Category="Team")
 	TArray<AARTCharacterAI*> GetSelectedUnit() {return SelectedUnits;}
 	
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-	virtual void MoveForward(float AxisValue);
-
-	virtual void MoveRight(float AxisValue);
-
 public:
 	//Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -68,14 +104,13 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintCallable, Category="Team")
 	void BP_ChangeCurrentUnit(AARTCharacterAI* Pawn, bool& Success);
 	
 	UFUNCTION(BlueprintPure, Category="Team")
-	AARTCharacterAI* BP_GetControlledUnit();
+	AARTCharacterAI* BP_GetControlledUnit() const;
 	
 private:
 	void InitSpawnPlayerTeam();

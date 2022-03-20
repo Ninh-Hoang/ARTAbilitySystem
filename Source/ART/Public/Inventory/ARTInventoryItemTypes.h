@@ -306,19 +306,24 @@ public:
 	UPROPERTY()
 	TArray<UAttributeSet*> InstancedAttributeSets;
 	UPROPERTY()
-	TArray< FActiveGameplayEffectHandle> AddedGameplayEffects;
+	TArray<FActiveGameplayEffectHandle> AddedGameplayEffects;
 };
 
 USTRUCT(BlueprintType)
 struct ART_API FARTItemSlotDefinition
 {
 	GENERATED_BODY()
+
+	FARTItemSlotDefinition() : NumberOfSlot(1) {};
 public:
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Inventory")
 	FGameplayTagContainer Tags;
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Inventory")
 	FARTItemSlotFilter Filter;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Inventory", meta=(ClampMin=1))
+	int32 NumberOfSlot;
 };
 
 //---------------------------------------------

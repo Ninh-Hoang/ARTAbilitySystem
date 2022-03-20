@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "ARTCharacter/ARTGameplayAbilitySet.h"
+
+#include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
 #include "GameplayEffect.h"
-#include "Ability/ARTAbilitySystemComponent.h"
-#include "Ability/AttributeSet/ARTAttributeSetBase.h"
 
 void FARTAbilitySetHandle::AddAbilitySpecHandle(const FGameplayAbilitySpecHandle& Handle)
 {
@@ -32,7 +32,7 @@ UARTAbilitySet::UARTAbilitySet(const FObjectInitializer& ObjectInitializer)
 {
 }
  
-FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent* ASC, UObject* OverrideSourceObject) const
+FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UAbilitySystemComponent* ASC, UObject* OverrideSourceObject) const
 {
     check(ASC);
  
@@ -44,6 +44,7 @@ FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent
  
     FARTAbilitySetHandle OutHandle;
     OutHandle.HandleId = ARTAbilitySetHandle_Impl::GetNextQueuedHandleIdForUse();
+    OutHandle.AbilitySystemComponent = ASC;
     
     // Grant attribute sets
     for (int32 AttributeIndex = 0; AttributeIndex < GrantedAttributeSets.Num(); ++AttributeIndex)
@@ -57,7 +58,7 @@ FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent
         }
 
         //we do not to send this to handle, we will not remove attribute set at runtime, remove ability set will only remove ability and effect
-        ASC->AddAttributeSetSubobject(NewObject<UARTAttributeSetBase>(ASC->GetAvatarActor(), AttributeSetToGrant.Attribute));
+        ASC->AddAttributeSetSubobject(NewObject<UAttributeSet>(ASC->GetAvatarActor(), AttributeSetToGrant.Attribute));
     }
  
     // Grant the gameplay abilities.
@@ -101,7 +102,7 @@ FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetTo(UARTAbilitySystemComponent
  
 FARTAbilitySetHandle UARTAbilitySet::GiveAbilitySetToInterface(TScriptInterface<IAbilitySystemInterface> AbilitySystemInterface, UObject* OverrideSourceObject) const
 {
-    UARTAbilitySystemComponent* ASC = Cast<UARTAbilitySystemComponent>(AbilitySystemInterface.GetObject());
+    UAbilitySystemComponent* ASC = Cast<UAbilitySystemComponent>(AbilitySystemInterface.GetObject());
     return GiveAbilitySetTo(ASC, OverrideSourceObject);
 }
  

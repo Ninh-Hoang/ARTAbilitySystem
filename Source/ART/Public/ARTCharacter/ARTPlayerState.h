@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "ARTGameplayAbilitySet.h"
 #include "GameplayEffectTypes.h"
+#include "Inventory/Interfaces/ARTInventoryInterface.h"
 #include "ARTPlayerState.generated.h"
 
 /**
@@ -16,7 +18,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FARTOnGameplayAttributeValueChang
 
 
 UCLASS()
-class ART_API AARTPlayerState : public APlayerState, public IAbilitySystemInterface
+class ART_API AARTPlayerState : public APlayerState, public IAbilitySystemInterface, public IARTInventoryInterface
 {
 	GENERATED_BODY()
 
@@ -25,13 +27,12 @@ public:
 
 	/** Name of the AbilitySystem component. Use this name if you want to use a different class (with ObjectInitializer.SetDefaultSubobjectClass). */
 	static FName AbilitySystemComponentName;
-
+	static FName InventoryComponentName;
+	
 	// Implement IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	class UARTAttributeSetBase* GetAttributeSet() const;
-
-	class UInventoryComponent* GetInventoryComponent() const;
+	virtual UARTInventoryComponent* GetInventoryComponent() const override;
 	
 	UFUNCTION(BlueprintCallable, Category = "ART|ARTPlayerState")
 	bool IsAlive() const;
@@ -61,14 +62,15 @@ public:
 	void SetHealth(const float Health);
 	
 protected:
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UARTAbilitySystemComponent* AbilitySystemComponent;
 
-	UPROPERTY()
-	class UARTAttributeSetBase* AttributeSet;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UARTInventoryComponent_Active* InventoryComponent;
+	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "ART|Item")
 	class UInventorySet* InventorySet;
+	
 
 	FGameplayTag DeadTag;
 	FGameplayTag KnockedDownTag;

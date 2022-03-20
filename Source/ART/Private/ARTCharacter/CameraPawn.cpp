@@ -2,6 +2,9 @@
 
 
 #include "ARTCharacter/CameraPawn.h"
+
+#include "GameplayTagResponseTable.h"
+#include "Ability/ARTAbilitySystemComponent.h"
 #include "Framework/ARTGameState.h"
 #include "ARTCharacter/AI/ARTCharacterAI.h"
 #include "Camera/CameraComponent.h"
@@ -9,8 +12,10 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "AI/Order/ARTSelectComponent.h"
 #include "AI/ARTAIConductor.h"
+#include "ARTCharacter/ARTPlayerState.h"
 #include "ARTCharacter/AI/ARTAIController.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
+#include "Inventory/Component/ARTInventoryComponent_Active.h"
 
 // Sets default values
 ACameraPawn::ACameraPawn()
@@ -30,6 +35,99 @@ ACameraPawn::ACameraPawn()
 	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MoveComp"));
 
 	DummyInputComp = CreateDefaultSubobject<UInputComponent>(TEXT("DummyInputComp"));
+}
+
+void ACameraPawn::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	AARTPlayerState* PS = GetPlayerState<AARTPlayerState>();
+	if (PS)
+	{
+		ASC = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		InventoryComponent = Cast<UARTInventoryComponent_Active>(PS->GetInventoryComponent());
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
+
+		InitializeAbilitySet();
+		InitializeAttributes();
+		InitializeTagPropertyMap();
+		InitializeTagResponseTable();
+	}
+}
+
+void ACameraPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	AARTPlayerState* PS = GetPlayerState<AARTPlayerState>();
+	if (PS)
+	{
+		// Set the ASC for clients. Server does this in PossessedBy.
+		ASC = Cast<UARTAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		InventoryComponent = Cast<UARTInventoryComponent_Active>(PS->GetInventoryComponent());
+		
+		// Init ASC Actor Info for clients. Server will init its ASC when it possesses a new Actor.
+		ASC->InitAbilityActorInfo(PS, this);
+		InitializeAttributes();
+	}
+}
+
+void ACameraPawn::InitializeAbilitySet()
+{
+	// Grant abilities, but only on the server	
+	if (GetLocalRole() != ROLE_Authority || !ASC || ASC->CharacterAbilitiesGiven)
+	{
+		return;
+	}
+	
+	for(TSoftObjectPtr<UARTAbilitySet> Set : AbilitySets)
+	{
+		UARTAbilitySet* LoadedSet = Set.IsValid() ? Set.Get() : Set.LoadSynchronous();
+		if (LoadedSet)
+		{
+			AbilitySetHandles.Add(LoadedSet->GiveAbilitySetTo(ASC, this));
+			ASC->CharacterAbilitiesGiven = true;
+		}
+	}
+}
+
+void ACameraPawn::InitializeAttributes()
+{
+	if (!ASC)
+	{
+		return;
+	}
+
+	if (!DefaultAttributes)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s() Missing DefaultAttributes for %s. Please fill in the character's Blueprint."),
+			   *FString(__FUNCTION__), *GetName());
+		return;
+	}
+	
+	// Can run on Server and Client
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	const FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(
+		DefaultAttributes, 1, EffectContext);
+	if (NewHandle.IsValid())
+	{
+		ASC->ApplyGameplayEffectSpecToSelf(*NewHandle.Data.Get());
+	}
+}
+
+void ACameraPawn::InitializeTagPropertyMap()
+{
+	TagDelegateMap.Initialize(this, ASC);
+}
+
+void ACameraPawn::InitializeTagResponseTable()
+{
+	if (TagReponseTable)
+	{
+		TagReponseTable->RegisterResponseForEvents(ASC);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -71,6 +169,16 @@ void ACameraPawn::MoveRight(float AxisValue)
 {
 	FRotator Rot = FRotator(0, GetControlRotation().Yaw, 0);
 	AddMovementInput(FRotationMatrix(Rot).GetScaledAxis(EAxis::Y), AxisValue);
+}
+
+UAbilitySystemComponent* ACameraPawn::GetAbilitySystemComponent() const
+{
+	return ASC;
+}
+
+UARTInventoryComponent* ACameraPawn::GetInventoryComponent() const
+{
+	return InventoryComponent;
 }
 
 void ACameraPawn::InitSpawnPlayerTeam()
@@ -125,7 +233,7 @@ bool ACameraPawn::ChangeCurrentUnitInternal(AARTCharacterAI* Unit)
 	return true;
 }
 
-AARTCharacterAI* ACameraPawn::BP_GetControlledUnit()
+AARTCharacterAI* ACameraPawn::BP_GetControlledUnit() const
 {
 	return PlayerPawn;
 }

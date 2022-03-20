@@ -4,25 +4,84 @@
 
 #include "CoreMinimal.h"
 #include "Inventory/Component/ARTInventoryComponent_Storage.h"
+#include "Inventory/Mod/ARTItemDefinition_Mod.h"
 #include "ARTInventoryComponent_Equippable.generated.h"
 
 /**
  * 
  */
+class UARTItemStack_Mod;
+
+USTRUCT(BlueprintType)
+struct FARTItemModHandlePair : public FFastArraySerializerItem
+{
+	GENERATED_BODY()
+ 
+	FARTItemModHandlePair(){}
+ 
+	FARTItemModHandlePair(UARTItemStack_Mod* InModStack, FARTModPropertyHandle InHandle)
+		: ModStack(InModStack), Handle(InHandle) {}
+ 
+private:
+	friend struct FARTItemModHandleContainer;
+
+	UPROPERTY()
+	UARTItemStack_Mod* ModStack;
+	
+	UPROPERTY()
+	FARTModPropertyHandle Handle;
+};
+
+USTRUCT(BlueprintType)
+struct FARTItemModHandleContainer : public FFastArraySerializer
+{
+	GENERATED_BODY()
+ 
+	FARTItemModHandleContainer() { }
+ 
+public:
+	void AddItemModHandlePair(FARTItemModHandlePair& Pair);
+ 	
+ 	void RemoveItemModHandlePair(UARTItemStack_Mod* ItemStack);
+	
+	FARTModPropertyHandle& GetModPropertyHandle(const UARTItemStack_Mod* ItemStack) const;
+	
+	void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize);
+	void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize);
+	void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize);
+     
+	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
+	{
+		return FastArrayDeltaSerialize<FARTItemModHandlePair, FARTItemModHandleContainer>(ItemModHandlePairs, DeltaParms, *this);
+	}
+	
+	
+     
+ 
+private:
+	// List of gameplay tag stacks. Use the accelerated TagCountMap for checking tag count, etc.
+	UPROPERTY()
+	TArray<FARTItemModHandlePair> ItemModHandlePairs;
+};
+ 
+template<>
+struct TStructOpsTypeTraits<FARTItemModHandleContainer> : public TStructOpsTypeTraitsBase2<FARTItemModHandleContainer>
+{
+	enum
+	{
+		WithNetDeltaSerializer = true,
+	};
+};
+
 USTRUCT(BlueprintType)
 struct FARTInventoryItemInfoEntry
 {
 	GENERATED_BODY()
 public:
-	FARTInventoryItemInfoEntry()
-	{
-
-	}
+	FARTInventoryItemInfoEntry(){}
 	FARTInventoryItemInfoEntry(const FARTItemSlotRef& Ref)
-		: ItemSlotRef(Ref)
-	{
-
-	}
+		: ItemSlotRef(Ref){}
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Abilities")
 	FARTItemSlotRef ItemSlotRef;
 	UPROPERTY(BlueprintReadOnly, Category = "Abilities")
@@ -53,6 +112,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Abilities", Replicated, meta = (AllowPrivateAccess = "true"))
 	TArray<FARTInventoryItemInfoEntry> EquippedItemAbilityInfos;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	FARTItemModHandleContainer ItemModHandleContainer;
 
 	UPROPERTY(BlueprintAssignable)
 	FARTInvOnItemEquippedDelegate OnEquippedItem;

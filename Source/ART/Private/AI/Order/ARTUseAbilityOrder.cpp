@@ -1,10 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AI/Order/ARTUseAbilityOrder.h"
-#include "Ability/ARTAbilitySystemComponent.h"
-#include "Ability/ARTGameplayAbility.h"
 
-#include "Ability/ARTGlobalTags.h"
+#include "ARTGameplayAbility_Order.h"
+#include "Ability/ARTAbilitySystemComponent.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 
 UARTUseAbilityOrder::UARTUseAbilityOrder()
@@ -65,7 +64,7 @@ EARTTargetType UARTUseAbilityOrder::GetTargetType(const AActor* OrderedActor, co
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -154,13 +153,13 @@ FText UARTUseAbilityOrder::GetName(const AActor* OrderedActor, const FGameplayTa
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 	if (Ability == nullptr)
 	{
 		return FText::FromString(TEXT("UARTUseAbilityOrder::GetName: Error: Parameter 'Index' was invalid."));
 	}
 
-	return Ability->GetName();
+	return Ability->GetAbilityName();
 }
 
 FText UARTUseAbilityOrder::GetDescription(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags,
@@ -173,7 +172,7 @@ FText UARTUseAbilityOrder::GetDescription(const AActor* OrderedActor, const FGam
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 	if (Ability == nullptr)
 	{
 		return FText::FromString(TEXT("UARTUseAbilityOrder::GetName: Error: Parameter 'Index' was invalid."));
@@ -191,7 +190,7 @@ FARTOrderPreviewData UARTUseAbilityOrder::GetOrderPreviewData(const AActor* Orde
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 	if (Ability == nullptr)
 	{
 		return FARTOrderPreviewData();
@@ -214,7 +213,7 @@ EARTOrderProcessPolicy UARTUseAbilityOrder::GetOrderProcessPolicy(const AActor* 
 	
 	TArray<FGameplayAbilitySpec*> SpecArray;
 	FGameplayAbilitySpec* Spec = nullptr;
-	UARTGameplayAbility* Ability = nullptr;
+	UARTGameplayAbility_Order* Ability = nullptr;
 	AbilitySystem->GetActivatableGameplayAbilitySpecsByAllMatchingTags(OrderTags, SpecArray, false);
 	if (SpecArray.Num() > 0)
 	{
@@ -224,7 +223,7 @@ EARTOrderProcessPolicy UARTUseAbilityOrder::GetOrderProcessPolicy(const AActor* 
 		
 		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
 		
-		Ability = Cast<UARTGameplayAbility>(AbilitySource);
+		Ability = Cast<UARTGameplayAbility_Order>(AbilitySource);
 	}
 	
 	if (!Spec || !Ability) return Super::GetOrderProcessPolicy(OrderedActor, OrderTags, Index);
@@ -261,7 +260,7 @@ EARTOrderProcessPolicy UARTUseAbilityOrder::GetOrderProcessPolicy(const AActor* 
 		TArray<UGameplayAbility*> AbilityInstances = Spec->GetAbilityInstances();
 		for (UGameplayAbility* AbilityInstance : AbilityInstances)
 		{
-			UARTGameplayAbility* ARTAbilityInstance = Cast<UARTGameplayAbility>(AbilityInstance);
+			UARTGameplayAbility_Order* ARTAbilityInstance = Cast<UARTGameplayAbility_Order>(AbilityInstance);
 
 			if (ARTAbilityInstance != nullptr && ARTAbilityInstance->AreAbilityTasksActive())
 			{
@@ -285,7 +284,7 @@ EARTOrderGroupExecutionType UARTUseAbilityOrder::GetGroupExecutionType(const AAc
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -304,7 +303,7 @@ bool UARTUseAbilityOrder::IsHumanPlayerAutoOrder(const AActor* OrderedActor, con
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -323,7 +322,7 @@ bool UARTUseAbilityOrder::GetHumanPlayerAutoOrderInitialState(const AActor* Orde
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -342,7 +341,7 @@ bool UARTUseAbilityOrder::IsAIPlayerAutoOrder(const AActor* OrderedActor, const 
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -362,7 +361,7 @@ bool UARTUseAbilityOrder::GetAcquisitionRadiusOverride(const AActor* OrderedActo
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -380,7 +379,7 @@ void UARTUseAbilityOrder::GetTagRequirements(const AActor* OrderedActor, const F
 		return;
 	}
 	UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 
 	if (Ability != nullptr)
 	{
@@ -406,7 +405,7 @@ float UARTUseAbilityOrder::GetTargetScore(const AActor* OrderedActor, const FART
 		
 		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
 		
-		if(UARTGameplayAbility* ARTAbility =  Cast<UARTGameplayAbility>(AbilitySource))
+		if(UARTGameplayAbility_Order* ARTAbility =  Cast<UARTGameplayAbility_Order>(AbilitySource))
 		{
 			return ARTAbility->GetRange(AbilitySystem->AbilityActorInfo.Get(), Spec->Handle);
 		}
@@ -432,7 +431,7 @@ float UARTUseAbilityOrder::GetRequiredRange(const AActor* OrderedActor, const FG
 		
 		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
 		
-		if(UARTGameplayAbility* ARTAbility =  Cast<UARTGameplayAbility>(AbilitySource))
+		if(UARTGameplayAbility_Order* ARTAbility =  Cast<UARTGameplayAbility_Order>(AbilitySource))
 		{
 			return ARTAbility->GetRange(AbilitySystem->AbilityActorInfo.Get(), Spec->Handle);
 		}
@@ -446,10 +445,10 @@ void UARTUseAbilityOrder::InitializePreviewActor(AARTOrderPreview* PreviewActor,
 {
 	UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
 	UGameplayAbility* Ability = GetAbility(AbilitySystem, OrderTags);
-	PreviewActor->SetInstigatorAbility(Cast<UARTGameplayAbility>(Ability));
+	PreviewActor->SetInstigatorAbility(Cast<UARTGameplayAbility_Order>(Ability));
 }
 
-UARTGameplayAbility* UARTUseAbilityOrder::GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
+UARTGameplayAbility_Order* UARTUseAbilityOrder::GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
                                                   FGameplayTagContainer OrderTags) const
 {
 	TArray<FGameplayAbilitySpec*> SpecArray;
@@ -462,7 +461,7 @@ UARTGameplayAbility* UARTUseAbilityOrder::GetAbility(const UARTAbilitySystemComp
 		
 		UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
 		
-		return Cast<UARTGameplayAbility>(AbilitySource);
+		return Cast<UARTGameplayAbility_Order>(AbilitySource);
 	}
 
 	return nullptr;
@@ -477,11 +476,11 @@ UTexture2D* UARTUseAbilityOrder::GetIcon(const AActor* OrderedActor, const FGame
 	}
 
 	const UARTAbilitySystemComponent* AbilitySystem = OrderedActor->FindComponentByClass<UARTAbilitySystemComponent>();
-	UARTGameplayAbility* Ability = Cast<UARTGameplayAbility>(GetAbility(AbilitySystem, OrderTags));
+	UARTGameplayAbility_Order* Ability = Cast<UARTGameplayAbility_Order>(GetAbility(AbilitySystem, OrderTags));
 	if (Ability == nullptr)
 	{
 		return nullptr;
 	}
 
-	return Ability->GetIcon();
+	return Ability->GetAbilityIcon();
 }

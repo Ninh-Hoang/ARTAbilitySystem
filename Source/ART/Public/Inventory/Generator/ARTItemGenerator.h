@@ -24,10 +24,10 @@ class ART_API UARTItemGenerator : public UObject, public IGameplayTagAssetInterf
 public:
 	UARTItemGenerator(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Default")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	TSubclassOf<UARTItemStack> ItemStackClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Default")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Default")
 	FGameplayTagContainer OwnedTags;
 
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override
@@ -37,12 +37,13 @@ public:
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
 
-	UPROPERTY(EditDefaultsOnly, Instanced, BlueprintReadOnly, Category = "UI", Meta = (AssetBundles = "UI"))
+	UPROPERTY(EditDefaultsOnly, Instanced, BlueprintReadWrite, Category = "UI", Meta = (AssetBundles = "UI"))
 	UARTItemUIData* UIData;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Item Generator")
-	UARTItemStack* GenerateItemStack(const FARTItemGeneratorContext& Context = FARTItemGeneratorContext());
-	virtual UARTItemStack* GenerateItemStack_Implementation(const FARTItemGeneratorContext& Context = FARTItemGeneratorContext());
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Item Generator", Meta = (AutoCreateRefTerm =
+		"Context"))
+	UARTItemStack* GenerateItemStack(const FARTItemGeneratorContext& Context);
+	virtual UARTItemStack* GenerateItemStack_Implementation(const FARTItemGeneratorContext& Context);
 		
 protected:
 	virtual UARTItemStack* CreateNewItemStack(UARTItemDefinition* ItemDefinition, UARTItemRarity* ItemRarity);
@@ -56,7 +57,7 @@ class ART_API UARTItemGenerator_Static : public UARTItemGenerator
 public:
 	UARTItemGenerator_Static(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Generator")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generator")
 	TSubclassOf<UARTItemGenerator> StaticGenerator;
 
 	virtual UARTItemStack* GenerateItemStack_Implementation(const FARTItemGeneratorContext& Context) override;

@@ -12,8 +12,8 @@
  * 
  */
 
-class UARTAbilitySystemComponent;
-class UARTAttributeSetBase;
+class UAbilitySystemComponent;
+class UAttributeSet;
 class UGameplayEffect;
 class UGameplayAbility;
 
@@ -24,7 +24,7 @@ struct FARTAbilitySet_Attribute
 
 public:
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UARTAttributeSetBase> Attribute;
+	TSubclassOf<UAttributeSet> Attribute;
 };
 
 USTRUCT(BlueprintType)
@@ -79,12 +79,10 @@ private:
 	// Handles to the granted gameplay effects.
 	UPROPERTY()
 	TArray<FActiveGameplayEffectHandle> GameplayEffectHandles;
- 
- 
      
 	int32 HandleId = 0;
      
-	TWeakObjectPtr<UARTAbilitySystemComponent> AbilitySystemComponent = nullptr;
+	TWeakObjectPtr<UAbilitySystemComponent> AbilitySystemComponent = nullptr;
      
 	void Reset()
 	{
@@ -108,7 +106,7 @@ public:
 	const TArray<FARTAbilitySet_Ability>& GetGrantedGameplayAbilities() const { return GrantedGameplayAbilities; }
 	const TArray<FARTAbilitySet_GameplayEffect>& GetGrantedGameplayEffects() const { return GrantedGameplayEffects; }
  
-	FARTAbilitySetHandle GiveAbilitySetTo(UARTAbilitySystemComponent* ASC, UObject* OverrideSourceObject = nullptr) const;
+	FARTAbilitySetHandle GiveAbilitySetTo(UAbilitySystemComponent* ASC, UObject* OverrideSourceObject = nullptr) const;
 	FARTAbilitySetHandle GiveAbilitySetToInterface(TScriptInterface<IAbilitySystemInterface> AbilitySystemInterface, UObject* OverrideSourceObject = nullptr) const;
 	static void TakeAbilitySet(FARTAbilitySetHandle& AbilitySetHandle);
  

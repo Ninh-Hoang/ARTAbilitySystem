@@ -19,10 +19,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty> & OutLifetimeProps) const override;
 
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mod Settings", Replicated)
-	TArray<FARTModModifierData> Modifiers;
+	TArray<FARTModModifierData> DynamicModifiers;
 	   
 	virtual bool CanAttachTo_Implementation(UARTItemStack* OtherStack) override;
-	
 };

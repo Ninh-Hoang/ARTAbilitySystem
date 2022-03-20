@@ -40,11 +40,13 @@ EBTNodeResult::Type UBTTask_ActivateAbility::ExecuteTask(UBehaviorTreeComponent&
 		TArray<FGameplayAbilitySpec*> SpecArray;
 		ASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, SpecArray, false);
 		if(SpecArray.Num() <1 ) return EBTNodeResult::Failed;
+		if(SpecArray[0]->GetAbilityInstances().Num() < 1) return EBTNodeResult::Failed;
 
-		TArray<UGameplayAbility*> InstanceAbilities = SpecArray[0]->GetAbilityInstances();
-		if(InstanceAbilities.Num() < 1) return EBTNodeResult::Failed;
-		
-		ActiveAbility = SpecArray[0]->GetAbilityInstances()[0];
+		const FGameplayAbilitySpec* Spec = SpecArray[0];
+		UGameplayAbility* CDOAbility = Spec->Ability;
+		UGameplayAbility* InstancedAbility = Spec->GetPrimaryInstance();
+
+		ActiveAbility = InstancedAbility ? InstancedAbility : CDOAbility;
 		
 		OnAbilityEndHandle = ASC->OnAbilityEnded.AddUObject(this, &UBTTask_ActivateAbility::OnAbilityEnded);
 		

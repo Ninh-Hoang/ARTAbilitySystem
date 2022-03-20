@@ -91,7 +91,7 @@ UARTItemStack* UARTItemGenerator_SimpleRandom::GenerateItemStack_Implementation(
 					ModifierData.ModifierOp = DynamicMod.ModifierOp;
 					ModifierData.Value = FMath::RandRange(DynamicMod.MinValue, DynamicMod.MaxValue);
 
-					Mod->Modifiers.Add(ModifierData);
+					Mod->DynamicModifiers.Add(ModifierData);
 			}
 
 			//TODO: 

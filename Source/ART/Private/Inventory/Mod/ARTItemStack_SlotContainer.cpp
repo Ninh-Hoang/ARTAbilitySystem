@@ -19,7 +19,10 @@ void UARTItemStack_SlotContainer::InitializeContainer(TArray<FARTItemSlotDefinit
 	//this should only be called by the generator
 	for (FARTItemSlotDefinition& SlotDef : CustomInventorySlots)
 	{
-		CreateContainerSlot(SlotDef.Tags, FARTItemSlotFilterHandle(new FARTItemSlotFilter(SlotDef.Filter)));
+		for(int32 i = 0; i < SlotDef.NumberOfSlot; i++)
+		{
+			CreateContainerSlot(SlotDef.Tags, FARTItemSlotFilterHandle(new FARTItemSlotFilter(SlotDef.Filter)));
+		}
 	}
 }
 

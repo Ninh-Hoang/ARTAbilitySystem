@@ -244,6 +244,19 @@ float UARTBlueprintFunctionLibrary::EffectContextGetSourceLevel(FGameplayEffectC
 	return 0.0f;
 }
 
+UGameplayAbility* UARTBlueprintFunctionLibrary::EffectContextGetAbility(FGameplayEffectContextHandle EffectContext)
+{
+	//do not edit this, just read
+	return const_cast<UGameplayAbility*>(EffectContext.GetAbility());
+}
+
+void UARTBlueprintFunctionLibrary::GetAbilityTags(const UGameplayAbility* Ability, FGameplayTagContainer& AbilityTags)
+{
+	if(!Ability) return;
+	AbilityTags.Reset();
+	AbilityTags = Ability->AbilityTags;
+}
+
 void UARTBlueprintFunctionLibrary::ClearTargetData(FGameplayAbilityTargetDataHandle& TargetData)
 {
 	TargetData.Clear();
@@ -362,9 +375,58 @@ float UARTBlueprintFunctionLibrary::GetTagCallerMag(UAbilitySystemComponent* InA
 	return 0.0f;
 }
 
-const FGameplayTagContainer& UARTBlueprintFunctionLibrary::GetAssetTagFromSpec(FGameplayEffectSpecHandle SpecHandle)
+FGameplayTagContainer& UARTBlueprintFunctionLibrary::GetAssetTagFromSpec(const FGameplayEffectSpecHandle& SpecHandle)
 {
-	return SpecHandle.Data->Def->InheritableGameplayEffectTags.CombinedTags;
+	/*if(!SpecHandle.IsValid()) return;
+	Container.Reset();
+	SpecHandle.Data->GetAllAssetTags(Container);*/
+	
+	if(!SpecHandle.IsValid()) return *new FGameplayTagContainer();
+	FGameplayTagContainer Container;
+	SpecHandle.Data->GetAllAssetTags(Container);
+	FGameplayTagContainer* ContainerPointer = new FGameplayTagContainer(Container);
+	return *ContainerPointer;
+	
+}
+
+FGameplayTagContainer& UARTBlueprintFunctionLibrary::GetGrantedTagFromSpec(const FGameplayEffectSpecHandle& SpecHandle)
+{
+	if(!SpecHandle.IsValid()) return *new FGameplayTagContainer();
+	FGameplayTagContainer Container;
+	SpecHandle.Data->GetAllGrantedTags(Container);
+	FGameplayTagContainer* ContainerPointer = new FGameplayTagContainer(Container);
+	return *ContainerPointer;
+}
+
+float UARTBlueprintFunctionLibrary::GetDuration(const FGameplayEffectSpecHandle& SpecHandle)
+{
+	if(!SpecHandle.IsValid()) return 0.f;
+	float Duration = 0.f;
+	SpecHandle.Data->AttemptCalculateDurationFromDef(Duration);
+	return Duration;
+}
+
+FGameplayEffectSpecHandle UARTBlueprintFunctionLibrary::AddDuration(FGameplayEffectSpecHandle SpecHandle,
+	float AddDuration)
+{
+	if (FGameplayEffectSpec* Spec = SpecHandle.Data.Get())
+	{
+		const float NewDuration = GetDuration(Spec) + AddDuration > 0.01f;
+		if (NewDuration > 0.01f)
+		{
+			Spec->SetDuration(NewDuration, false);
+		}
+		else
+		{
+			Spec->SetDuration(0.01f, false);
+		}
+	}
+	else
+	{
+		ABILITY_LOG(Warning, TEXT("UARTAbilitySystemBlueprintLibrary::AddDuration called with invalid SpecHandle"));
+	}
+
+	return SpecHandle;
 }
 
 UARTGameplayEffectUIData* UARTBlueprintFunctionLibrary::GetGameplayEffectUIDataFromActiveHandle(

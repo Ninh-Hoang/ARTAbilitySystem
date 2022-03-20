@@ -16,7 +16,7 @@
 class AActor;
 struct FARTOrderTargetData;
 class UARTAbilitySystemComponent;
-class UGameplayAbility;
+class UARTGameplayAbility_Order;
 
 UCLASS(NotBlueprintType, Abstract, Blueprintable, hideCategories = ("Display", "Requirements", "Policy"))
 class ART_API UARTUseAbilityOrder : public UARTOrderWithBehavior
@@ -77,7 +77,7 @@ public:
 	                                    const FGameplayTagContainer& OrderTags, int32 Index) override;
 	//~ End UARTOrder Interface
 protected:
-	virtual UARTGameplayAbility* GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
+	virtual UARTGameplayAbility_Order* GetAbility(const UARTAbilitySystemComponent* AbilitySystem,
 	                                     FGameplayTagContainer OrderTags) const;
 private:
 	UTexture2D* GetIcon(const AActor* OrderedActor, const FGameplayTagContainer& OrderTags, int32 Index) const;

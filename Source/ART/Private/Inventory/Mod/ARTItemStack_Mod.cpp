@@ -14,7 +14,7 @@ void UARTItemStack_Mod::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UARTItemStack_Mod, Modifiers);
+	DOREPLIFETIME(UARTItemStack_Mod, DynamicModifiers);
 }
 
 bool UARTItemStack_Mod::CanAttachTo_Implementation(UARTItemStack* OtherStack)

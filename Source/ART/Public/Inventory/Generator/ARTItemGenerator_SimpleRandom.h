@@ -53,10 +53,10 @@ public:
 	}
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
-		FGameplayAttribute Attribute;
+	FGameplayAttribute Attribute;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
-		TEnumAsByte<EGameplayModOp::Type> ModifierOp;
+	TEnumAsByte<EGameplayModOp::Type> ModifierOp;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	float MinValue;

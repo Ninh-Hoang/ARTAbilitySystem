@@ -6,14 +6,10 @@
 #include "Ability/ARTAbilitySystemComponent.h"
 #include "Blueprint/ARTTargetType.h"
 #include "ARTCharacter/ARTSurvivor.h"
-#include "GameplayTagContainer.h"
 #include "Ability/ARTAbilitySystemGlobals.h"
 #include "ARTCharacter/ARTPlayerController.h"
 #include "Weapon/Weapon.h"
-
 #include "Ability/ARTGlobalTags.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
 
 UARTGameplayAbility::UARTGameplayAbility()
 {
@@ -39,38 +35,14 @@ UARTGameplayAbility::UARTGameplayAbility()
 		UFunction* ScoreUtilityFunction = GetClass()->FindFunctionByName(FuncName);
 		bHasBlueprintScoreUtility = ImplementedInBlueprint(ScoreUtilityFunction);
 	}
-	
-	{
-		static FName FuncName = FName(TEXT("K2_GetTargetScore"));
-		UFunction* TargetScoreFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintGetTargetScore = ImplementedInBlueprint(TargetScoreFunction);
-	}
-	
-	{
-		static FName FuncName = FName(TEXT("K2_GetOrderTargetData"));
-		UFunction* OrderTargetDataFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintGetOrderTargetData = ImplementedInBlueprint(OrderTargetDataFunction);
-	}
-	
-	{
-		static FName FuncName = FName(TEXT("K2_GetRange"));
-		UFunction* AbilityRangeFunction = GetClass()->FindFunctionByName(FuncName);
-		bHasBlueprintGetRange = ImplementedInBlueprint(AbilityRangeFunction);
-	}
-
-	//order system
-	AbilityProcessPolicy = EAbilityProcessPolicy::INSTANT;
-
-	GroupExecutionType = EARTOrderGroupExecutionType::MOST_SUITABLE_UNIT;
-
-	AcquisitionRadiusOverride = 0.0f;
-	bIsAcquisitionRadiusOverridden = false;
-
-	bHumanPlayerAutoAbility = false;
-	bHumanPlayerAutoAutoAbilityInitialState = false;
-	bAIPlayerAutoAbility = false;
 }
 
+const FARTGameplayAbilityActorInfo& UARTGameplayAbility::GetARTActorInfo() const
+{
+	ensure(CurrentActorInfo);
+
+	return *static_cast<const FARTGameplayAbilityActorInfo*>(CurrentActorInfo);
+}
 
 void UARTGameplayAbility::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
 {
@@ -273,7 +245,7 @@ void UARTGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	RegisteredCancelTagEventHandles.Empty();
 }
 
-FARTGameplayEffectContainerSpec UARTGameplayAbility::MakeEffectContainerSpecFromContainer(
+FARTGameplayEffectContainerSpec& UARTGameplayAbility::MakeEffectContainerSpecFromContainer(
 	const FARTGameplayEffectContainer& Container, const FGameplayEventData& EventData, int32 OverrideGameplayLevel)
 {
 	// First figure out our actor info
@@ -345,19 +317,19 @@ FARTGameplayEffectContainerSpec UARTGameplayAbility::MakeEffectContainerSpecFrom
 			ReturnSpec.SourceGameplayEffectSpecs.Add(SpecHandle);
 		}
 	}
-	return ReturnSpec;
+	FARTGameplayEffectContainerSpec* SpecPointer = new FARTGameplayEffectContainerSpec(ReturnSpec);
+	
+	return *SpecPointer;
 }
 
-FARTGameplayEffectContainerSpec UARTGameplayAbility::MakeEffectContainerSpec(
+FARTGameplayEffectContainerSpec& UARTGameplayAbility::MakeEffectContainerSpec(
 	FGameplayTag ContainerTag, const FGameplayEventData& EventData, int32 OverrideGameplayLevel)
 {
-	FARTGameplayEffectContainer* FoundContainer = EffectContainerMap.Find(ContainerTag);
-
-	if (FoundContainer)
+	if (const FARTGameplayEffectContainer* FoundContainer = EffectContainerMap.Find(ContainerTag))
 	{
 		return MakeEffectContainerSpecFromContainer(*FoundContainer, EventData, OverrideGameplayLevel);
 	}
-	return FARTGameplayEffectContainerSpec();
+	return * new FARTGameplayEffectContainerSpec();
 }
 
 TArray<FActiveGameplayEffectHandle> UARTGameplayAbility::ApplyEffectContainerSpec(
@@ -486,6 +458,11 @@ void UARTGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 		
 		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Cooldown")),
 		                                               Duration);
+
+		//Fire Pre commit cost event
+		UARTAbilitySystemComponent* ASC = Cast<UARTAbilitySystemComponent>(ActorInfo->AbilitySystemComponent);
+		ASC->NotifyPreCommitCooldownEffect(const_cast<UARTGameplayAbility*>(this), SpecHandle);
+		
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 }
@@ -518,7 +495,7 @@ bool UARTGameplayAbility::CheckCooldown(const FGameplayAbilitySpecHandle Handle,
 
 const FGameplayTagContainer* UARTGameplayAbility::GetCooldownTags() const
 {
-	return &CooldownTags;
+	//return &CooldownTags;
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
@@ -752,20 +729,6 @@ void UARTGameplayAbility::MontageStopForAllMeshes(float OverrideBlendOutTime)
 	}
 }
 
-// ----------------------------------------------------------------------------------------------------------------
-// Order functions
-// ----------------------------------------------------------------------------------------------------------------
-
-EARTTargetType UARTGameplayAbility::GetTargetType() const
-{
-	return TargetType;
-}
-
-EARTOrderGroupExecutionType UARTGameplayAbility::GetGroupExecutionType() const
-{
-	return GroupExecutionType;
-}
-
 FGameplayTag UARTGameplayAbility::GetEventTriggerTag() const
 {
 	for (const FAbilityTriggerData& AbilityTrigger : AbilityTriggers)
@@ -784,12 +747,12 @@ const TArray<FAbilityTriggerData>& UARTGameplayAbility::GetAbilityTriggerData() 
 	return AbilityTriggers;
 }
 
-UTexture2D* UARTGameplayAbility::GetIcon() const
+UTexture2D* UARTGameplayAbility::GetAbilityIcon() const
 {
 	return Icon;
 }
 
-FText UARTGameplayAbility::GetName() const
+FText UARTGameplayAbility::GetAbilityName() const
 {
 	return Name;
 }
@@ -801,11 +764,6 @@ FText UARTGameplayAbility::GetDescription(const AActor* Actor) const
 	return FormattedDescription;
 }
 
-FARTOrderPreviewData UARTGameplayAbility::GetAbilityPreviewData() const
-{
-	return AbilityPreviewData;
-}
-
 void UARTGameplayAbility::FormatDescription_Implementation(const FText& InDescription, const AActor* Actor,
                                                            FText& OutDescription) const
 
@@ -813,36 +771,6 @@ void UARTGameplayAbility::FormatDescription_Implementation(const FText& InDescri
 	OutDescription = InDescription;
 }
 
-bool UARTGameplayAbility::GetAcquisitionRadiusOverride(float& OutAcquisitionRadius) const
-{
-	OutAcquisitionRadius = AcquisitionRadiusOverride;
-	return bIsAcquisitionRadiusOverridden;
-}
-
-int32 UARTGameplayAbility::GetAutoOrderPriority() const
-{
-	return AutoOrderPriority;
-}
-
-bool UARTGameplayAbility::IsHumanPlayerAutoAbility() const
-{
-	return bHumanPlayerAutoAbility;
-}
-
-bool UARTGameplayAbility::GetHumanPlayerAutoAutoAbilityInitialState() const
-{
-	return bHumanPlayerAutoAutoAbilityInitialState;
-}
-
-bool UARTGameplayAbility::IsAIPlayerAutoAbility() const
-{
-	return bAIPlayerAutoAbility;
-}
-
-bool UARTGameplayAbility::IsTargetScoreOverriden() const
-{
-	return bIsTargetScoreOverridden;
-}
 
 bool UARTGameplayAbility::AreAbilityTasksActive() const
 {
@@ -872,50 +800,9 @@ void UARTGameplayAbility::OnAbilityLevelChanged_Implementation(int32 NewLevel)
 {
 }
 
-float UARTGameplayAbility::GetTargetScore(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle, const FARTOrderTargetData& TargetData,
-                                          int32 Index) const
-{
-	if(bHasBlueprintGetTargetScore)
-	{
-		return K2_GetTargetScore(*ActorInfo, Handle, TargetData, Index);
-	}
-	return 0.0f;
-}
-
-bool UARTGameplayAbility::GetOrderTargetData(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle, OUT FARTOrderTargetData* OrderTargetData) const
-{
-	if(bHasBlueprintGetOrderTargetData)
-	{
-		return K2_GetOrderTargetData(*ActorInfo, Handle, *OrderTargetData);
-	}
-	return false;
-}	
-
-float UARTGameplayAbility::GetRange(FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const
-{
-	if(bHasBlueprintGetRange)
-	{
-		return K2_GetRange(*ActorInfo, Handle);
-	}
-	return AbilityBaseRange.GetValue();
-}
-
-EAbilityProcessPolicy UARTGameplayAbility::GetAbilityProcessPolicy() const
-{
-	return AbilityProcessPolicy;
-}
-
 FGameplayTagContainer UARTGameplayAbility::GetActivationRequiredTags() const
 {
 	return ActivationRequiredTags;
-}
-
-void UARTGameplayAbility::GetOrderTagRequirements(FARTOrderTagRequirements& OutTagRequirements) const
-{
-	OutTagRequirements.SourceRequiredTags.AppendTags(SourceRequiredTags);
-	OutTagRequirements.SourceBlockedTags.AppendTags(SourceBlockedTags);
-	OutTagRequirements.TargetRequiredTags.AppendTags(TargetRequiredTags);
-	OutTagRequirements.TargetBlockedTags.AppendTags(TargetBlockedTags);
 }
 
 void UARTGameplayAbility::GetSourceTagRequirements(FGameplayTagContainer& OutRequiredTags,
@@ -930,26 +817,6 @@ void UARTGameplayAbility::GetTargetTagRequirements(FGameplayTagContainer& OutReq
 {
 	OutRequiredTags.AppendTags(TargetRequiredTags);
 	OutBlockedTags.AppendTags(TargetBlockedTags);
-}
-
-FVector UARTGameplayAbility::GetBlackboardOrderLocation()
-{
-	return UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsVector(FName("Order_Location"));
-}
-
-AActor* UARTGameplayAbility::GetBlackboardOrderTarget()
-{
-	return Cast<AActor>(UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsObject(FName("Order_Target")));
-}
-
-FVector UARTGameplayAbility::GetBlackboardOrderHomeLocation()
-{
-	return UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsVector(FName("Order_HomeLocation"));
-}
-
-float UARTGameplayAbility::GetBlackboardOrderRange()
-{
-	return UAIBlueprintHelperLibrary::GetBlackboard(GetAvatarActorFromActorInfo())->GetValueAsFloat(FName("Order_Range"));
 }
 
 bool UARTGameplayAbility::DoesSatisfyTargetTagRequirement(AActor* TargetActor)

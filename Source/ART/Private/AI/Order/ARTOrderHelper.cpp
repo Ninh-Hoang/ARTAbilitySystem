@@ -3,9 +3,9 @@
 
 #include "AI/Order/ARTOrderHelper.h"
 #include "AbilitySystemComponent.h"
+#include "ARTGameplayAbility_Order.h"
 #include "Abilities/Tasks/AbilityTask.h"
 #include "Ability/ARTAbilitySystemComponent.h"
-#include "Ability/ARTGameplayAbility.h"
 #include "Ability/ARTGlobalTags.h"
 #include "AI/Order/ARTAutoOrderComponent.h"
 #include "AI/Order/ARTOrderComponent.h"
@@ -1098,7 +1098,7 @@ bool UARTOrderHelper::FindOrderTargetDataFromAbility(const AActor* AbilityActor,
 		
 			UGameplayAbility* AbilitySource = InstancedAbility ? InstancedAbility : CDOAbility;
 		
-			if(UARTGameplayAbility* ARTAbility = Cast<UARTGameplayAbility>(AbilitySource))
+			if(UARTGameplayAbility_Order* ARTAbility = Cast<UARTGameplayAbility_Order>(AbilitySource))
 			{
 				return ARTAbility->GetOrderTargetData(ASC->AbilityActorInfo.Get(), SpecArray[0]->Handle, &OrderTargetData);
 			}
