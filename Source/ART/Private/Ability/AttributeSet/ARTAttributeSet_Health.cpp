@@ -2,7 +2,6 @@
 
 
 #include "Ability/AttributeSet/ARTAttributeSet_Health.h"
-#include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 
 UARTAttributeSet_Health::UARTAttributeSet_Health()

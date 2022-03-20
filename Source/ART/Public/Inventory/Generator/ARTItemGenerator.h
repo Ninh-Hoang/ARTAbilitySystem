@@ -29,7 +29,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Default")
 	FGameplayTagContainer OwnedTags;
-
+	
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override
 	{
 		TagContainer.AppendTags(OwnedTags);

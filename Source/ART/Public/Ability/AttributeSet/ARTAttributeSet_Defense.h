@@ -15,7 +15,7 @@ class ART_API UARTAttributeSet_Defense : public UARTAttributeSetBase
 public:
 	UARTAttributeSet_Defense();
 	
-	//Health is important to check if alive or not, there it is in base class
+	//Armor
 	UPROPERTY(BlueprintReadOnly, Category = "Armor", ReplicatedUsing = OnRep_Armor)
 	FGameplayAttributeData Armor;
 	ATTRIBUTE_ACCESSORS(UARTAttributeSet_Defense, Armor)
