@@ -3,7 +3,7 @@
 
 #include "AI/Order/ARTOrderHelper.h"
 #include "AbilitySystemComponent.h"
-#include "ARTGameplayAbility_Order.h"
+#include "Ability/ARTGameplayAbility_Order.h"
 #include "Abilities/Tasks/AbilityTask.h"
 #include "Ability/ARTAbilitySystemComponent.h"
 #include "Ability/ARTGlobalTags.h"

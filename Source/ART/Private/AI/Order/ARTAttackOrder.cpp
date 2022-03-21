@@ -2,7 +2,7 @@
 
 
 #include "AI/Order/ARTAttackOrder.h"
-#include "ARTGameplayAbility_Order.h"
+#include "Ability/ARTGameplayAbility_Order.h"
 #include "Ability/ARTAbilitySystemComponent.h"
 
 UARTAttackOrder::UARTAttackOrder()

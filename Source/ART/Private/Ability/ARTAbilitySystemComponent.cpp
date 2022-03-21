@@ -12,7 +12,7 @@
 #include "Ability/ARTGameplayEffectTypes.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "ARTGameplayAbility_Order.h"
+#include "Ability/ARTGameplayAbility_Order.h"
 #include "Ability/ARTAbilityTagRelationship.h"
 
 UARTAbilitySystemComponent::UARTAbilitySystemComponent()

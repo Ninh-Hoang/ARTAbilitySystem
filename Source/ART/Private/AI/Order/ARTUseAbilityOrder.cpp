@@ -2,7 +2,7 @@
 
 #include "AI/Order/ARTUseAbilityOrder.h"
 
-#include "ARTGameplayAbility_Order.h"
+#include "Ability/ARTGameplayAbility_Order.h"
 #include "Ability/ARTAbilitySystemComponent.h"
 #include "Blueprint/ARTBlueprintFunctionLibrary.h"
 

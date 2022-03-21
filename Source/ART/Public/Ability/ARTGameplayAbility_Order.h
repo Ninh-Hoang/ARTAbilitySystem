@@ -59,7 +59,8 @@ UCLASS()
 class ART_API UARTGameplayAbility_Order : public UARTGameplayAbility
 {
 	GENERATED_BODY()
-
+	
+public:
 	UARTGameplayAbility_Order();
 
 protected:

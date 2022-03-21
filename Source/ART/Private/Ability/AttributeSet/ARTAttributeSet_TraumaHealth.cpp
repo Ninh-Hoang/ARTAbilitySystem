@@ -2,7 +2,6 @@
 
 
 #include "Ability/AttributeSet/ARTAttributeSet_TraumaHealth.h"
-
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 

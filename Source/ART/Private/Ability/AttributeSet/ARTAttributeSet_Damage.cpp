@@ -13,7 +13,7 @@ UARTAttributeSet_Damage::UARTAttributeSet_Damage()
 void UARTAttributeSet_Damage::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
-
+	
 	FGameplayEffectContextHandle Context = Data.EffectSpec.GetContext();
 	UAbilitySystemComponent* Source = Context.GetOriginalInstigatorAbilitySystemComponent();
 	const FGameplayTagContainer& SourceTags = *Data.EffectSpec.CapturedSourceTags.GetAggregatedTags();

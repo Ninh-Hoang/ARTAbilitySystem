@@ -22,7 +22,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Damage", meta = (HideFromLevelInfos))
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS(UARTAttributeSet_Damage, Damage)
-
+	
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	
 	virtual void FinalDamageDealing(float LocalDamage, const FHitResult* Hit);

@@ -15,7 +15,8 @@ class ART_API UARTAttributeSet_Shield : public UARTAttributeSetBase
 	GENERATED_BODY()
 public:
 	UARTAttributeSet_Shield();
-	
+
+	//shield
 	UPROPERTY(BlueprintReadOnly, Category = "Shield", ReplicatedUsing = OnRep_Shield)
 	FGameplayAttributeData Shield;
 	ATTRIBUTE_ACCESSORS(UARTAttributeSet_Shield, Shield)
