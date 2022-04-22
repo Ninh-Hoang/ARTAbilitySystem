@@ -92,7 +92,8 @@ FGameplayModifierInfo UARTStringOpBPFunctionLibrary::MakeGameplayModifierInfo(FG
 	FGameplayModifierInfo Info;
 	Info.Attribute = Attribute;
 	Info.ModifierOp = ModifierOp;
-	Info.ModifierMagnitude.ScalableFloatMagnitude.Value = Magnitude;
+	//TODO: Source code edit
+	//Info.ModifierMagnitude.ScalableFloatMagnitude.Value = Magnitude;
 
 	return Info;
 }

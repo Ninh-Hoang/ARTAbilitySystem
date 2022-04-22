@@ -528,16 +528,17 @@ void UARTInventoryComponent_Equippable::RemoveMods(UARTItemStack* ItemStack, con
 							//Invert Additive 
 							if (Modifier.ModifierOp == EGameplayModOp::Additive)
 							{
-								switch(Modifier.ModifierMagnitude.MagnitudeCalculationType)
+								switch(Modifier.ModifierMagnitude.GetMagnitudeCalculationType())
 								{
 								case EGameplayEffectMagnitudeCalculation::ScalableFloat:
-									Modifier.ModifierMagnitude.ScalableFloatMagnitude.Value *= -1;
+									//TODO: Source code edit
+									//Modifier.ModifierMagnitude.ScalableFloatMagnitude.Value *= -1;
 									break;
 								case EGameplayEffectMagnitudeCalculation::CustomCalculationClass:
-									Modifier.ModifierMagnitude.CustomMagnitude.Coefficient.Value *= -1;
+									//Modifier.ModifierMagnitude.CustomMagnitude.Coefficient.Value *= -1;
 									break;
 								case EGameplayEffectMagnitudeCalculation::AttributeBased:
-									Modifier.ModifierMagnitude.AttributeBasedMagnitude.Coefficient.Value *= -1;
+									//Modifier.ModifierMagnitude.AttributeBasedMagnitude.Coefficient.Value *= -1;
 									break;
 								case EGameplayEffectMagnitudeCalculation::SetByCaller:
 									break;
